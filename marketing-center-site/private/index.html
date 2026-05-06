@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Designer Series Marketing Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f6f2;
+      --surface: #fbfbf9;
+      --surface-2: #f2efe8;
+      --text: #28251d;
+      --muted: #6d6a62;
+      --border: rgba(40,37,29,.1);
+      --primary: #0f6770;
+      --primary-dark: #0b545b;
+      --primary-soft: rgba(15,103,112,.09);
+      --warn-bg: #fdf3e7;
+      --warn-border: #e8c89a;
+      --warn-text: #7a4a16;
+      --ok: #2f8f5b;
+      --pending: #b07d2a;
+      --scheduled: #2c66a8;
+      --shadow: 0 12px 32px rgba(22, 18, 10, .08);
+      --radius: 22px;
+      --radius-sm: 14px;
+      --font-body: 'Inter', sans-serif;
+      --font-display: 'Instrument Serif', serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--text);
+      background: linear-gradient(180deg, #f1eee8 0%, var(--bg) 100%);
+      line-height: 1.6;
+    }
+
+    a { color: var(--primary); }
+
+    .shell {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 2rem 1rem 5rem;
+    }
+
+    .hero {
+      background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.55));
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+      padding: clamp(1.5rem, 4vw, 3rem);
+      margin-bottom: 1.25rem;
+    }
+
+    .eyebrow {
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--muted);
+      margin-bottom: .75rem;
+    }
+
+    h1, h2, h3 { margin: 0; line-height: 1.08; }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.2rem, 4vw, 4rem);
+      max-width: 18ch;
+      margin-bottom: 1rem;
+    }
+
+    .lede {
+      max-width: 70ch;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .warning {
+      margin-top: 1.5rem;
+      padding: 1rem 1.15rem;
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      color: var(--warn-text);
+      border-radius: 16px;
+      font-size: .95rem;
+      font-weight: 600;
+    }
+
+    .warning strong { display: block; margin-bottom: .15rem; font-size: 1rem; }
+
+    .roadmap {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(14px);
+      background: rgba(247,246,242,.88);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: .75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin: 0 0 2rem;
+    }
+
+    .chip {
+      text-decoration: none;
+      padding: .55rem .8rem;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid rgba(40,37,29,.08);
+      color: var(--text);
+      font-size: .88rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+    }
+
+    .chip:hover { border-color: rgba(40,37,29,.2); }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .dot.ready { background: var(--ok); }
+    .dot.drafting { background: var(--pending); }
+    .dot.scheduled { background: var(--scheduled); }
+
+    .series { display: grid; gap: 1.5rem; }
+
+    .week-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .week-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.5rem 1.5rem 0;
+      flex-wrap: wrap;
+    }
+
+    .week-label {
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--muted);
+      margin-bottom: .35rem;
+    }
+
+    .week-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: .25rem;
+    }
+
+    .week-meta {
+      color: var(--muted);
+      font-size: .95rem;
+      max-width: 60ch;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .35rem .75rem;
+      border-radius: 999px;
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      border: 1px solid transparent;
+    }
+
+    .status-ready { background: rgba(47,143,91,.1); color: var(--ok); border-color: rgba(47,143,91,.25); }
+    .status-drafting { background: rgba(176,125,42,.1); color: var(--pending); border-color: rgba(176,125,42,.25); }
+    .status-scheduled { background: rgba(44,102,168,.1); color: var(--scheduled); border-color: rgba(44,102,168,.25); }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: max-content 1fr auto;
+      gap: .55rem 1rem;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      margin: 1rem 1.5rem 0;
+      background: var(--surface-2);
+      border: 1px solid rgba(40,37,29,.08);
+      border-radius: var(--radius-sm);
+      font-size: .92rem;
+    }
+
+    .config-grid .label {
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-size: .75rem;
+    }
+
+    .config-grid .value {
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      color: var(--text);
+      word-break: break-word;
+      font-size: .9rem;
+    }
+
+    .copy-btn {
+      background: #fff;
+      border: 1px solid rgba(40,37,29,.12);
+      border-radius: 999px;
+      padding: .35rem .7rem;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .copy-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .copy-btn.copied { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .week-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .75rem;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: .75rem 1.15rem;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: .95rem;
+      font-family: inherit;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .btn-secondary {
+      background: transparent;
+      border-color: rgba(40,37,29,.14);
+      color: var(--text);
+    }
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+
+    .btn:disabled,
+    .btn[aria-disabled="true"] {
+      opacity: .45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .preview-wrap {
+      border-top: 1px solid var(--border);
+      background: #efece5;
+      padding: 1.25rem;
+      display: none;
+    }
+
+    .preview-wrap.open { display: block; }
+
+    .preview-frame-holder {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid rgba(40,37,29,.1);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 18px 48px rgba(25,20,10,.08);
+      position: relative;
+    }
+
+    .preview-frame-holder iframe {
+      display: block;
+      width: 100%;
+      height: 900px;
+      border: 0;
+      background: #fff;
+    }
+
+    .preview-empty {
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-style: italic;
+      background: #fff;
+    }
+
+    .draft-watermark {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(176,125,42,.95);
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .14em;
+      padding: .4rem .7rem;
+      border-radius: 6px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text);
+      color: #fff;
+      padding: .75rem 1.15rem;
+      border-radius: 999px;
+      font-size: .9rem;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity .2s, transform .2s;
+      z-index: 100;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 720px) {
+      .config-grid { grid-template-columns: 1fr; }
+      .config-grid .copy-btn { justify-self: start; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero" id="top">
+      <div class="eyebrow">Designer Series · Marketing Center</div>
+      <h1>Designer Series 12-Week Campaign</h1>
+      <p class="lede">
+        This is the internal execution center for the Designer Series email campaign. Each week below shows the planned send, a live preview of the email, and a single download button. Hand the downloaded HTML file to EmailOctopus exactly as-is.
+      </p>
+      <div class="warning">
+        <strong>Do not edit the HTML files.</strong>
+        Download, then paste directly into EmailOctopus &rarr; New campaign &rarr; Custom HTML. Do not open in Word, Outlook, or a code editor first. Do not change image URLs.
+      </div>
+    </section>
+
+    <nav class="roadmap" id="roadmap" aria-label="12-week roadmap"></nav>
+
+    <section class="series" id="series"></section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ============================================================
+    // CAMPAIGN DATA — edit this array as weeks are approved.
+    // status: "ready" | "drafting" | "scheduled"
+    // previewFile: path under /private/ to the final HTML (or null)
+    // ============================================================
+    const WEEKS = [
+      {
+        n: 1,
+        title: "Market follow-up awareness",
+        meta: "Coming out of Market — introduce Designer Protection Plan as the post-install answer.",
+        status: "ready",
+        sendDate: "TBD — set after approval",
+        subject: "After Market: protect the rooms you design",
+        fromName: "Donnie Owens, Risk Assurance Partners",
+        fromEmail: "designer.programs@raptns.com",
+        previewFile: "downloads/designer-week-01-final.html"
+      },
+      { n: 2,  title: "Week 2",  meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-02-final.html" },
+      { n: 3,  title: "Week 3",  meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-03-final.html" },
+      { n: 4,  title: "Week 4",  meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-04-final.html" },
+      { n: 5,  title: "Week 5",  meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-05-final.html" },
+      { n: 6,  title: "Week 6",  meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-06-final.html" },
+      { n: 7,  title: "Week 7",  meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-07-final.html" },
+      { n: 8,  title: "Week 8",  meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-08-final.html" },
+      { n: 9,  title: "Week 9",  meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-09-final.html" },
+      { n: 10, title: "Week 10", meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-10-final.html" },
+      { n: 11, title: "Week 11", meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-11-final.html" },
+      { n: 12, title: "Week 12", meta: "", status: "drafting", sendDate: "TBD", subject: "", fromName: "", fromEmail: "", previewFile: "downloads/designer-week-12-final.html" }
+    ];
+
+    const STATUS_LABEL = {
+      ready: "Ready to send",
+      drafting: "Drafting",
+      scheduled: "Scheduled"
+    };
+
+    const pad = n => String(n).padStart(2, "0");
+
+    function buildRoadmap() {
+      const nav = document.getElementById("roadmap");
+      WEEKS.forEach(w => {
+        const a = document.createElement("a");
+        a.className = "chip";
+        a.href = `#week-${w.n}`;
+        a.innerHTML = `<span class="dot ${w.status}"></span>Week ${pad(w.n)}`;
+        nav.appendChild(a);
+      });
+    }
+
+    function buildCard(w) {
+      const id = `week-${w.n}`;
+      const previewId = `preview-${w.n}`;
+      const ready = w.status === "ready" || w.status === "scheduled";
+      const downloadAttr = ready
+        ? `href="${w.previewFile}" download`
+        : `href="#" aria-disabled="true"`;
+
+      const configRows = [
+        ["Subject", w.subject],
+        ["From name", w.fromName],
+        ["From email", w.fromEmail],
+        ["Send window", w.sendDate]
+      ].map(([label, value]) => {
+        if (!value) return "";
+        return `
+          <div class="label">${label}</div>
+          <div class="value" data-copy-value="${value.replace(/"/g, "&quot;")}">${value}</div>
+          <button class="copy-btn" type="button" data-copy="${value.replace(/"/g, "&quot;")}">Copy</button>
+        `;
+      }).join("");
+
+      const previewBody = w.previewFile
+        ? `<div class="preview-frame-holder">
+             ${w.status === "drafting" ? '<div class="draft-watermark">Draft — not for sending</div>' : ""}
+             <iframe data-src="${w.previewFile}" loading="lazy" title="Week ${pad(w.n)} preview"></iframe>
+           </div>`
+        : `<div class="preview-empty">Preview will appear here once the email HTML is added to <code>/private/${w.previewFile || 'downloads/'}</code>.</div>`;
+
+      return `
+        <article class="week-card" id="${id}">
+          <div class="week-top">
+            <div>
+              <div class="week-label">Week ${pad(w.n)}</div>
+              <div class="week-title">${w.title || "Untitled"}</div>
+              ${w.meta ? `<div class="week-meta">${w.meta}</div>` : ""}
+            </div>
+            <span class="status-badge status-${w.status}">${STATUS_LABEL[w.status]}</span>
+          </div>
+
+          ${configRows.trim() ? `<div class="config-grid">${configRows}</div>` : ""}
+
+          <div class="week-actions">
+            <button class="btn btn-secondary" type="button" data-toggle-preview="${previewId}">Show preview</button>
+            <a class="btn btn-primary" ${downloadAttr}>${ready ? "Download HTML" : "Download (not ready)"}</a>
+          </div>
+
+          <div class="preview-wrap" id="${previewId}">
+            ${previewBody}
+          </div>
+        </article>
+      `;
+    }
+
+    function buildSeries() {
+      const series = document.getElementById("series");
+      series.innerHTML = WEEKS.map(buildCard).join("");
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(showToast._h);
+      showToast._h = setTimeout(() => t.classList.remove("show"), 1800);
+    }
+
+    function bindCopyButtons() {
+      document.querySelectorAll("[data-copy]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const text = btn.getAttribute("data-copy");
+          try {
+            await navigator.clipboard.writeText(text);
+            btn.classList.add("copied");
+            btn.textContent = "Copied";
+            showToast("Copied to clipboard");
+            setTimeout(() => {
+              btn.classList.remove("copied");
+              btn.textContent = "Copy";
+            }, 1400);
+          } catch (e) {
+            showToast("Copy failed — select the text manually");
+          }
+        });
+      });
+    }
+
+    function bindPreviewToggles() {
+      document.querySelectorAll("[data-toggle-preview]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-toggle-preview");
+          const target = document.getElementById(id);
+          if (!target) return;
+          const open = target.classList.toggle("open");
+          btn.textContent = open ? "Hide preview" : "Show preview";
+          if (open) {
+            const iframe = target.querySelector("iframe[data-src]");
+            if (iframe && !iframe.src) iframe.src = iframe.getAttribute("data-src");
+          }
+        });
+      });
+    }
+
+    buildRoadmap();
+    buildSeries();
+    bindCopyButtons();
+    bindPreviewToggles();
+  </script>
+</body>
+</html>
