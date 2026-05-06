@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Get the white paper — Designer Protection Plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <a class="brand" href="/">
+      <span class="brand-mark">D</span>
+      Designer Protection Plan
+    </a>
+
+    <div class="eyebrow">White paper</div>
+    <h1>How to keep and grow clients with post-sale service.</h1>
+    <p class="lede">
+      A short guide for designers on what happens to a client relationship after install &mdash; and how a structured aftercare offer protects the room, your reputation, and your studio's revenue. Submit your details and we will send the PDF to your inbox.
+    </p>
+
+    <div class="panel">
+      <form name="whitepaper-request" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/whitepaper/thank-you.html">
+        <input type="hidden" name="form-name" value="whitepaper-request" />
+        <p class="honeypot"><label>Do not fill this out: <input name="bot-field" /></label></p>
+
+        <div class="form-grid two-col">
+          <div class="field full">
+            <label for="wp-name">Full name <span class="required-mark">*</span></label>
+            <input id="wp-name" name="name" type="text" required autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="wp-email">Email <span class="required-mark">*</span></label>
+            <input id="wp-email" name="email" type="email" required autocomplete="email" />
+          </div>
+          <div class="field">
+            <label for="wp-phone">Phone <span class="required-mark">*</span></label>
+            <input id="wp-phone" name="phone" type="tel" required autocomplete="tel" />
+          </div>
+          <div class="field full">
+            <label for="wp-firm">Studio or firm name <span class="hint">(optional)</span></label>
+            <input id="wp-firm" name="firm" type="text" autocomplete="organization" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Send me the white paper</button>
+          <a class="btn btn-secondary" href="/">Back</a>
+        </div>
+      </form>
+    </div>
+
+    <p class="muted">We will only use your contact information to send the white paper and follow up about Designer Protection Plan. No third-party sharing.</p>
+
+    <div class="footer">
+      Risk Assurance Partners &middot;
+      <a href="mailto:designer.programs@raptns.com">designer.programs@raptns.com</a>
+    </div>
+  </main>
+</body>
+</html>

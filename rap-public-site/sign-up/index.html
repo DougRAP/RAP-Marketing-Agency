@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign me up — Designer Protection Plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <a class="brand" href="/">
+      <span class="brand-mark">D</span>
+      Designer Protection Plan
+    </a>
+
+    <div class="eyebrow">Designer onboarding</div>
+    <h1>Use Designer Protection Plan on an upcoming project.</h1>
+    <p class="lede">
+      Tell us a little about your studio. A concierge rep will call to walk you through the program, set you up with a Stripe account so you can earn commissions, and introduce you to the team that supports your projects. This is a white-glove process &mdash; not a sink-or-swim sign-up.
+    </p>
+
+    <div class="panel">
+      <form name="designer-sign-up" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/sign-up/thank-you.html">
+        <input type="hidden" name="form-name" value="designer-sign-up" />
+        <p class="honeypot"><label>Do not fill this out: <input name="bot-field" /></label></p>
+
+        <div class="form-grid two-col">
+          <div class="field full">
+            <label for="su-name">Full name <span class="required-mark">*</span></label>
+            <input id="su-name" name="name" type="text" required autocomplete="name" />
+          </div>
+          <div class="field full">
+            <label for="su-company">Company / studio name <span class="required-mark">*</span></label>
+            <input id="su-company" name="company" type="text" required autocomplete="organization" />
+          </div>
+          <div class="field">
+            <label for="su-email">Email <span class="required-mark">*</span></label>
+            <input id="su-email" name="email" type="email" required autocomplete="email" />
+          </div>
+          <div class="field">
+            <label for="su-phone">Best number for contact <span class="required-mark">*</span></label>
+            <input id="su-phone" name="phone" type="tel" required autocomplete="tel" />
+          </div>
+          <div class="field full">
+            <label for="su-address">Studio address <span class="required-mark">*</span></label>
+            <textarea id="su-address" name="address" required autocomplete="street-address" placeholder="Street, suite, city, state, ZIP"></textarea>
+          </div>
+          <div class="field">
+            <label for="su-job-size">Average project size <span class="required-mark">*</span></label>
+            <select id="su-job-size" name="average_project_size" required>
+              <option value="">Select a range</option>
+              <option>Under $25,000</option>
+              <option>$25,000 &ndash; $50,000</option>
+              <option>$50,000 &ndash; $100,000</option>
+              <option>$100,000 &ndash; $250,000</option>
+              <option>$250,000 &ndash; $500,000</option>
+              <option>Over $500,000</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="su-clients">Number of clients per year <span class="required-mark">*</span></label>
+            <select id="su-clients" name="clients_per_year" required>
+              <option value="">Select a range</option>
+              <option>1 &ndash; 5</option>
+              <option>6 &ndash; 10</option>
+              <option>11 &ndash; 25</option>
+              <option>26 &ndash; 50</option>
+              <option>Over 50</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="su-notes">Anything we should know? <span class="hint">(optional)</span></label>
+            <textarea id="su-notes" name="notes" placeholder="Upcoming project, specific questions, preferred call window, etc."></textarea>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Sign me up</button>
+          <a class="btn btn-secondary" href="/">Back</a>
+        </div>
+      </form>
+    </div>
+
+    <p class="muted">Your information goes directly to the Designer Programs team at Risk Assurance Partners. We will reach out within one business day.</p>
+
+    <div class="footer">
+      Risk Assurance Partners &middot;
+      <a href="mailto:designer.programs@raptns.com">designer.programs@raptns.com</a>
+    </div>
+  </main>
+</body>
+</html>
