@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /whitepaper/keeps-you-up-at-night.html
+Disallow: /whitepaper/thank-you.html
+Disallow: /sign-up/thank-you.html

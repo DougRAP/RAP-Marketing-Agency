@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="referrer" content="no-referrer" />
+<title>What Keeps You Up at Night — A Practical Guide for Interior Designers | RAP Designer Plans</title>
+<meta name="description" content="A 5-page white paper for independent interior designers on attracting, retaining, and delighting clients — with a curated resource list and a small gift from RAP." />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --navy: #1a2a3a;
+    --navy-deep: #11202e;
+    --cream: #f7f2e8;
+    --cream-soft: #fbf7ee;
+    --paper: #fdfaf3;
+    --muted: #6b7785;
+    --line: #d9cfbb;
+    --line-soft: #ebe2ce;
+    --accent: #b08a4a; /* warm brass */
+    --ink: #1a2a3a;
+
+    --serif: "Playfair Display", "Iowan Old Style", Georgia, serif;
+    --sans: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin:0; padding:0; }
+  body{
+    font-family: var(--sans);
+    color: var(--ink);
+    background: #e9e2d3;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.65;
+    font-size: 16px;
+  }
+
+  /* ====== Floating CTA / Print Button (screen only) ====== */
+  .toolbar{
+    position: fixed;
+    top: 24px; right: 24px;
+    z-index: 100;
+    display: flex; gap: 10px;
+    background: rgba(26,42,58,0.96);
+    padding: 10px 12px;
+    border-radius: 999px;
+    box-shadow: 0 12px 32px rgba(17,32,46,0.25);
+    backdrop-filter: blur(8px);
+  }
+  .toolbar button{
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--cream);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .02em;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease;
+  }
+  .toolbar button.primary{
+    background: var(--accent);
+    color: var(--navy-deep);
+    font-weight: 600;
+  }
+  .toolbar button:hover{ background: rgba(247,242,232,0.12); }
+  .toolbar button.primary:hover{ background: #c79c57; }
+
+  /* ====== Page frame ====== */
+  .page{
+    width: 8.5in;
+    min-height: 11in;
+    margin: 32px auto;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 0.7in 0.85in 0.85in 0.85in;
+    box-shadow: 0 30px 60px rgba(17,32,46,0.18), 0 4px 12px rgba(17,32,46,0.08);
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+  }
+  .page:last-of-type{ page-break-after: auto; break-after: auto; }
+
+  /* Page chrome */
+  .page-mark{
+    position: absolute;
+    top: 0.45in; right: 0.85in;
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .page-mark .dot{
+    display: inline-block;
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin: 0 8px 1px 8px;
+    vertical-align: middle;
+  }
+  .page-foot{
+    position: absolute;
+    bottom: 0.45in; left: 0.85in; right: 0.85in;
+    display: flex; justify-content: space-between;
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .page-foot .brand{ color: var(--navy); font-weight: 500; letter-spacing:.18em;}
+
+  /* ====== Typography ====== */
+  h1, h2, h3, h4{ font-family: var(--serif); color: var(--navy); margin: 0; font-weight: 500; }
+  h1{ font-size: 56px; line-height: 1.05; letter-spacing: -.01em; }
+  h2{ font-size: 30px; line-height: 1.15; letter-spacing: -.005em; margin: 0 0 14px; }
+  h3{ font-size: 20px; line-height: 1.25; margin: 0 0 8px; font-weight: 600; }
+  p{ margin: 0 0 14px; }
+  a{ color: var(--navy); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+
+  .eyebrow{
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+  }
+  .lede{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    line-height: 1.4;
+    color: var(--navy);
+    margin: 0 0 24px;
+  }
+  .rule{
+    width: 56px; height: 1px;
+    background: var(--accent);
+    margin: 18px 0;
+  }
+  .section-num{
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--accent);
+    font-size: 16px;
+    margin-right: 8px;
+  }
+
+  /* ====== Cover (page 1) ====== */
+  .cover{
+    padding: 0;
+    display: grid;
+    grid-template-rows: 1fr auto;
+  }
+  .cover-image{
+    position: relative;
+    height: 6.4in;
+    overflow: hidden;
+    background: #2a3a4d;
+  }
+  .cover-image img{
+    width: 100%; height: 100%; object-fit: cover;
+    filter: brightness(.78) saturate(.92);
+  }
+  .cover-image::after{
+    content:"";
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, rgba(17,32,46,0.05) 0%, rgba(17,32,46,0.55) 100%);
+  }
+  .cover-overlay{
+    position: absolute;
+    inset: 0;
+    padding: 0.7in 0.85in;
+    color: var(--cream);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .cover-overlay .top{
+    display: flex; justify-content: space-between; align-items: flex-start;
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+  }
+  .cover-overlay .top .logo{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    letter-spacing: .02em;
+    text-transform: none;
+    color: var(--cream);
+  }
+  .cover-overlay h1{
+    color: var(--cream);
+    font-size: 64px;
+    max-width: 6.6in;
+    margin-bottom: 16px;
+  }
+  .cover-overlay .subtitle{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    color: rgba(247,242,232,0.92);
+    max-width: 5.6in;
+    margin-bottom: 18px;
+  }
+  .cover-meta{
+    padding: 22px 0.85in 0.4in;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .cover-meta .left{ font-family: var(--serif); font-size: 18px; font-style: italic; color: var(--navy); }
+  .cover-meta .right{ font-family: var(--sans); font-size: 11px; letter-spacing:.22em; text-transform: uppercase; color: var(--muted); }
+
+  /* ====== Body composition ====== */
+  .intro-grid{
+    display: grid;
+    grid-template-columns: 1fr 2.2fr;
+    gap: 28px;
+    margin-top: 8px;
+  }
+  .intro-grid .pull img{ width: 100%; display: block; border-radius: 2px; }
+  .intro-grid .pull .caption{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.45;
+  }
+
+  /* float images for true text-wrap behavior */
+  .float-right, .float-left{
+    width: 2.4in;
+    margin-bottom: 8px;
+  }
+  .float-right{ float: right; margin: 4px 0 12px 22px; }
+  .float-left{ float: left; margin: 4px 22px 12px 0; }
+  .float-right img, .float-left img{
+    width: 100%; display: block; border-radius: 2px;
+  }
+  .float-right .caption, .float-left .caption{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.45;
+  }
+  .clearfix::after{ content:""; display:block; clear:both; }
+
+  .item{
+    margin: 0 0 22px;
+  }
+  .item h3 .num{
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 500;
+    margin-right: 10px;
+  }
+
+  ul.tight{
+    margin: 6px 0 14px;
+    padding-left: 20px;
+  }
+  ul.tight li{ margin: 4px 0; }
+
+  blockquote.pull{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 19px;
+    line-height: 1.4;
+    color: var(--navy);
+    border-left: 2px solid var(--accent);
+    padding: 4px 0 4px 18px;
+    margin: 18px 0;
+  }
+
+  /* Section headers */
+  .section-head{
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+    margin: 22px 0 16px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .section-head .label{
+    font-family: var(--sans);
+    font-size: 10.5px;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .section-head h2{
+    margin: 4px 0 0 0;
+    font-size: 28px;
+  }
+
+  /* Resources */
+  .res-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 32px;
+    margin-top: 14px;
+  }
+  .res-card h3{
+    font-size: 16px;
+    color: var(--navy);
+    border-bottom: 1px solid var(--line-soft);
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+  }
+  .res-card ul{
+    list-style: none;
+    padding: 0; margin: 0;
+  }
+  .res-card li{
+    margin: 0 0 12px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .res-card li .src{
+    display: block;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--accent);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  /* Recipe */
+  .recipe-hero{
+    height: 3.2in;
+    overflow: hidden;
+    margin: 0 -0.85in 24px -0.85in;
+    position: relative;
+  }
+  .recipe-hero img{ width:100%; height:100%; object-fit: cover; }
+  .recipe-hero .tag{
+    position: absolute;
+    top: 24px; left: 0.85in;
+    background: var(--cream);
+    color: var(--navy);
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border-radius: 999px;
+  }
+  .recipe-grid{
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 32px;
+  }
+  .recipe-grid h3{ font-family: var(--serif); font-size: 18px; color: var(--navy); margin-bottom: 8px; }
+  .recipe-grid ul{ padding-left: 18px; margin: 0 0 14px; font-size: 13.5px; line-height: 1.6; }
+  .recipe-grid ol{ padding-left: 18px; margin: 0; font-size: 13.5px; line-height: 1.65; }
+  .recipe-grid ol li{ margin: 0 0 10px; }
+  .recipe-meta{
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 12px;
+    margin: 14px 0 18px;
+    padding: 12px 0;
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .recipe-meta div{ font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  .recipe-meta div b{ display:block; font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 18px; color: var(--navy); letter-spacing: 0; text-transform: none; margin-top: 2px;}
+
+  /* Closing card */
+  .cta-card{
+    margin-top: 22px;
+    background: var(--navy);
+    color: var(--cream);
+    padding: 26px 30px;
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-card::before{
+    content:"";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+  .cta-card .eyebrow{ color: var(--accent); margin-bottom: 10px; }
+  .cta-card h2{ color: var(--cream); font-size: 26px; margin-bottom: 10px; }
+  .cta-card p{ color: rgba(247,242,232,0.86); font-size: 14px; line-height: 1.6; }
+  .cta-card .contact{
+    margin-top: 14px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--cream);
+  }
+
+  /* ====== PRINT ====== */
+  @page{
+    size: Letter;
+    margin: 0;
+  }
+  @media print{
+    body{ background: #fff; }
+    .toolbar{ display: none !important; }
+    .page{
+      margin: 0;
+      box-shadow: none;
+      width: 8.5in;
+      height: 11in;
+      min-height: 11in;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-of-type{ page-break-after: auto; }
+    a{ color: var(--navy); text-decoration: none; }
+    /* Ensure backgrounds print */
+    *{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  }
+
+  /* ====== Screen-only small responsiveness for preview ====== */
+  @media (max-width: 900px){
+    .page{
+      width: 100%;
+      padding: 28px 22px 60px;
+      margin: 12px auto;
+    }
+    .cover-image{ height: 360px; }
+    .cover-overlay{ padding: 28px 22px; }
+    .cover-overlay h1{ font-size: 38px; }
+    .cover-overlay .subtitle{ font-size: 17px; }
+    h1{ font-size: 36px; }
+    h2{ font-size: 24px; }
+    .intro-grid{ grid-template-columns: 1fr; }
+    .float-right, .float-left{ width: 45%; }
+    .res-grid{ grid-template-columns: 1fr; }
+    .recipe-grid{ grid-template-columns: 1fr; }
+    .recipe-hero{ margin: 0 -22px 18px; height: 220px; }
+    .page-mark{ right: 22px; top: 14px; }
+    .page-foot{ left: 22px; right: 22px; bottom: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Toolbar (screen only) -->
+<div class="toolbar" role="toolbar" aria-label="Document actions">
+  <button class="primary" onclick="window.print()">Download PDF</button>
+  <button onclick="window.print()">Print</button>
+</div>
+
+<!-- ============================================== -->
+<!-- PAGE 1 — COVER                                  -->
+<!-- ============================================== -->
+<section class="page cover" aria-label="Cover">
+  <div class="cover-image">
+    <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=2000&q=80" alt="An interior designer's living room with a soft, layered atmosphere" />
+    <div class="cover-overlay">
+      <div class="top">
+        <span class="logo">RAP&nbsp;Designer&nbsp;Plans</span>
+        <span>White&nbsp;Paper&nbsp;·&nbsp;2026</span>
+      </div>
+      <div>
+        <div class="eyebrow" style="color:#d9c69a;">For Independent Interior Designers</div>
+        <h1>What Keeps You<br/>Up at Night?</h1>
+        <p class="subtitle">A practical guide to attracting, keeping,<br/>and delighting interior&nbsp;design&nbsp;clients.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cover-meta">
+    <div class="left">Five short chapters. One quieter night's&nbsp;sleep.</div>
+    <div class="right">RAPTNS.com&nbsp;·&nbsp;Designer&nbsp;Plans</div>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PAGE 2 — INTRO + ATTRACTING (PART I)            -->
+<!-- ============================================== -->
+<section class="page" aria-label="Page 2">
+  <div class="page-mark">Page&nbsp;Two<span class="dot"></span>Introduction &amp; Attracting Clients</div>
+
+  <div class="eyebrow">Introduction</div>
+  <h2>It's almost always 3&nbsp;a.m.</h2>
+
+  <div class="intro-grid">
+    <div class="pull">
+      <img src="https://images.unsplash.com/photo-1581094271901-8022df4466f9?auto=format&fit=crop&w=900&q=80" alt="A solo designer at a desk reviewing samples" />
+      <div class="caption">The independent designer's quiet hour: laptop open, fabric memos out, the install you're worried about replaying in your head.</div>
+    </div>
+    <div>
+      <p class="lede">If you run an interior design business, you already know what 3&nbsp;a.m. feels&nbsp;like.</p>
+      <p>You're awake replaying yesterday's conversations: the client who still hasn't signed, the sofa that shipped damaged, the install that needs three trades to coordinate, the nagging worry that one unhappy client could undo months of hard work and referrals. Independent designers consistently name three pressures &mdash; finding consistent clients, managing cash flow, and navigating client expectations &mdash; as the things that wake them up.</p>
+      <p>This guide is for designers like you: small teams or solo studios whose name is on the door and on every review. It focuses on three parts of your business that decide how well you sleep &mdash; <em>attracting</em> the right clients, <em>retaining</em> them through the messy middle, and <em>servicing</em> them so well that your reputation becomes your strongest asset.</p>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="label">Part I &nbsp;·&nbsp; Attracting</span>
+  </div>
+  <h2>Being findable, clear, and&nbsp;referable.</h2>
+
+  <div class="item clearfix">
+    <div class="float-right">
+      <img src="https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=900&q=80" alt="A focused, cohesive portfolio shot of a styled living room" />
+      <div class="caption">A focused portfolio shows clients exactly what you're known for.</div>
+    </div>
+    <h3><span class="num">01.</span>Define a visible, recognizable brand.</h3>
+    <p>Many designers struggle less with talent and more with clarity: prospects can't quite describe what they do or who they do it for. If people can't put you into a single sentence, it's harder to remember you and harder to recommend you.</p>
+    <p>Tighten your positioning. Instead of <em>"I do all kinds of design,"</em> try <em>"I help busy families turn chaos into calm,"</em> or <em>"I specialize in modern coastal homes with a relaxed, livable feel."</em> When your message is specific, the right clients feel an immediate pull. Curate your portfolio to show a point of view &mdash; not every project you've ever touched.</p>
+  </div>
+
+  <div class="item clearfix">
+    <div class="float-left">
+      <img src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=900&q=80" alt="A clean inquiry form on a laptop screen" />
+      <div class="caption">A short discovery form filters the right clients in &mdash; and the wrong ones out &mdash; before the first call.</div>
+    </div>
+    <h3><span class="num">02.</span>Use a simple, repeatable lead process.</h3>
+    <p>Random inquiries create random results. Designers who grow steadily treat lead handling as a process, not a fire drill. Begin with a short discovery form (space, timeline, rough investment range), then a 20&ndash;30&nbsp;minute call built around three questions: <em>What's not working in your space now? How do you want it to feel when we're done? What's your comfort zone for investment?</em> Within 24 hours, send a concise <em>"How I Work"</em> one-pager. Structure shows leadership from the first interaction.</p>
+  </div>
+
+  <div class="page-foot">
+    <span class="brand">RAP&nbsp;Designer&nbsp;Plans</span>
+    <span>What Keeps You Up at Night &nbsp;·&nbsp; 02 / 05</span>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PAGE 3 — ATTRACTING (cont.) + RETAINING (PART II)
+<!-- ============================================== -->
+<section class="page" aria-label="Page 3">
+  <div class="page-mark">Page&nbsp;Three<span class="dot"></span>Attracting &amp; Retaining</div>
+
+  <div class="item clearfix">
+    <div class="float-right">
+      <img src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=900&q=80" alt="A designer, realtor, and contractor in conversation around a kitchen island" />
+      <div class="caption">Realtors, builders, and showrooms are some of your most aligned referral partners &mdash; if you treat them deliberately.</div>
+    </div>
+    <h3><span class="num">03.</span>Make partnerships a deliberate strategy.</h3>
+    <p>New clients often arrive through other professionals: realtors, builders, furniture showrooms, fellow designers. Yet many independent designers let those relationships evolve accidentally. Identify five to ten ideal partners at your price point and offer a clear win for each: you make their clients' projects smoother and protect their reputation as carefully as your own. Nurture quarterly &mdash; coffee, shared photo tags, the occasional joint workshop.</p>
+  </div>
+
+  <div class="item clearfix">
+    <div class="float-left">
+      <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?auto=format&fit=crop&w=900&q=80" alt="A designer recording a short video on a phone in a styled living room" />
+      <div class="caption">"What happens if something arrives damaged?" is more memorable than another <em>five trends</em> post.</div>
+    </div>
+    <h3><span class="num">04.</span>Tell stories that ease real fears.</h3>
+    <p>Clients worry about more than colors. They worry about money, regret, and hassle. Educational content that addresses those fears builds trust before you ever meet. Designers report that their most-read posts are about process and problems &mdash; not just pretty photos. When you say, <em>"Here's exactly what I do if something goes wrong,"</em> you position yourself as a calm expert who has thought about the whole journey, not just the reveal.</p>
+  </div>
+
+  <div class="item">
+    <h3><span class="num">05.</span>Make it easy to say "yes."</h3>
+    <p>Once someone is interested, friction kills momentum. Offer a clear starter package, present your proposal on a single summary page before detailed terms, and give clients simple e-sign and payment options. When your process feels professional, organized, and transparent, clients feel safer taking the next step &mdash; and that sense of safety is often the real deciding factor between <em>"We're thinking about it"</em> and <em>"We're ready to move forward."</em></p>
+  </div>
+
+  <div class="section-head">
+    <span class="label">Part II &nbsp;·&nbsp; Retaining</span>
+  </div>
+  <h2>Communicating through the messy&nbsp;middle.</h2>
+
+  <div class="item clearfix">
+    <div class="float-right">
+      <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=900&q=80" alt="A printed project roadmap with phases and dates highlighted" />
+      <div class="caption">A one-page roadmap turns a project into a path &mdash; and silences a lot of <em>"just&nbsp;checking&nbsp;in"</em> emails.</div>
+    </div>
+    <h3><span class="num">01.</span>Set expectations before they set themselves.</h3>
+    <p>Most project blow-ups start because expectations were never aligned. Build a welcome packet or one-page roadmap for every project: each phase, what happens in it, when payments are due, how decisions get made, and how scope changes are handled. Clients appreciate knowing the path ahead and exactly when they'll see options, get updates, and be asked to approve purchases.</p>
+  </div>
+
+  <div class="item clearfix">
+    <div class="float-left">
+      <img src="https://images.unsplash.com/photo-1517400508447-f8dd518b86db?auto=format&fit=crop&w=900&q=80" alt="A designer typing a weekly project update on a laptop" />
+      <div class="caption">A weekly update &mdash; even a quiet one &mdash; calms more anxiety than a beautiful render ever will.</div>
+    </div>
+    <h3><span class="num">02.</span>Communicate proactively, even when nothing is happening.</h3>
+    <p>Silence makes clients anxious. A short weekly email per active project &mdash; status line, item statuses (Ordered / In&nbsp;Transit / On&nbsp;Site / Installed), decisions needed &mdash; will change the temperature of every relationship you have. You'll spend less time reacting to scattered questions because clients know when to expect information and what it will look like.</p>
+  </div>
+
+  <blockquote class="pull">"Clients judge you less on whether something went wrong, and more on how quickly and clearly you respond when it&nbsp;does."</blockquote>
+
+  <div class="page-foot">
+    <span class="brand">RAP&nbsp;Designer&nbsp;Plans</span>
+    <span>What Keeps You Up at Night &nbsp;·&nbsp; 03 / 05</span>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PAGE 4 — RETAINING (cont.) + SERVICING + CLOSE  -->
+<!-- ============================================== -->
+<section class="page" aria-label="Page 4">
+  <div class="page-mark">Page&nbsp;Four<span class="dot"></span>Servicing &amp; Reputation</div>
+
+  <div class="item clearfix">
+    <div class="float-right">
+      <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=900&q=80" alt="A designer calmly handling an issue on the phone with a clipboard in hand" />
+      <div class="caption">Have the script ready before you need&nbsp;it.</div>
+    </div>
+    <h3><span class="num">03.</span>Build a clear playbook for when things go wrong.</h3>
+    <p>Something will go wrong &mdash; shipping damage, backorders, an off-spec piece. Acknowledge promptly. Own the next step even if you didn't cause the issue. Present options (wait for replacement, choose alternatives, adjust design). Set a specific date for your next update and keep it. Template language at the ready helps you respond gracefully under stress, when grace is hardest.</p>
+  </div>
+
+  <div class="item">
+    <h3><span class="num">04.</span>Keep measuring &mdash; and showing &mdash; progress.</h3>
+    <p>Clients feel better when they can see the finish line. Use a simple project tracker with milestones (concept approval, orders placed, deliveries scheduled, install date). Share periodic <em>before / now</em> photos to remind clients how far the space has come. The more visible the progress, the less likely clients are to second-guess their decision to hire you.</p>
+  </div>
+
+  <div class="section-head">
+    <span class="label">Part III &nbsp;·&nbsp; Servicing</span>
+  </div>
+  <h2>Turning great service into reputation and&nbsp;referrals.</h2>
+
+  <div class="item clearfix">
+    <div class="float-left">
+      <img src="https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=900&q=80" alt="A designer and smiling client reviewing photos in a finished room" />
+      <div class="caption">Every project is a referral engine &mdash; if you treat the last 10% as carefully as the first.</div>
+    </div>
+    <h3><span class="num">01.</span>Design your "final 10%" as carefully as your concept phase.</h3>
+    <p>Clients remember the end of a project very clearly. Treat the last phase as its own mini-experience: a final walkthrough where you style the space, handle tweaks, and answer questions. Bring a small, thoughtful gift that fits the project. Use that meeting to ask, <em>"What worked really well for you?"</em> and <em>"What's one thing I could make even smoother next time?"</em></p>
+  </div>
+
+  <div class="item clearfix">
+    <div class="float-right">
+      <img src="https://images.unsplash.com/photo-1606293926249-ed22a35aafdd?auto=format&fit=crop&w=900&q=80" alt="A thank-you card and small gift box on a console table" />
+      <div class="caption">A clear path &mdash; not a clever ask &mdash; is what makes referrals&nbsp;happen.</div>
+    </div>
+    <h3><span class="num">02.</span>Ask for reviews and referrals naturally.</h3>
+    <p>Happy clients often want to help; they need a nudge and a clear path. A follow-up email a week or two after completion can include a direct link to your review platform, two short prompts (<em>"What was it like working together?"</em>), and a simple note that referrals are appreciated &mdash; with how introductions actually work.</p>
+  </div>
+
+  <div class="item">
+    <h3><span class="num">03.</span>Reduce risk so you can confidently recommend better solutions.</h3>
+    <p>Your reputation is tied to products you don't fully control. When a sofa fails or a finish doesn't hold up, clients call <em>you</em> first. When you can tell them, <em>"If something goes wrong, here's exactly how we handle it &mdash; and here's how your investment is protected,"</em> you shift the conversation from fear to confidence.</p>
+  </div>
+
+  <div class="cta-card">
+    <div class="eyebrow">A Quiet Layer Behind the Beautiful Work</div>
+    <h2>RAP Designer Plans</h2>
+    <p>RAP Designer Plans sit in the background of your projects, turning potential nightmare moments into simple, handled events &mdash; so you can recommend higher-value pieces with less worry, reassure anxious clients with a concrete plan, and protect your own reputation when the unexpected happens. Your clients get peace of mind that extends beyond installation day. You get fewer late-night calls, and more stories that end with <em>"They took care of us, even when something went wrong."</em></p>
+    <div class="contact">A short, no-obligation conversation &nbsp;·&nbsp; sales@raptns.com &nbsp;·&nbsp; 561.374.3147</div>
+  </div>
+
+  <div class="page-foot">
+    <span class="brand">RAP&nbsp;Designer&nbsp;Plans</span>
+    <span>What Keeps You Up at Night &nbsp;·&nbsp; 04 / 05</span>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PAGE 5 — RESOURCES + RECIPE GIFT                -->
+<!-- ============================================== -->
+<section class="page" aria-label="Page 5">
+  <div class="page-mark">Page&nbsp;Five<span class="dot"></span>Resources &amp; A Small Gift</div>
+
+  <div class="eyebrow">Curated by RAP Designer Plans</div>
+  <h2>Suggested reading for designers building&nbsp;steadier&nbsp;practices.</h2>
+  <div class="rule"></div>
+
+  <div class="res-grid">
+    <div class="res-card">
+      <h3>Referrals &amp; Client Experience</h3>
+      <ul>
+        <li>"6 Layers of Referral Strategy for Your Interior Design Business" <span class="src">— Scarlet Thread Consulting (podcast)</span></li>
+        <li>"How to Get More Referrals for Your Interior Design Business" <span class="src">— Dakota Design Company</span></li>
+        <li>"Where to Look for Great Interior Design Clients" <span class="src">— Ochre &amp; Beige</span></li>
+      </ul>
+    </div>
+    <div class="res-card">
+      <h3>Attracting Ideal Clients</h3>
+      <ul>
+        <li>"Ultimate Interior Design Guide to Attracting Ideal Clients" <span class="src">— The Pearl Collective</span></li>
+        <li>"How to Attract High-End Interior Design Clients Authentically" <span class="src">— Melissa Galt</span></li>
+        <li>"Effective Strategies for Interior Designers to Expand Clientele" <span class="src">— INT Design Award</span></li>
+      </ul>
+    </div>
+    <div class="res-card">
+      <h3>Client Retention &amp; Service Operations</h3>
+      <ul>
+        <li>"4 Client Retention Strategies for Professional Service Firms" <span class="src">— Klient</span></li>
+        <li>"Client Retention Strategies for Service Businesses" <span class="src">— Involve Digital</span></li>
+        <li>"Client Retention Strategies for Professional Services" <span class="src">— TheO CRM</span></li>
+      </ul>
+    </div>
+    <div class="res-card">
+      <h3>Books for the Bedside Table</h3>
+      <ul>
+        <li><em>Interior Design Clients: The Designer's Guide to Building and Managing Your Clientele</em> <span class="src">— Thomas L. Williams</span></li>
+        <li><em>Marketing and Client Relations for Interior Designers</em> <span class="src">— Mary V. Knackstedt</span></li>
+        <li>The Pearl Collective's recommended business reading list <span class="src">— thepearlcollective.com</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Recipe gift -->
+  <div class="recipe-hero">
+    <img src="https://images.unsplash.com/photo-1557925923-cd4648e211a0?auto=format&fit=crop&w=2000&q=80" alt="A glazed pound cake on a simple cake stand with a slice plated nearby" />
+    <span class="tag">A Little Gift &nbsp;·&nbsp; Memorial Day</span>
+  </div>
+
+  <div class="eyebrow">A small thank-you from the RAP team</div>
+  <h2 style="font-size:26px;">Buttered Rum Pound&nbsp;Cake.</h2>
+  <p style="font-style:italic; font-family:var(--serif); font-size:16px; color:var(--muted); margin-top:-2px;">Your business is serious. Hosting can still be fun.</p>
+
+  <div class="recipe-meta">
+    <div>Yield <b>One 10-cup loaf</b></div>
+    <div>Active <b>20 minutes</b></div>
+    <div>Total <b>1&nbsp;hr&nbsp;30&nbsp;min</b></div>
+  </div>
+
+  <div class="recipe-grid">
+    <div>
+      <h3>For the cake</h3>
+      <ul>
+        <li>1 cup unsalted butter, room temp</li>
+        <li>2&frac12; cups sugar</li>
+        <li>5 large eggs</li>
+        <li>3 cups all-purpose flour</li>
+        <li>&frac12; tsp baking powder</li>
+        <li>&frac12; tsp fine sea salt</li>
+        <li>1 cup whole milk</li>
+        <li>&frac14; cup dark rum</li>
+        <li>1 tsp vanilla extract</li>
+      </ul>
+      <h3>For the buttered-rum glaze</h3>
+      <ul>
+        <li>&frac12; cup butter</li>
+        <li>1 cup sugar</li>
+        <li>&frac14; cup water</li>
+        <li>&frac14; cup dark rum</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Method</h3>
+      <ol>
+        <li>Heat oven to 325&deg;F. Generously butter a 10-cup bundt or loaf pan.</li>
+        <li>Cream butter and sugar until pale and fluffy, 4&ndash;5 minutes. Add eggs one at a time, beating well after each.</li>
+        <li>Whisk flour, baking powder, and salt. Combine milk, rum, and vanilla. Add dry and wet to the butter mixture in three alternating additions, beginning and ending with dry. Don't overmix.</li>
+        <li>Pour into pan, smooth the top, and bake 60&ndash;75 minutes, until a tester comes out with a few moist crumbs.</li>
+        <li>While the cake bakes, make the glaze: melt butter with sugar and water, simmer two minutes, off heat stir in rum.</li>
+        <li>Pierce the warm cake all over with a skewer; spoon glaze slowly so it soaks in. Cool in the pan 20 minutes, then turn out.</li>
+      </ol>
+      <p style="font-style:italic; font-family:var(--serif); font-size:14px; color:var(--muted); margin-top:6px;">Serve at client meetings or reveal days, wrap mini loaves as thank-yous for your best referral partners, or enjoy a slice while you <em>don't</em> think about fabric lead times.</p>
+    </div>
+  </div>
+
+  <div class="page-foot">
+    <span class="brand">Compliments of RAP&nbsp;Designer&nbsp;Plans</span>
+    <span>What Keeps You Up at Night &nbsp;·&nbsp; 05 / 05</span>
+  </div>
+</section>
+
+<script>
+  // Keyboard shortcut: ⌘/Ctrl + P opens print dialog (browser handles it natively;
+  // this just ensures the toolbar is also reachable via the button).
+  document.addEventListener('keydown', function(e){
+    if ((e.metaKey || e.ctrlKey) && e.key === 'p'){
+      // Let the browser handle it — but make sure the toolbar isn't in the captured frame.
+    }
+  });
+</script>
+
+</body>
+</html>
