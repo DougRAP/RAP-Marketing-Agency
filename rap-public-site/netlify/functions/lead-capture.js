@@ -1,9 +1,11 @@
 // /.netlify/functions/lead-capture
 //
-// Outgoing-webhook handler for Netlify Forms on the rap-designer-programs site.
-// Receives "submission-created" events for the two forms on this site:
+// Direct fetch endpoint for the two forms on rap-public-site:
 //   - whitepaper-request   (whitepaper download)
 //   - designer-sign-up     (designer onboarding)
+//
+// Both forms POST a flat JSON body with `form_name` plus the field values
+// (same shape as designer-plan-site's popup-capture and partner-apply).
 //
 // For each submission, it:
 //   1. Upserts the lead by email (citext unique key).
@@ -11,9 +13,9 @@
 //      and the full submission body preserved in payload jsonb.
 //   3. Adds the lead to the 'designers-all' email_lists membership.
 //
-// The HTML forms are still native Netlify Forms (data-netlify="true"), so
-// Netlify keeps a copy of every submission in its own dashboard as a backup
-// if Supabase or this function is unavailable.
+// Supabase is the single source of truth — there is no Netlify Forms backup
+// anymore. If this function fails, the browser shows an inline error and the
+// visitor can retry.
 
 const { supabase } = require('./_supabase');
 
@@ -71,28 +73,25 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'bad_json' }) };
   }
 
-  // Netlify "submission-created" puts form_name + data at the top level of the
-  // POST body. Some integrations wrap it under "payload" — handle both shapes.
-  const root = body.payload && typeof body.payload === 'object' ? body.payload : body;
-  const formName = root.form_name;
-  const data = root.data || {};
+  // Browser posts a flat JSON: { form_name, email, name, phone, ... bot-field }.
+  const formName = body.form_name;
 
   if (!formName) {
-    console.warn('[lead-capture] missing form_name in webhook body');
     return { statusCode: 400, body: JSON.stringify({ error: 'missing_form_name' }) };
   }
 
-  // Honeypot: bots fill bot-field. Drop silently with 200 — before any mapping
-  // or schema work to match the pattern in popup-capture.js and partner-apply.js.
-  if (data['bot-field']) {
+  // Honeypot: bots fill bot-field. Drop silently with 200 — same pattern as
+  // popup-capture.js and partner-apply.js.
+  if (body['bot-field']) {
     return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'honeypot' }) };
   }
 
   if (!CONSENT_TEXT[formName]) {
-    // Unknown form — return 200 so Netlify doesn't retry forever, but don't write.
     console.warn('[lead-capture] unknown form_name received:', formName);
-    return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'unknown_form', form_name: formName }) };
+    return { statusCode: 400, body: JSON.stringify({ error: 'unknown_form_name', form_name: formName }) };
   }
+
+  const data = body;
 
   const lead = mapLead(formName, data);
   if (!lead.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email)) {
@@ -121,18 +120,16 @@ exports.handler = async (event) => {
     source: formName,
     payload: {
       ...data,
-      site_url: root.site_url || null,
-      netlify_submission_id: root.id || null,
-      ip: root.ip || event.headers['x-nf-client-connection-ip'] || null,
-      user_agent: root.user_agent || event.headers['user-agent'] || null,
-      submitted_at: root.created_at || null
+      referer: event.headers['referer'] || event.headers['referrer'] || null,
+      ip: event.headers['x-nf-client-connection-ip'] || null,
+      user_agent: event.headers['user-agent'] || null
     },
     created_by: 'lead-capture'
   });
 
   if (eventErr) {
-    // Lead already exists; an event-insert failure is logged but not fatal
-    // to the webhook response (otherwise Netlify will retry and double-write).
+    // Lead already exists; event-insert failure is logged but not fatal so the
+    // browser still gets a 200 and the visitor still lands on thank-you.
     console.error('[lead-capture] lead_event insert failed', eventErr);
   }
 
