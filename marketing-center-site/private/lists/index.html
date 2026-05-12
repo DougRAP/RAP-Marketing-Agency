@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Email Lists — Marketing Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f6f2;
+      --surface: #fbfbf9;
+      --surface-2: #f2efe8;
+      --text: #28251d;
+      --muted: #6d6a62;
+      --border: rgba(40,37,29,.1);
+      --primary: #0f6770;
+      --primary-dark: #0b545b;
+      --primary-soft: rgba(15,103,112,.09);
+      --ok: #2f8f5b;
+      --pending: #b07d2a;
+      --shadow: 0 12px 32px rgba(22,18,10,.08);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --font-body: 'Inter', sans-serif;
+      --font-display: 'Instrument Serif', serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font-body); color: var(--text); background: linear-gradient(180deg, #f1eee8 0%, var(--bg) 100%); line-height: 1.55; }
+    a { color: var(--primary); }
+    .shell { max-width: 1240px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    h1 { font-family: var(--font-display); font-size: 2.5rem; margin: 0 0 .25rem; }
+    .lede { color: var(--muted); margin: 0 0 2rem; max-width: 60ch; }
+    .crumbs { font-size: .8rem; color: var(--muted); margin-bottom: .5rem; }
+    .crumbs a { text-decoration: none; }
+
+    .grid { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
+    @media (min-width: 880px) { .grid { grid-template-columns: 320px 1fr; } }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
+    .panel h2 { font-family: var(--font-display); font-size: 1.5rem; margin: 0 0 .75rem; }
+    .panel h3 { font-size: .9rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; margin: 0 0 .5rem; }
+
+    .list-rows { display: flex; flex-direction: column; gap: .35rem; }
+    .list-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .65rem .8rem; border-radius: var(--radius-sm);
+      background: var(--surface-2); cursor: pointer; border: 1px solid transparent;
+      transition: border-color .12s ease, background .12s ease;
+    }
+    .list-row:hover { border-color: var(--border); }
+    .list-row.active { background: var(--primary-soft); border-color: var(--primary); }
+    .list-row .name { font-weight: 600; font-size: .95rem; }
+    .list-row .desc { font-size: .78rem; color: var(--muted); }
+    .list-row .count { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--primary); }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: 1rem; }
+    .toolbar input[type="search"] {
+      flex: 1 1 220px; padding: .55rem .8rem; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface-2); font: inherit; color: var(--text);
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .55rem .9rem; border-radius: var(--radius-sm);
+      background: var(--primary); color: white; border: 0;
+      font: inherit; font-weight: 500; cursor: pointer; text-decoration: none;
+    }
+    .btn:hover { background: var(--primary-dark); }
+    .btn-quiet { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+    .btn-quiet:hover { background: #ebe7df; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    thead th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: .55rem .6rem; border-bottom: 1px solid var(--border); }
+    tbody td { padding: .65rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 500; }
+    .pill-ok { background: rgba(47,143,91,.12); color: var(--ok); }
+    .pill-pending { background: rgba(176,125,42,.14); color: var(--pending); }
+    .pill-muted { background: var(--surface-2); color: var(--muted); }
+
+    .row-actions { display: flex; gap: .35rem; }
+    .row-actions button { padding: .25rem .5rem; font-size: .75rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+    .row-actions button:hover { background: var(--surface-2); }
+    .row-actions button.danger { color: #a83333; }
+
+    .empty { padding: 2rem; text-align: center; color: var(--muted); font-style: italic; }
+
+    .form-inline { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--border); }
+    .form-inline input { flex: 1 1 130px; padding: .45rem .6rem; border-radius: 10px; border: 1px solid var(--border); background: white; font: inherit; }
+
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(40,37,29,.4); display: none; z-index: 50; }
+    .modal-backdrop.open { display: flex; align-items: center; justify-content: center; }
+    .modal { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; max-width: 520px; width: calc(100% - 2rem); box-shadow: var(--shadow); }
+    .modal h2 { font-family: var(--font-display); margin: 0 0 .5rem; }
+    .modal .modal-body { max-height: 50vh; overflow-y: auto; margin: 1rem 0; }
+    .modal .lead-pick { display: flex; justify-content: space-between; gap: .5rem; padding: .5rem .65rem; border-radius: 10px; border: 1px solid var(--border); margin-bottom: .35rem; }
+    .modal .lead-pick .meta { font-size: .78rem; color: var(--muted); }
+    .modal .modal-footer { display: flex; justify-content: flex-end; gap: .5rem; }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="crumbs">
+    <a href="/private/">Marketing center</a> &nbsp;/&nbsp; Email lists
+  </div>
+  <h1>Email lists</h1>
+  <p class="lede">Curate which leads belong on which list. Lists sync to EmailOctopus when an <code>emailoctopus_id</code> is set; otherwise they&rsquo;re local-only and can be exported as CSV.</p>
+
+  <div class="grid">
+    <!-- LEFT: lists -->
+    <aside class="panel">
+      <h2>Lists</h2>
+      <div class="list-rows" id="lists"></div>
+
+      <form id="new-list-form" class="form-inline">
+        <input type="text" name="slug" placeholder="slug (a-z-)" required pattern="[a-z0-9-]+" />
+        <input type="text" name="name" placeholder="Display name" required />
+        <button type="submit" class="btn">+ Add list</button>
+      </form>
+    </aside>
+
+    <!-- RIGHT: members + add panel -->
+    <section class="panel">
+      <div class="toolbar">
+        <h2 id="list-name" style="margin: 0; flex: 1 1 100%;">Pick a list</h2>
+        <button type="button" class="btn btn-quiet" id="add-from-pool" disabled>+ Add from pool</button>
+        <a href="#" class="btn btn-quiet" id="export-csv" hidden>Download CSV</a>
+      </div>
+
+      <table id="members-table" hidden>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Name</th>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Added</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="members-body"></tbody>
+      </table>
+      <p class="empty" id="members-empty">Pick a list on the left to see its members.</p>
+    </section>
+  </div>
+</div>
+
+<!-- Modal: add lead from pool -->
+<div class="modal-backdrop" id="pool-modal">
+  <div class="modal">
+    <h2>Add lead to list</h2>
+    <input type="search" id="pool-search" placeholder="Search by email, name, or company" style="width: 100%; padding: .55rem .8rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); font: inherit;">
+    <div class="modal-body" id="pool-results"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-quiet" id="pool-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var API = '/.netlify/functions/admin-leads';
+  var state = { lists: [], activeList: null };
+
+  function el(id) { return document.getElementById(id); }
+  function api(path, opts) { return fetch(API + path, opts || {}).then(function(r){ return r.json(); }); }
+
+  function renderLists() {
+    var box = el('lists');
+    box.innerHTML = '';
+    state.lists.forEach(function(l){
+      var row = document.createElement('div');
+      row.className = 'list-row' + (state.activeList && state.activeList.id === l.id ? ' active' : '');
+      row.innerHTML =
+        '<div>' +
+          '<div class="name">' + escapeHtml(l.name) + '</div>' +
+          '<div class="desc">' + escapeHtml(l.description || l.slug) + '</div>' +
+        '</div>' +
+        '<div class="count">' + l.member_count + '</div>';
+      row.addEventListener('click', function(){ selectList(l); });
+      box.appendChild(row);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  function loadOverview() {
+    return api('?mode=overview').then(function(r){
+      state.lists = r.lists || [];
+      renderLists();
+    });
+  }
+
+  function selectList(l) {
+    state.activeList = l;
+    el('list-name').textContent = l.name;
+    el('add-from-pool').disabled = false;
+    var exp = el('export-csv');
+    exp.hidden = false;
+    exp.href = API + '?mode=export&list_id=' + l.id;
+    renderLists();
+    loadMembers();
+  }
+
+  function loadMembers() {
+    api('?mode=list&id=' + state.activeList.id).then(function(r){
+      var body = el('members-body');
+      var members = r.members || [];
+      body.innerHTML = '';
+      if (members.length === 0) {
+        el('members-table').hidden = true;
+        el('members-empty').hidden = false;
+        el('members-empty').textContent = 'This list is empty. Use "+ Add from pool" to populate it.';
+        return;
+      }
+      el('members-table').hidden = false;
+      el('members-empty').hidden = true;
+      members.forEach(function(m){
+        var lead = m.lead || {};
+        var tr = document.createElement('tr');
+        var statusPill = lead.status === 'partner' ? 'pill-ok' :
+                         lead.status === 'new' ? 'pill-pending' : 'pill-muted';
+        tr.innerHTML =
+          '<td>' + escapeHtml(lead.email) + '</td>' +
+          '<td>' + escapeHtml(lead.full_name) + '</td>' +
+          '<td>' + escapeHtml(lead.company) + '</td>' +
+          '<td><span class="pill ' + statusPill + '">' + escapeHtml(lead.status) + '</span></td>' +
+          '<td>' + new Date(m.added_at).toLocaleDateString() + '</td>' +
+          '<td class="row-actions"><button class="danger" data-remove="' + lead.id + '">Remove</button></td>';
+        body.appendChild(tr);
+      });
+    });
+  }
+
+  // remove
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-remove]');
+    if (!btn || !state.activeList) return;
+    if (!confirm('Remove from list?')) return;
+    api('', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op: 'remove', list_id: state.activeList.id, lead_id: btn.dataset.remove })
+    }).then(function(){ loadOverview(); loadMembers(); });
+  });
+
+  // pool modal
+  el('add-from-pool').addEventListener('click', function(){
+    el('pool-modal').classList.add('open');
+    el('pool-search').value = '';
+    el('pool-results').innerHTML = '';
+    el('pool-search').focus();
+    loadPool('');
+  });
+  el('pool-close').addEventListener('click', function(){
+    el('pool-modal').classList.remove('open');
+  });
+
+  var poolTimer;
+  el('pool-search').addEventListener('input', function(e){
+    clearTimeout(poolTimer);
+    var q = e.target.value;
+    poolTimer = setTimeout(function(){ loadPool(q); }, 220);
+  });
+
+  function loadPool(q) {
+    api('?mode=leads' + (q ? '&q=' + encodeURIComponent(q) : '')).then(function(r){
+      var box = el('pool-results');
+      box.innerHTML = '';
+      (r.leads || []).forEach(function(lead){
+        var row = document.createElement('div');
+        row.className = 'lead-pick';
+        row.innerHTML =
+          '<div>' +
+            '<div><strong>' + escapeHtml(lead.email) + '</strong></div>' +
+            '<div class="meta">' + escapeHtml(lead.full_name || '') + ' · ' + escapeHtml(lead.company || '') + ' · ' + escapeHtml(lead.last_event_source || '') + '</div>' +
+          '</div>' +
+          '<button class="btn" data-add="' + lead.id + '">Add</button>';
+        box.appendChild(row);
+      });
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-add]');
+    if (!btn || !state.activeList) return;
+    btn.disabled = true; btn.textContent = '…';
+    api('', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op: 'add', list_id: state.activeList.id, lead_id: btn.dataset.add })
+    }).then(function(){
+      btn.textContent = '✓ Added';
+      loadOverview();
+      loadMembers();
+    });
+  });
+
+  // new list
+  el('new-list-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    api('', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op: 'create_list', slug: fd.get('slug'), name: fd.get('name') })
+    }).then(function(r){
+      if (r.error) { alert(r.error); return; }
+      e.target.reset();
+      loadOverview();
+    });
+  });
+
+  loadOverview();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1755 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop plans — Designer Plan</title>
+<meta name="description" content="Three tiers. 36 months of coverage. Coverage begins at delivery, with no waiting period. A single concierge contact handles every claim.">
+
+<!-- Google Fonts: Inter Tight (display 500/600) + Inter (body 400/500) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGNER PLAN — SHOP PLANS PAGE
+   Mobile-first responsive · vanilla HTML/CSS/JS · Netlify-ready
+   Pattern library: landing-a.html (Approach A)
+   ============================================================ */
+
+:root{
+  /* palette — carried from landing-a */
+  --paper:        #faf7f1;
+  --ink:          #1a1815;
+  --ink-65:       rgba(26, 24, 21, 0.65);
+  --ink-45:       rgba(26, 24, 21, 0.45);
+  --brown-deep:   #3a2a1f;   /* not used on this page */
+  --rule:         #e3d9c6;
+  --rule-strong:  #cdbf9f;
+  --accent:       #c4582a;   /* terracotta — partner band CTA + MOST CHOSEN badge */
+  --accent-soft:  #f6e0cb;   /* corrected from #f4e4d6 — warmer, less pink-cool. see delivery note. */
+
+
+
+  
+  /* type */
+  --display: "Inter Tight", system-ui, -apple-system, sans-serif;
+  --body:    "Inter", system-ui, -apple-system, sans-serif;
+
+  /* spacing */
+  --sp-section: clamp(48px, 6vw, 80px);
+  --sp-block:   clamp(32px, 4vw, 56px);
+  --sp-tight:   clamp(16px, 2vw, 24px);
+
+  /* layout */
+  --container:  1200px;
+  --container-narrow: 720px;
+  --gutter:     clamp(20px, 4vw, 40px);
+
+  /* motion */
+  --ease:       cubic-bezier(0.2, 0.6, 0.2, 1);
+  --t-fast:     180ms;
+  --t-med:      280ms;
+  --t-slow:     600ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+
+h1, h2, h3, h4 {
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--ink);
+}
+
+p { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+
+a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+  transition: text-decoration-color var(--t-fast) var(--ease);
+}
+a:hover { text-decoration-color: var(--ink); }
+
+button { font: inherit; cursor: pointer; }
+
+.skip {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--ink); color: var(--paper);
+  padding: 12px 16px; z-index: 1000;
+  text-decoration: none;
+}
+.skip:focus { left: 16px; top: 16px; }
+
+/* ============================================================
+   CART DRAWER + TRIGGER
+   ============================================================ */
+.cart-trigger {
+  background: transparent;
+  border: 1px solid var(--paper);
+  color: var(--paper);
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color var(--t-med) var(--ease),
+              color var(--t-med) var(--ease),
+              border-color var(--t-med) var(--ease);
+}
+.nav.scrolled .cart-trigger {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.cart-trigger:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+.nav.scrolled .cart-trigger:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.cart-count {
+  background: var(--accent);
+  color: var(--paper);
+  border-radius: 999px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0;
+}
+
+.cart-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 24, 21, 0.4);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-med) var(--ease);
+}
+.cart-backdrop.open { opacity: 1; pointer-events: auto; }
+
+.cart-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(92%, 440px);
+  height: 100vh;
+  background: var(--paper);
+  z-index: 210;
+  transform: translateX(100%);
+  transition: transform var(--t-med) var(--ease);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -20px 0 40px rgba(26, 24, 21, 0.08);
+}
+.cart-drawer.open { transform: translateX(0); }
+
+.cart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--rule);
+}
+.cart-title {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.25rem;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.cart-close {
+  background: transparent;
+  border: 0;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.cart-partner-banner,
+.cart-guest-banner {
+  padding: 16px 28px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--rule);
+}
+.cart-partner-banner {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.cart-partner-banner .eyebrow {
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+.cart-partner-banner p { margin: 0; }
+.cart-guest-banner { color: var(--ink-65); }
+.cart-guest-banner p { margin: 0; }
+
+.cart-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+.cart-item {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  align-items: start;
+}
+.cart-item-name {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1rem;
+  margin: 0;
+}
+.cart-item-price { font-weight: 500; text-align: right; }
+.cart-item-commission {
+  grid-column: 1 / -1;
+  font-size: 0.8125rem;
+  color: var(--accent);
+  margin: 4px 0 0;
+}
+.cart-item-remove {
+  grid-column: 1 / -1;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 6px 0 0;
+  color: var(--ink-65);
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  cursor: pointer;
+  justify-self: start;
+}
+.cart-item-remove:hover { color: var(--ink); }
+
+.cart-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-45);
+  font-size: 0.9375rem;
+  padding: 40px;
+}
+
+.cart-footer {
+  padding: 24px 28px;
+  border-top: 1px solid var(--rule);
+}
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 16px;
+  font-size: 1rem;
+}
+.cart-total-row strong {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.25rem;
+}
+.cart-checkout { width: 100%; }
+.cart-checkout:disabled { opacity: 0.5; cursor: not-allowed; }
+.cart-checkout-note {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-45);
+  text-align: center;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+.container-narrow { max-width: var(--container-narrow); }
+
+.eyebrow {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  margin: 0 0 20px;
+  display: block;
+}
+
+.h-display {
+  font-size: clamp(2.25rem, 5.5vw, 4.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+.h-section {
+  font-size: clamp(1.75rem, 3.8vw, 2.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.018em;
+}
+.h-block {
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  line-height: 1.15;
+}
+
+.lead {
+  font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+  line-height: 1.55;
+  color: var(--ink-65);
+}
+.small {
+  font-size: 0.875rem;
+  color: var(--ink-65);
+}
+
+/* ============================================================
+   BUTTONS — carried from landing-a verbatim
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 22px;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  text-decoration: none;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: background-color var(--t-med) var(--ease),
+              color var(--t-med) var(--ease),
+              border-color var(--t-med) var(--ease),
+              transform var(--t-fast) var(--ease);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.btn .arrow {
+  display: inline-block;
+  transition: transform var(--t-med) var(--ease);
+}
+.btn:hover .arrow { transform: translateX(3px); }
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.btn-primary:hover {
+  background: #2a2723;
+  border-color: #2a2723;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.btn-secondary:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn-photo {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--paper);
+}
+.btn-photo:hover {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.btn-photo-outline {
+  background: transparent;
+  color: var(--paper);
+  border-color: var(--paper);
+}
+.btn-photo-outline:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: var(--paper);
+  border-color: var(--accent);
+}
+.btn-accent:hover {
+  background: #a8481f;
+  border-color: #a8481f;
+}
+
+.link-inline {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--ink-65);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+  transition: color var(--t-fast) var(--ease);
+}
+.link-inline:hover { color: var(--ink); text-decoration-color: var(--ink); }
+
+/* ============================================================
+   NAV — carried from landing-a
+   ============================================================ */
+
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  padding: 18px 0;
+  background: transparent;
+  transition: background-color var(--t-med) var(--ease),
+              border-color var(--t-med) var(--ease),
+              padding var(--t-med) var(--ease);
+  border-bottom: 1px solid transparent;
+}
+.nav.scrolled {
+  background: rgba(250, 247, 241, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom-color: var(--rule);
+  padding: 14px 0;
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.logo {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+  text-decoration: none;
+  transition: color var(--t-med) var(--ease);
+  white-space: nowrap;
+}
+.nav.scrolled .logo { color: var(--ink); }
+
+.nav-links {
+  display: none;
+  list-style: none;
+  padding: 0; margin: 0;
+  gap: 28px;
+  align-items: center;
+}
+
+.nav-links a {
+  font-size: 0.875rem;
+  color: var(--paper);
+  text-decoration: none;
+  font-weight: 400;
+  transition: color var(--t-med) var(--ease), opacity var(--t-fast) var(--ease);
+  letter-spacing: 0.005em;
+}
+.nav-links a:hover { opacity: 0.75; }
+.nav.scrolled .nav-links a { color: var(--ink); }
+
+.nav-toggle {
+  background: transparent;
+  border: 0;
+  padding: 8px;
+  margin: -8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+}
+.nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 1.5px;
+  background: var(--paper);
+  transition: background-color var(--t-med) var(--ease);
+}
+.nav.scrolled .nav-toggle span { background: var(--ink); }
+
+.nav-drawer {
+  position: fixed;
+  top: 0; right: 0;
+  width: min(85%, 360px);
+  height: 100vh;
+  background: var(--paper);
+  z-index: 100;
+  padding: 80px 32px 32px;
+  transform: translateX(100%);
+  transition: transform var(--t-med) var(--ease);
+  box-shadow: -20px 0 40px rgba(26, 24, 21, 0.08);
+  overflow-y: auto;
+}
+.nav-drawer.open { transform: translateX(0); }
+
+.nav-drawer-close {
+  position: absolute;
+  top: 22px; right: 22px;
+  background: transparent;
+  border: 0;
+  padding: 8px;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.nav-drawer ul {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nav-drawer a {
+  display: block;
+  padding: 14px 0;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  letter-spacing: -0.01em;
+}
+
+.nav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 24, 21, 0.3);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-med) var(--ease);
+}
+.nav-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ============================================================
+   HERO — Shop plans
+   Full-bleed photo · slightly shorter than landing-a hero (this is a shop page, not an intro)
+   ============================================================ */
+
+.hero {
+  position: relative;
+  min-height: 78vh;
+  display: flex;
+  align-items: flex-end;
+  padding: 120px 0 var(--sp-block);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.hero-photo img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    rgba(26, 24, 21, 0.15) 0%,
+    rgba(26, 24, 21, 0) 30%,
+    rgba(26, 24, 21, 0) 50%,
+    rgba(26, 24, 21, 0.55) 100%
+  );
+}
+
+.hero-content {
+  color: var(--paper);
+  max-width: 720px;
+}
+
+.hero .eyebrow { color: rgba(250, 247, 241, 0.85); }
+
+.hero-headline {
+  color: var(--paper);
+  margin-bottom: 24px;
+}
+
+.hero-subhead {
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  line-height: 1.5;
+  color: rgba(250, 247, 241, 0.92);
+  margin-bottom: 36px;
+  max-width: 620px;
+}
+
+.hero-ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+/* ============================================================
+   SECTION SCAFFOLDING
+   ============================================================ */
+
+section { padding: 0 0 var(--sp-section); }
+section:first-of-type { padding-top: 0; }
+
+.section-header { margin-bottom: var(--sp-block); }
+
+/* ============================================================
+   PARTNER CREDIT BAND — terracotta moment #1
+   
+   Background --brown-deep. CTA --accent
+   ============================================================ */
+
+.credit-band {
+  padding: var(--sp-block) 0 var(--sp-block);
+}
+
+.credit-band-inner {
+  
+  background: var(--brown-deep);
+  color: var(--paper);
+  border-radius: 4px;
+  padding: clamp(36px, 5vw, 56px) clamp(28px, 4vw, 56px);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.credit-band .eyebrow {
+  
+  color: rgba(250, 247, 241, 0.7);
+  margin-bottom: 14px;
+}
+
+.credit-band h2 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.5rem, 3vw, 2.125rem);
+  line-height: 1.15;
+  letter-spacing: -0.018em;
+  margin: 0 0 16px;
+  max-width: 620px;
+  color: var(--paper);
+}
+
+.credit-band p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(250, 247, 241, 0.85);
+  max-width: 560px;
+  margin: 0;
+}
+
+.credit-band-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.credit-band-actions .link-inline {
+  
+  color: var(--paper);
+ 
+ text-decoration-color: rgba(250, 247, 241, 0.4);
+}
+.credit-band-actions .link-inline:hover {
+  
+  text-decoration-color: var(--paper);
+}
+
+/* ============================================================
+   PLANS INTRO + TIER GRID — the page's focal point
+   Each tier is a product card.
+   Tier 3 has integrated MOST CHOSEN badge + 1.5px --ink border + solid-ink CTA.
+   ============================================================ */
+
+.plans-intro {
+  max-width: 620px;
+  margin-bottom: var(--sp-block);
+}
+.plans-intro .h-section { margin-bottom: 20px; }
+.plans-intro p {
+  font-size: 1.0625rem;
+  color: var(--ink-65);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tiers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.tier {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color var(--t-med) var(--ease);
+}
+.tier:hover { border-color: var(--rule-strong); }
+
+/* Tier 3 — emphasized */
+.tier-emphasized {
+  border-color: var(--ink);
+  border-width: 1.5px;
+}
+
+/* Integrated MOST CHOSEN badge — sits flush inside the top of Tier 3 card.
+   The 1.5px ink border encompasses it; nothing protrudes. */
+.tier-badge {
+  background: var(--accent);
+  color: var(--paper);
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 10px 28px;
+  text-align: center;
+  border-bottom: 1px solid var(--ink);
+}
+
+.tier-body {
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.tier .eyebrow { margin-bottom: 14px; }
+
+.tier h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  letter-spacing: -0.015em;
+  margin: 0 0 10px;
+}
+
+.tier-tagline {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--ink-65);
+  margin: 0 0 22px;
+}
+
+.tier ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  border-top: 1px solid var(--rule);
+}
+.tier li {
+  padding: 12px 0;
+  font-size: 0.9375rem;
+  color: var(--ink-65);
+  line-height: 1.45;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tier-price {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.0625rem;
+  margin: 0 0 22px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.tier-price .qual {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 0.875rem;
+  color: var(--ink-65);
+  letter-spacing: 0;
+  margin-left: 2px;
+}
+
+.tier-ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+.tier-ctas .btn { width: 100%; }
+
+/* in-card details disclosure — opens on click of "View details" or summary itself */
+.tier-details {
+  margin-top: 22px;
+  border-top: 1px solid var(--rule);
+  padding-top: 0;
+}
+
+.tier-details summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 18px 0 18px;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: color var(--t-fast) var(--ease);
+}
+.tier-details summary::-webkit-details-marker { display: none; }
+.tier-details summary:hover { color: var(--ink); }
+.tier-details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.tier-details summary .indicator {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.125rem;
+  color: var(--ink-65);
+  transition: transform var(--t-med) var(--ease), color var(--t-fast) var(--ease);
+  letter-spacing: 0;
+}
+.tier-details[open] summary .indicator {
+  transform: rotate(45deg);
+  color: var(--ink);
+}
+
+.tier-details-body {
+  padding: 8px 0 8px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-65);
+}
+.tier-details-body p { margin: 0 0 18px; }
+
+.tier-details-body h4 {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  margin: 22px 0 12px;
+}
+.tier-details-body ul {
+  border: 0;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+.tier-details-body li {
+  border: 0;
+  padding: 4px 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--ink-65);
+  position: relative;
+  padding-left: 18px;
+}
+.tier-details-body li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 14px;
+  width: 8px;
+  height: 1px;
+  background: var(--rule-strong);
+}
+
+.tier-details-terms {
+  margin-top: 14px;
+  font-size: 0.8125rem;
+}
+.tier-details-terms a {
+  color: var(--ink-65);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+}
+.tier-details-terms a:hover { color: var(--ink); }
+
+/* ============================================================
+   WHITE-GLOVE ASK — quiet centered block
+   ============================================================ */
+
+.white-glove {
+  text-align: center;
+}
+
+.white-glove-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: var(--sp-block);
+  border-top: 1px solid var(--rule);
+}
+
+.white-glove .h-section {
+  margin-bottom: 20px;
+}
+.white-glove-body {
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink-65);
+  margin: 0 auto 32px;
+  max-width: 540px;
+}
+
+/* ============================================================
+   CARE KITS — three-column text block with hairlines
+   (matches .how-step pattern from landing-a)
+   ============================================================ */
+
+.care-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-top: var(--sp-block);
+}
+
+.care-item {
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 28px;
+  display: flex;
+  flex-direction: column;
+}
+.care-item .num {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-65);
+  display: block;
+  margin-bottom: 16px;
+}
+.care-item h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.375rem;
+  letter-spacing: -0.015em;
+  margin: 0 0 14px;
+}
+.care-item p {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-65);
+  margin: 0 0 22px;
+}
+.care-item-price {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  color: var(--ink);
+  margin: 0 0 18px;
+  letter-spacing: -0.01em;
+}
+.care-item .link-inline {
+  margin-top: auto;
+}
+
+/* ============================================================
+   PARTNER CTA ECHO — final close, ink-on-paper
+   ============================================================ */
+
+.final-cta {
+  text-align: center;
+}
+
+.final-cta-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.final-cta .h-section {
+  margin-bottom: 24px;
+}
+.final-cta-body {
+  font-size: 1.0625rem;
+  color: var(--ink-65);
+  line-height: 1.6;
+  margin-bottom: 36px;
+}
+
+.final-cta-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ============================================================
+   FOOTER — carried from landing-a
+   ============================================================ */
+
+.footer {
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  padding: 60px 0 32px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+
+.footer-brand .logo {
+  color: var(--ink);
+  font-size: 1.25rem;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.footer-tagline {
+  font-size: 0.875rem;
+  color: var(--ink-65);
+  margin: 0;
+}
+
+.footer-col h4 {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  margin: 0 0 18px;
+}
+.footer-col ul {
+  list-style: none;
+  padding: 0; margin: 0;
+}
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 0.9375rem;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color var(--t-fast) var(--ease);
+}
+.footer-col a:hover { color: var(--ink-65); }
+
+.footer-baseline {
+  padding-top: 28px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--ink-65);
+}
+
+/* ============================================================
+   REVEAL ON SCROLL
+   ============================================================ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity var(--t-slow) var(--ease),
+              transform var(--t-slow) var(--ease);
+  will-change: opacity, transform;
+}
+.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (min-width: 720px) {
+  .hero-ctas {
+    flex-direction: row;
+    align-items: center;
+  }
+  .credit-band-inner {
+    grid-template-columns: 1.5fr 1fr;
+    align-items: center;
+    gap: 40px;
+  }
+  .credit-band-actions {
+    align-items: flex-end;
+  }
+  .final-cta-buttons {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 860px) {
+  .nav-links { display: flex; }
+  .nav-toggle { display: none; }
+
+  .tiers {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Tier 3 sits flush at the top with siblings even though it has a badge —
+     the eyebrow rows must line up across all three cards. The badge sits ABOVE
+     the eyebrow row. To keep eyebrows aligned, we offset tiers 1 & 2 down by
+     the badge height (10px top + 11px line-height + 10px bottom + 1px border = ~38px). */
+  .tier-emphasized {
+    margin-top: 0;
+  }
+  .tier:not(.tier-emphasized) {
+    margin-top: 38px;
+  }
+
+  .care-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 48px;
+  }
+
+  .footer-baseline {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1400px) {
+  :root { --gutter: 56px; }
+}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip">Skip to main content</a>
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<header class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="/" class="logo" aria-label="Designer Plan — home">Designer Plan</a>
+
+    <nav aria-label="Primary">
+      <ul class="nav-links">
+        <li><a href="/#partner">Partner with us</a></li>
+        <li><a href="/plans">Shop plans</a></li>
+        <li><a href="#white-glove">White-glove service</a></li>
+        <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+      </ul>
+    </nav>
+
+    <button type="button" class="cart-trigger" id="cart-trigger" aria-label="Open cart">
+      Cart <span class="cart-count" id="cart-count" hidden>0</span>
+    </button>
+
+    <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<aside class="nav-drawer" id="nav-drawer" aria-label="Mobile navigation" hidden>
+  <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  <ul>
+    <li><a href="/#partner">Partner with us</a></li>
+    <li><a href="/plans">Shop plans</a></li>
+    <li><a href="#white-glove">White-glove service</a></li>
+    <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+  </ul>
+</aside>
+
+<main id="main">
+
+  <!-- ============================================================
+       HERO  (P.1)
+       ============================================================ -->
+  <section class="hero" aria-label="Shop plans">
+    <div class="hero-photo">
+      <!-- placeholder: sunlit room aspiration, full-bleed, same register as landing-a hero -->
+      <img
+        src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=2400&q=80"
+        alt="A sunlit dining room with a long wooden table, upholstered chairs, and warm afternoon light through tall windows"
+        loading="eager">
+    </div>
+
+    <div class="container">
+      <div class="hero-content">
+        <span class="eyebrow">Shop plans</span>
+        <h1 class="h-display hero-headline">Coverage for the furniture you specified.</h1>
+        <p class="hero-subhead">Three tiers. 36 months. Coverage begins at delivery, with no waiting period. A single concierge contact handles every claim.</p>
+
+        <div class="hero-ctas">
+          <a href="#credit-band" class="btn btn-photo">Use my $5,000 credit <span class="arrow">&rarr;</span></a>
+          <a href="#plans" class="btn btn-photo-outline">Jump to plans <span class="arrow">&darr;</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PARTNER CREDIT BAND (P.2) — terracotta moment #1
+       ============================================================ -->
+  <section class="credit-band" id="credit-band">
+    <div class="container reveal">
+      <div class="credit-band-inner">
+        <div>
+          <span class="eyebrow">A better way to buy</span>
+          <h2>Become a partner first. Your first plan, on us — up to $5,000 of coverage.</h2>
+          <p>Designers in the program earn up to 35% commission on every plan they specify &mdash; and the first plan is complimentary. If you&rsquo;re buying a plan today, it&rsquo;s worth the two-step application.</p>
+        </div>
+        <div class="credit-band-actions">
+          <a href="/partner-apply" class="btn btn-accent">Use my $5,000 credit <span class="arrow">&rarr;</span></a>
+          <a href="/login" class="link-inline">Already a partner? Log in &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PLAN TIER GRID (P.3) — the page's focal point
+       ============================================================ -->
+  <section id="plans">
+    <div class="container reveal">
+
+      <div class="plans-intro">
+        <span class="eyebrow">The plans</span>
+        <h2 class="h-section">Three tiers. 36 months. Like-new restoration.</h2>
+        <p>Indoor furniture, adjustable bed bases, and rugs. Restoration to like-new condition &mdash; not generic replacement.</p>
+      </div>
+
+      <div class="tiers">
+
+        <!-- ===== TIER ONE ===== -->
+        <article class="tier" id="tier-one">
+          <div class="tier-body">
+            <span class="eyebrow">Tier one</span>
+            <h3>Stain Protection</h3>
+            <p class="tier-tagline">36 months of coverage for the most common household stains.</p>
+
+            <ul>
+              <li>Common food, beverage, and accidental stains</li>
+              <li>Pet &amp; human accidents</li>
+              <li>Ink, water marks, dirt soiling</li>
+              <li>Indoor furniture, bed bases, rugs</li>
+              <li>Coverage begins at delivery</li>
+            </ul>
+
+            <p class="tier-price">From $[XX]<span class="qual">/36 mo</span></p>
+
+            <div class="tier-ctas">
+              <button type="button" class="btn btn-secondary" data-toggle="tier-one-details" aria-expanded="false" aria-controls="tier-one-details">
+                View details <span class="arrow">&darr;</span>
+              </button>
+              <button type="button" class="btn btn-primary" data-add-to-cart data-plan="tier-one" data-name="Stain Protection" data-price-cents="14900">Add to cart <span class="arrow">&rarr;</span></button>
+            </div>
+
+            <details class="tier-details" id="tier-one-details">
+              <summary>
+                <span>Full coverage detail</span>
+                <span class="indicator" aria-hidden="true">+</span>
+              </summary>
+              <div class="tier-details-body">
+                <p>Designer Stain Protection offers comprehensive 36-month protection against many of the most common household stains and accidents. Save by buying direct &mdash; protecting your client&rsquo;s investment should be as thoughtful as selecting it.</p>
+                <p>Coverage applies to a wide range of furniture types: indoor furniture, adjustable bed bases, and rugs. Coverage begins the moment your first eligible item is delivered, with no waiting period. This is not a basic replacement plan. Our goal is to restore damaged items to &ldquo;like new&rdquo; condition.</p>
+
+                <h4>Materials covered</h4>
+                <ul>
+                  <li>Wood &amp; solid surface items</li>
+                  <li>Upholstery, including leather</li>
+                  <li>Faux leather</li>
+                  <li>Fabric &amp; mixed coverings</li>
+                </ul>
+
+                <h4>Rooms covered</h4>
+                <ul>
+                  <li>Living room, dining room, dinette, family room</li>
+                  <li>Bedroom, home office, accessory furniture</li>
+                  <li>Rugs</li>
+                </ul>
+
+                <h4>Stains &amp; damage covered</h4>
+                <ul>
+                  <li>Common accidental food stains, including food grease</li>
+                  <li>Accidental beverage, coffee, tea, wine, cocktails, liquor &amp; water rings</li>
+                  <li>Pet stains from non-habitual accidents (excludes odors &amp; discoloration)</li>
+                  <li>Human stains from non-habitual accidents (excludes odors &amp; discoloration)</li>
+                  <li>Accidental soiling from dirt, mud &amp; food grease (excludes general soiling)</li>
+                  <li>Pens (excluding markers), pencil, and dye transfer from newspaper</li>
+                  <li>Water rings &amp; liquid marks on wood and other hard surfaces</li>
+                </ul>
+
+                <p class="tier-details-terms"><a href="/terms#tier-one">View terms &amp; conditions &nearr;</a></p>
+              </div>
+            </details>
+          </div>
+        </article>
+
+        <!-- ===== TIER TWO ===== -->
+        <article class="tier" id="tier-two">
+          <div class="tier-body">
+            <span class="eyebrow">Tier two</span>
+            <h3>Premium Protection</h3>
+            <p class="tier-tagline">Adds rips, tears, burns, and electrical components.</p>
+
+            <ul>
+              <li>Everything in Stain Protection</li>
+              <li>Accidental rips, tears, punctures, burns</li>
+              <li>Failure of factory-installed electrical components</li>
+              <li>Indoor furniture, bed bases, rugs</li>
+              <li>No waiting period</li>
+            </ul>
+
+            <p class="tier-price">From $[XX]<span class="qual">/36 mo</span></p>
+
+            <div class="tier-ctas">
+              <button type="button" class="btn btn-secondary" data-toggle="tier-two-details" aria-expanded="false" aria-controls="tier-two-details">
+                View details <span class="arrow">&darr;</span>
+              </button>
+              <button type="button" class="btn btn-primary" data-add-to-cart data-plan="tier-two" data-name="Premium Protection" data-price-cents="24900">Add to cart <span class="arrow">&rarr;</span></button>
+            </div>
+
+            <details class="tier-details" id="tier-two-details">
+              <summary>
+                <span>Full coverage detail</span>
+                <span class="indicator" aria-hidden="true">+</span>
+              </summary>
+              <div class="tier-details-body">
+                <p>A step up from Stain Protection, Premium Protection provides 36 months of enhanced coverage. In addition to protecting against common household stains, it covers rips, tears, burns, and electrical components.</p>
+                <p>Coverage begins when your first item is delivered. There is no waiting period. Our goal is to return damaged items to &ldquo;like new&rdquo; condition.</p>
+
+                <h4>Materials covered</h4>
+                <ul>
+                  <li>Wood &amp; solid surface items</li>
+                  <li>Upholstery, including leather</li>
+                  <li>Faux leather</li>
+                  <li>Fabric &amp; mixed coverings</li>
+                </ul>
+
+                <h4>Rooms covered</h4>
+                <ul>
+                  <li>Living room, dining room, dinette, family room</li>
+                  <li>Bedroom, home office, accessory furniture</li>
+                </ul>
+
+                <h4>Coverage list</h4>
+                <p style="margin-top: -6px; font-size: 0.8125rem; font-style: italic;">Includes all Tier One coverage, plus:</p>
+                <ul>
+                  <li>Accidental rips, tears, punctures, burns</li>
+                  <li>Failure of factory-installed electrical components (USB ports, stitching) &mdash; exclusions apply</li>
+                </ul>
+
+                <p class="tier-details-terms"><a href="/terms#tier-two">View terms &amp; conditions &nearr;</a></p>
+              </div>
+            </details>
+          </div>
+        </article>
+
+        <!-- ===== TIER THREE — MOST CHOSEN ===== -->
+        <article class="tier tier-emphasized" id="tier-three">
+          <div class="tier-badge" aria-label="Most chosen plan">MOST CHOSEN</div>
+          <div class="tier-body">
+            <span class="eyebrow">Tier three</span>
+            <h3>Premium Plus Protection</h3>
+            <p class="tier-tagline">Adds wood frames, structural components, and motion mechanisms.</p>
+
+            <ul>
+              <li>Everything in Premium Protection</li>
+              <li>Wood frames &amp; structural components</li>
+              <li>Motion mechanisms</li>
+              <li>Most comprehensive coverage available</li>
+              <li>No waiting period</li>
+            </ul>
+
+            <p class="tier-price">From $[XX]<span class="qual">/36 mo</span></p>
+
+            <div class="tier-ctas">
+              <button type="button" class="btn btn-secondary" data-toggle="tier-three-details" aria-expanded="false" aria-controls="tier-three-details">
+                View details <span class="arrow">&darr;</span>
+              </button>
+              <button type="button" class="btn btn-primary" data-add-to-cart data-plan="tier-three" data-name="Premium Plus Protection" data-price-cents="34900">Add to cart <span class="arrow">&rarr;</span></button>
+            </div>
+
+            <details class="tier-details" id="tier-three-details">
+              <summary>
+                <span>Full coverage detail</span>
+                <span class="indicator" aria-hidden="true">+</span>
+              </summary>
+              <div class="tier-details-body">
+                <p>Our most-selected plan. Premium Plus Protection offers 36 months of our most extensive coverage &mdash; trusted by design professionals and their clients alike. It goes beyond stain protection to include rips, tears, burns, electrical components, structural failure, and mechanical parts.</p>
+                <p>Coverage applies to a wide range of items, including indoor furniture, adjustable bed bases, and rugs. Protection begins the day your first item is delivered. There are no waiting periods. Our mission is to restore damaged pieces to their original, like-new condition.</p>
+
+                <h4>Materials covered</h4>
+                <ul>
+                  <li>Wood &amp; solid surface items</li>
+                  <li>Upholstery, including leather</li>
+                  <li>Faux leather</li>
+                  <li>Fabric &amp; mixed coverings</li>
+                </ul>
+
+                <h4>Rooms covered</h4>
+                <ul>
+                  <li>Living room, dining room, dinette, family room</li>
+                  <li>Bedroom, home office, accessory furniture</li>
+                </ul>
+
+                <h4>Coverage list</h4>
+                <p style="margin-top: -6px; font-size: 0.8125rem; font-style: italic;">Includes all Tier Two coverage, plus:</p>
+                <ul>
+                  <li>Wood frames and structural components</li>
+                  <li>Motion mechanisms</li>
+                </ul>
+
+                <p class="tier-details-terms"><a href="/terms#tier-three">View terms &amp; conditions &nearr;</a></p>
+              </div>
+            </details>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       WHITE-GLOVE ASK (P.7)
+       ============================================================ -->
+  <section id="white-glove" class="white-glove">
+    <div class="container reveal">
+      <div class="white-glove-wrap">
+        <span class="eyebrow">Just need setup help?</span>
+        <h2 class="h-section">White-glove service for delivery, setup &amp; install.</h2>
+        <p class="white-glove-body">Not every project needs a protection plan. If you just need professional hands for delivery, unboxing, room placement, or installation, we&rsquo;re happy to help. Tell us about the project and we&rsquo;ll get back to you within one business day.</p>
+        <a href="mailto:designer.programs@raptns.com?subject=White-glove%20service%20request" class="btn btn-secondary">Request white-glove service <span class="arrow">&rarr;</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CARE KITS (P.8) — text-with-hairlines, matches .how-step pattern
+       ============================================================ -->
+  <section>
+    <div class="container reveal">
+
+      <div class="section-header">
+        <span class="eyebrow">Care kits &amp; adjacent solutions</span>
+        <h2 class="h-section">Between claims, here&rsquo;s how to keep things looking finished.</h2>
+        <p style="font-size: 1.0625rem; color: var(--ink-65); line-height: 1.6; margin: 20px 0 0; max-width: 620px;">Professional-grade care kits sized for the pieces you specify.</p>
+      </div>
+
+      <div class="care-grid">
+
+        <article class="care-item">
+          <span class="num">01</span>
+          <h3>Fabric Cleaning Kit</h3>
+          <p>Spot treatment, fabric protector, and microfiber cloths. Sized for one full project.</p>
+          <p class="care-item-price">$[XX]</p>
+          <a href="/care/fabric" class="link-inline">Learn more &rarr;</a>
+        </article>
+
+        <article class="care-item">
+          <span class="num">02</span>
+          <h3>Leather Cleaning Kit</h3>
+          <p>Conditioner, cleaner, and applicator cloths. Safe on leather and faux leather.</p>
+          <p class="care-item-price">$[XX]</p>
+          <a href="/care/leather" class="link-inline">Learn more &rarr;</a>
+        </article>
+
+        <article class="care-item">
+          <span class="num">03</span>
+          <h3>Touch-Up &amp; Repair Kit</h3>
+          <p>Wood fillers, finish-matching markers, felt pads, and minor repair tools.</p>
+          <p class="care-item-price">$[XX]</p>
+          <a href="/care/touch-up" class="link-inline">Learn more &rarr;</a>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PARTNER CTA ECHO (P.9) — final close
+       ============================================================ -->
+  <section class="final-cta">
+    <div class="container final-cta-wrap reveal">
+      <span class="eyebrow">Buying direct?</span>
+      <h2 class="h-section">Designers earn commission on every plan. Partner with us first.</h2>
+      <p class="final-cta-body">If you&rsquo;re an interior designer specifying furniture for clients, becoming a partner unlocks up to 35% commission on every plan you sell &mdash; plus your first plan is complimentary. The application takes two minutes.</p>
+
+      <div class="final-cta-buttons">
+        <a href="/partner-apply" class="btn btn-primary">Become a partner <span class="arrow">&rarr;</span></a>
+        <a href="/#partner" class="btn btn-secondary">Learn about partnership <span class="arrow">&rarr;</span></a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     CART DRAWER (slide-in from right)
+     Auth-aware: shows commission line if a partner is logged in.
+     ============================================================ -->
+<div class="cart-backdrop" id="cart-backdrop" hidden></div>
+<aside class="cart-drawer" id="cart-drawer" aria-label="Cart" aria-hidden="true" hidden>
+  <header class="cart-header">
+    <h2 class="cart-title">Your cart</h2>
+    <button type="button" class="cart-close" id="cart-close" aria-label="Close cart">&times;</button>
+  </header>
+
+  <div class="cart-partner-banner" id="cart-partner-banner" hidden>
+    <span class="eyebrow">Logged in as partner</span>
+    <p>Commission on this order: <strong id="cart-commission">$0.00</strong> (<span id="cart-commission-rate">35%</span>)</p>
+  </div>
+
+  <div class="cart-guest-banner" id="cart-guest-banner">
+    <p><a href="/login">Log in</a> or <a href="/partner-apply">become a partner</a> to earn up to 35% commission on every plan.</p>
+  </div>
+
+  <ul class="cart-items" id="cart-items" aria-live="polite"></ul>
+
+  <p class="cart-empty" id="cart-empty">Your cart is empty.</p>
+
+  <footer class="cart-footer">
+    <div class="cart-total-row">
+      <span>Subtotal</span>
+      <strong id="cart-subtotal">$0.00</strong>
+    </div>
+    <button type="button" class="btn btn-primary cart-checkout" id="cart-checkout" disabled>
+      Proceed to checkout <span class="arrow">&rarr;</span>
+    </button>
+    <p class="cart-checkout-note">Checkout is in development — your dev team will wire this to the existing cart backend.</p>
+  </footer>
+</aside>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="footer">
+  <div class="container">
+
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="logo">Designer Plan</a>
+        <p class="footer-tagline">A program by Risk Assurance Partners</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Program</h4>
+        <ul>
+          <li><a href="/about">About us</a></li>
+          <li><a href="/partnership">Benefits of partnership</a></li>
+          <li><a href="/terms">Terms of use</a></li>
+          <li><a href="/privacy">Privacy policy</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:designer.programs@raptns.com">designer.programs@raptns.com</a></li>
+          <li><a href="tel:+15613743147">561-374-3147</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>For existing customers</h4>
+        <ul>
+          <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+          <li><a href="mailto:designer.programs@raptns.com">Talk to a specialist</a></li>
+          <li><a href="/login">Login</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-baseline">
+      <span>&copy; 2026 Risk Assurance Partners. All rights reserved.</span>
+      <span>Designer Plan is administered by Risk Assurance Partners.</span>
+    </div>
+
+  </div>
+</footer>
+
+<script src="/js/auth.js"></script>
+<script src="/js/cart.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  // ===== NAV =====
+  var nav = document.getElementById('nav');
+  var navToggle = document.getElementById('nav-toggle');
+  var navDrawer = document.getElementById('nav-drawer');
+  var navDrawerClose = document.getElementById('nav-drawer-close');
+  var navBackdrop = document.getElementById('nav-backdrop');
+
+  function openDrawer(){
+    navDrawer.hidden = false;
+    navBackdrop.hidden = false;
+    requestAnimationFrame(function(){
+      navDrawer.classList.add('open');
+      navBackdrop.classList.add('open');
+    });
+    navToggle.setAttribute('aria-expanded','true');
+    navToggle.setAttribute('aria-label','Close menu');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer(){
+    navDrawer.classList.remove('open');
+    navBackdrop.classList.remove('open');
+    navToggle.setAttribute('aria-expanded','false');
+    navToggle.setAttribute('aria-label','Open menu');
+    document.body.style.overflow = '';
+    setTimeout(function(){
+      navDrawer.hidden = true;
+      navBackdrop.hidden = true;
+    }, 280);
+  }
+  navToggle.addEventListener('click', openDrawer);
+  navDrawerClose.addEventListener('click', closeDrawer);
+  navBackdrop.addEventListener('click', closeDrawer);
+  navDrawer.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', closeDrawer);
+  });
+
+  // scroll-state on nav
+  var navScrolled = false;
+  function onScroll(){
+    var shouldScroll = window.scrollY > 80;
+    if(shouldScroll !== navScrolled){
+      navScrolled = shouldScroll;
+      nav.classList.toggle('scrolled', shouldScroll);
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // ===== REVEAL ON SCROLL =====
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in-view'); });
+  }
+
+  // ===== TIER DETAILS — View details button toggles the in-card disclosure =====
+  document.querySelectorAll('[data-toggle]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var targetId = btn.getAttribute('data-toggle');
+      var details = document.getElementById(targetId);
+      if(!details) return;
+      var willOpen = !details.open;
+      details.open = willOpen;
+      btn.setAttribute('aria-expanded', String(willOpen));
+      if(willOpen){
+        // smooth-scroll the disclosure into view
+        setTimeout(function(){
+          details.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+      }
+    });
+  });
+
+  // keep ARIA state synced if the user opens via the summary directly
+  document.querySelectorAll('details.tier-details').forEach(function(d){
+    d.addEventListener('toggle', function(){
+      var btn = document.querySelector('[data-toggle="' + d.id + '"]');
+      if(btn) btn.setAttribute('aria-expanded', String(d.open));
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>

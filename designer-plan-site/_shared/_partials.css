@@ -1,0 +1,183 @@
+/* ============================================================
+   Shared CSS partial for ancillary pages.
+   Inlined into each page's <style> block — kept here as the
+   single source of truth so the dev team can extract to a real
+   stylesheet later.
+   ============================================================ */
+
+:root{
+  --paper:        #faf7f1;
+  --ink:          #1a1815;
+  --ink-65:       rgba(26, 24, 21, 0.65);
+  --ink-45:       rgba(26, 24, 21, 0.45);
+  --rule:         #e3d9c6;
+  --rule-strong:  #cdbf9f;
+  --accent:       #c4582a;
+  --display: "Inter Tight", system-ui, -apple-system, sans-serif;
+  --body:    "Inter", system-ui, -apple-system, sans-serif;
+  --container: 1200px;
+  --container-narrow: 720px;
+  --gutter: clamp(20px, 4vw, 40px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 {
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  margin: 0 0 16px;
+}
+h1 { font-size: clamp(2rem, 4vw, 3rem); }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin-top: 40px; }
+h3 { font-size: 1.15rem; margin-top: 28px; }
+p { margin: 0 0 1em; }
+a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+}
+a:hover { text-decoration-color: var(--ink); }
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+.container-narrow { max-width: var(--container-narrow); }
+
+.eyebrow {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  display: block;
+  margin-bottom: 16px;
+}
+
+/* simple nav (no scroll-state behavior on ancillary pages) */
+.nav-simple {
+  border-bottom: 1px solid var(--rule);
+  padding: 18px 0;
+  background: var(--paper);
+}
+.nav-simple .nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-simple .logo {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.nav-simple ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 28px;
+}
+.nav-simple ul a {
+  font-size: 0.875rem;
+  text-decoration: none;
+  color: var(--ink-65);
+}
+.nav-simple ul a:hover { color: var(--ink); }
+@media (max-width: 720px) { .nav-simple ul { display: none; } }
+
+main.page { padding: 64px 0 80px; }
+main.page .lead {
+  font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+  color: var(--ink-65);
+  max-width: 640px;
+  margin: 0 0 32px;
+}
+
+.footer-simple {
+  border-top: 1px solid var(--rule);
+  padding: 32px 0;
+  font-size: 0.875rem;
+  color: var(--ink-65);
+}
+.footer-simple .footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: space-between;
+}
+.footer-simple a {
+  color: var(--ink-65);
+  text-decoration: none;
+  margin-right: 18px;
+}
+.footer-simple a:hover { color: var(--ink); }
+
+form.simple-form {
+  max-width: 480px;
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+form.simple-form label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--ink-65);
+  margin-bottom: 4px;
+}
+form.simple-form input,
+form.simple-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--paper);
+  font: inherit;
+  color: var(--ink);
+}
+form.simple-form input:focus,
+form.simple-form textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+}
+button.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+button.btn-primary:hover { background: #2a2723; }
+
+.placeholder-note {
+  background: #fff8e8;
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  margin: 24px 0;
+  font-size: 0.875rem;
+  color: var(--ink-65);
+}

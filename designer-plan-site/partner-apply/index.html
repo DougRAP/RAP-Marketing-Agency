@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apply to the partner program — Designer Plan</title>
+<meta name="description" content="Apply to join the Designer Plan partner program. Approved studios earn up to 35% commission and receive their first plan complimentary.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared/_partials.css">
+</head>
+<body>
+
+<header class="nav-simple">
+  <div class="container nav-inner">
+    <a href="/" class="logo">Designer Plan</a>
+    <nav><ul>
+      <li><a href="/#partner">Partner with us</a></li>
+      <li><a href="/plans">Shop plans</a></li>
+      <li><a href="/login">Log in</a></li>
+    </ul></nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container container-narrow">
+    <span class="eyebrow">Become a partner</span>
+    <h1>Apply to the program.</h1>
+    <p class="lead">A two-step application. Approved studios earn up to 35% commission and receive their first plan, on us — up to $5,000 of coverage. Most applications are reviewed within one business day.</p>
+
+    <form class="simple-form" id="apply-form" novalidate>
+      <div style="position:absolute;left:-9999px;" aria-hidden="true">
+        <label>Do not fill <input type="text" name="hp" tabindex="-1" autocomplete="off"></label>
+      </div>
+      <input type="hidden" name="consent_text" value="By submitting this application, you agree to be contacted about your partner application and to receive program-related email. Unsubscribe anytime.">
+
+      <div>
+        <label for="full_name">Your name</label>
+        <input type="text" id="full_name" name="full_name" required autocomplete="name">
+      </div>
+      <div>
+        <label for="studio_name">Studio name</label>
+        <input type="text" id="studio_name" name="studio_name" required autocomplete="organization">
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autocomplete="email">
+      </div>
+      <div>
+        <label for="phone">Phone (optional)</label>
+        <input type="tel" id="phone" name="phone" autocomplete="tel">
+      </div>
+      <div>
+        <label for="address">Studio city &amp; state</label>
+        <input type="text" id="address" name="address" autocomplete="address-level2">
+      </div>
+      <div>
+        <label for="average_project_size">Typical project size</label>
+        <input type="text" id="average_project_size" name="average_project_size" placeholder="e.g. $50k–$150k">
+      </div>
+      <div>
+        <label for="clients_per_year">Clients per year</label>
+        <input type="text" id="clients_per_year" name="clients_per_year" placeholder="approx.">
+      </div>
+
+      <p style="font-size: 0.75rem; color: var(--ink-45); margin: 0;">
+        By submitting, you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy policy</a>.
+      </p>
+
+      <button type="submit" class="btn-primary" id="apply-submit">Submit application &rarr;</button>
+      <p id="apply-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
+    </form>
+  </div>
+</main>
+
+<footer class="footer-simple">
+  <div class="container footer-inner">
+    <div>&copy; 2026 Risk Assurance Partners</div>
+    <div>
+      <a href="/about">About</a>
+      <a href="/partnership">Partnership</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var form = document.getElementById('apply-form');
+  var status = document.getElementById('apply-status');
+  var btn = document.getElementById('apply-submit');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var fd = new FormData(form);
+    var payload = {};
+    fd.forEach(function(v,k){ payload[k] = v; });
+    btn.disabled = true; btn.textContent = 'Sending…';
+    fetch('/.netlify/functions/partner-apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function(r){
+      if (!r.ok) throw new Error('network');
+      return r.json();
+    }).then(function(){
+      form.style.display = 'none';
+      status.textContent = 'Application received. We\'ll be in touch within one business day at the email you provided.';
+      status.style.fontSize = '1.125rem';
+      status.style.color = 'var(--ink)';
+    }).catch(function(){
+      status.textContent = 'Something went wrong. Email designer.programs@raptns.com and we\'ll take it from there.';
+      btn.disabled = false; btn.textContent = 'Try again →';
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

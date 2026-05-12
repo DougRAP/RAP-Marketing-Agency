@@ -275,3 +275,53 @@ The marketing-center site at `rap-marketing-center.netlify.app/private/` is what
 1. Sales team auth — Supabase Auth with magic links, or do they already have a Google/Microsoft tenant we should SSO into?
 2. Where should the Netlify Function live in the repo — new `netlify/functions/` at the root, or inside `rap-public-site/`?
 3. Preference for migrations — Supabase CLI migrations checked into the repo, or DDL applied through Studio for now?
+
+---
+
+## Addendum — 2026-05-12 — Designer Plan extensions
+
+A fourth Netlify site (`designer-plan-site/`) was added to the monorepo for **thedesignerplan.com** — the landing page + plans page + partner-application + cart flow. It uses the same Supabase project as the public site. Migration: `supabase/migrations/20260512_designer_plan_extensions.sql`.
+
+### What was added (additive only — Adrian's `leads` + `lead_events` schema is unchanged)
+
+| Object | Purpose |
+|---|---|
+| `leads.consent_at`, `leads.consent_text` | Resolves the open question in this doc. Recorded on every form submit. |
+| `public.partners` | One row per approved/pending partner studio. `lead_id` FK to `leads` (1:1). Holds `commission_rate`, `referral_code`, `stripe_account_id`, `status`. |
+| `public.plans` | Reference table for the three coverage tiers, seeded. |
+| `public.orders` | Plan purchases. FK to `lead_id` (buyer) and `partner_id` (commission recipient). |
+| `public.email_lists`, `public.email_list_members` | Curated marketing lists, with optional `emailoctopus_id` for sync. |
+| `public.admin_leads_view` | Read view for the marketing-center admin UI — joins `leads` + `partners` + last event. |
+
+New `lead_events.source` values used by designer-plan-site functions:
+`landing_popup`, `plans_credit_capture`, `partner_application`, `cart_started`, `plan_purchase` (future).
+
+### Ingestion path matches Adrian's pattern
+
+All writes go through Netlify Functions in `designer-plan-site/netlify/functions/`, using the `SUPABASE_SERVICE_ROLE_KEY` env var server-side. No browser → Supabase writes. Functions in this set:
+
+| Function | Triggered by | What it does |
+|---|---|---|
+| `popup-capture` | landing-page popup form | upsert lead, log `form_submitted` event, add to `designers-all` list |
+| `partner-apply` | `/partner-apply` form | upsert lead, upsert `partners` row (status pending), log event, add to `designers-pending` list |
+| `cart-checkout` | cart drawer "Proceed" button | stub today; logs `cart_started` event when partner-attributed |
+
+The marketing-center site also gained a function for the admin UI:
+
+| Function | UI | What it does |
+|---|---|---|
+| `admin-leads` | `/private/lists/` | overview, member listing, lead search, add/remove members, CSV export, create-list |
+
+### Operational rules — preserved
+
+- No changes to existing Netlify sites' publish/build settings.
+- The marketing-center site needs its **Functions Directory** set in the Netlify dashboard (one-time) to enable `admin-leads.js`. This is the only new dashboard change — see `designer-plan-site/DEPLOY.md`.
+- New site (`designer-plan-site`) is a sibling, not a consolidation. The doc's "raise it first" rule was honored: Doug approved the fourth site explicitly before scaffold.
+- All secrets remain in Netlify env vars — no keys in the repo.
+- Migrations are checked in (`supabase/migrations/20260512_*.sql`).
+
+### Open question now answered
+
+> Consent text on the forms — current copy says "We will only use your contact information to..." which is fine, but if we add a `consent_at`/`consent_text` column we need to commit to a specific version that's stored alongside.
+
+Resolved. `leads.consent_at` and `leads.consent_text` columns added. Every form on designer-plan-site posts the current consent string as a hidden field; the function stores it on the lead row.

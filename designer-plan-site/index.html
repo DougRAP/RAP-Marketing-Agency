@@ -1,0 +1,1783 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Designer Plan — A program by Risk Assurance Partners</title>
+<meta name="description" content="A 36-month protection program for the furniture you specify. Offer it to your clients at project closeout — we handle every claim.">
+
+<!-- Google Fonts: Inter Tight (display 500/600) + Inter (body 400/500) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGNER PLAN — LANDING PAGE · APPROACH A · EDITORIAL SCROLL
+   Mobile-first responsive · vanilla HTML/CSS/JS · Netlify-ready
+   ============================================================ */
+
+:root{
+  /* palette — light/airy per §2.4, modeled on Burrow per §2.3 */
+  --paper:        #faf7f1;
+  --ink:          #1a1815;
+  --ink-65:       rgba(26, 24, 21, 0.65);
+  --ink-45:       rgba(26, 24, 21, 0.45);
+  --brown-deep:   #3a2a1f;   /* reserved for Plan page punctuation — unused on A */
+  --rule:         #e3d9c6;
+  --rule-strong:  #cdbf9f;
+  --accent:       #c4582a;   /* terracotta — RESERVED. on A: popup CTA only */
+  --accent-soft:  #f4e4d6;   /* provisional, not deployed on A */
+
+  /* type */
+  --display: "Inter Tight", system-ui, -apple-system, sans-serif;
+  --body:    "Inter", system-ui, -apple-system, sans-serif;
+
+  /* spacing */
+  --sp-section: clamp(48px, 6vw, 80px);
+  --sp-block:   clamp(32px, 4vw, 56px);
+  --sp-tight:   clamp(16px, 2vw, 24px);
+
+  /* layout */
+  --container:  1200px;
+  --container-narrow: 720px;
+  --gutter:     clamp(20px, 4vw, 40px);
+
+  /* motion */
+  --ease:       cubic-bezier(0.2, 0.6, 0.2, 1);
+  --t-fast:     180ms;
+  --t-med:      280ms;
+  --t-slow:     600ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+
+h1, h2, h3, h4 {
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--ink);
+}
+
+p { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+
+a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+  transition: text-decoration-color var(--t-fast) var(--ease);
+}
+a:hover { text-decoration-color: var(--ink); }
+
+button { font: inherit; cursor: pointer; }
+
+/* skip-to-content for accessibility */
+.skip {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--ink); color: var(--paper);
+  padding: 12px 16px; z-index: 1000;
+  text-decoration: none;
+}
+.skip:focus { left: 16px; top: 16px; }
+
+/* container */
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+.container-narrow {
+  max-width: var(--container-narrow);
+}
+
+/* eyebrow — all caps, letter-spaced */
+.eyebrow {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  margin: 0 0 20px;
+  display: block;
+}
+
+/* headlines — sentence case, never title case */
+.h-display {
+  font-size: clamp(2.25rem, 5.5vw, 4.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+.h-section {
+  font-size: clamp(1.75rem, 3.8vw, 2.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.018em;
+}
+.h-block {
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  line-height: 1.15;
+}
+
+/* body sizes */
+.lead {
+  font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+  line-height: 1.55;
+  color: var(--ink-65);
+}
+.small {
+  font-size: 0.875rem;
+  color: var(--ink-65);
+}
+
+/* ============================================================
+   BUTTONS
+   default treatments: outlined-on-paper, cream-on-photo.
+   terracotta-accent is reserved for the popup ONLY on this page.
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 22px;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  text-decoration: none;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: background-color var(--t-med) var(--ease),
+              color var(--t-med) var(--ease),
+              border-color var(--t-med) var(--ease),
+              transform var(--t-fast) var(--ease);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.btn .arrow {
+  display: inline-block;
+  transition: transform var(--t-med) var(--ease);
+}
+.btn:hover .arrow { transform: translateX(3px); }
+
+/* primary (outlined on paper — quiet, Burrow-register) */
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.btn-primary:hover {
+  background: #2a2723;
+  border-color: #2a2723;
+}
+
+/* secondary (outlined) */
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.btn-secondary:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* on-photography (cream pill on hero photo) */
+.btn-photo {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--paper);
+}
+.btn-photo:hover {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.btn-photo-outline {
+  background: transparent;
+  color: var(--paper);
+  border-color: var(--paper);
+}
+.btn-photo-outline:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* reserved-accent — popup ONLY on this page */
+.btn-accent {
+  background: var(--accent);
+  color: var(--paper);
+  border-color: var(--accent);
+}
+.btn-accent:hover {
+  background: #a8481f;
+  border-color: #a8481f;
+}
+
+/* text-style link button */
+.link-inline {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--ink-65);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+  transition: color var(--t-fast) var(--ease);
+}
+.link-inline:hover { color: var(--ink); text-decoration-color: var(--ink); }
+
+/* ============================================================
+   NAV
+   transparent over hero, paper background after scroll
+   ============================================================ */
+
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  padding: 18px 0;
+  background: transparent;
+  transition: background-color var(--t-med) var(--ease),
+              border-color var(--t-med) var(--ease),
+              padding var(--t-med) var(--ease);
+  border-bottom: 1px solid transparent;
+}
+.nav.scrolled {
+  background: rgba(250, 247, 241, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom-color: var(--rule);
+  padding: 14px 0;
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.logo {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+  text-decoration: none;
+  transition: color var(--t-med) var(--ease);
+  white-space: nowrap;
+}
+.nav.scrolled .logo { color: var(--ink); }
+
+.nav-links {
+  display: none;
+  list-style: none;
+  padding: 0; margin: 0;
+  gap: 28px;
+  align-items: center;
+}
+
+.nav-links a {
+  font-size: 0.875rem;
+  color: var(--paper);
+  text-decoration: none;
+  font-weight: 400;
+  transition: color var(--t-med) var(--ease), opacity var(--t-fast) var(--ease);
+  letter-spacing: 0.005em;
+}
+.nav-links a:hover { opacity: 0.75; }
+.nav.scrolled .nav-links a { color: var(--ink); }
+
+.nav-toggle {
+  background: transparent;
+  border: 0;
+  padding: 8px;
+  margin: -8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+}
+.nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 1.5px;
+  background: var(--paper);
+  transition: background-color var(--t-med) var(--ease);
+}
+.nav.scrolled .nav-toggle span { background: var(--ink); }
+
+/* mobile drawer */
+.nav-drawer {
+  position: fixed;
+  top: 0; right: 0;
+  width: min(85%, 360px);
+  height: 100vh;
+  background: var(--paper);
+  z-index: 100;
+  padding: 80px 32px 32px;
+  transform: translateX(100%);
+  transition: transform var(--t-med) var(--ease);
+  box-shadow: -20px 0 40px rgba(26, 24, 21, 0.08);
+  overflow-y: auto;
+}
+.nav-drawer.open { transform: translateX(0); }
+
+.nav-drawer-close {
+  position: absolute;
+  top: 22px; right: 22px;
+  background: transparent;
+  border: 0;
+  padding: 8px;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.nav-drawer ul {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nav-drawer a {
+  display: block;
+  padding: 14px 0;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  letter-spacing: -0.01em;
+}
+
+.nav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 24, 21, 0.3);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-med) var(--ease);
+}
+.nav-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ============================================================
+   HERO
+   full-bleed photo, eyebrow + headline + subhead + dual CTA
+   ============================================================ */
+
+.hero {
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  align-items: flex-end;
+  padding: 120px 0 var(--sp-block);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.hero-photo img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+/* subtle gradient overlay for text legibility — bottom-weighted, warm */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    rgba(26, 24, 21, 0.15) 0%,
+    rgba(26, 24, 21, 0) 30%,
+    rgba(26, 24, 21, 0) 50%,
+    rgba(26, 24, 21, 0.55) 100%
+  );
+}
+
+.hero-content {
+  color: var(--paper);
+  max-width: 720px;
+}
+
+.hero .eyebrow { color: rgba(250, 247, 241, 0.85); }
+
+.hero-headline {
+  color: var(--paper);
+  margin-bottom: 24px;
+}
+
+.hero-subhead {
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  line-height: 1.5;
+  color: rgba(250, 247, 241, 0.92);
+  margin-bottom: 36px;
+  max-width: 620px;
+}
+
+.hero-ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.hero-tertiary {
+  font-size: 0.875rem;
+  color: rgba(250, 247, 241, 0.8);
+}
+.hero-tertiary a {
+  color: var(--paper);
+  text-decoration: underline;
+  text-decoration-color: rgba(250, 247, 241, 0.4);
+  text-underline-offset: 3px;
+}
+.hero-tertiary a:hover { text-decoration-color: var(--paper); }
+
+/* ============================================================
+   SECTION SCAFFOLDING
+   ============================================================ */
+
+
+section { padding: 0 0 var(--sp-section); }
+section:first-of-type { padding-top: 0; }
+
+.section-header { margin-bottom: var(--sp-block); }
+
+/* ============================================================
+   REFRAME BLOCK (A.2)
+   centered narrow column · "the room is finished. real life is not."
+   ============================================================ */
+
+.reframe {
+  text-align: center;
+}
+.reframe .h-section {
+  margin-bottom: 28px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.reframe p {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: clamp(1.05rem, 1.5vw, 1.175rem);
+  line-height: 1.6;
+  color: var(--ink-65);
+}
+.reframe-figure {
+  margin: 36px auto 32px;
+  max-width: 920px;
+}
+.reframe-figure img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.reframe-figure figcaption {
+  margin-top: 14px;
+  font-size: 0.875rem;
+  color: var(--ink-45);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* MOST CHOSEN badge on landing tier card (matches plans page) */
+.tier-emphasized { position: relative; }
+.tier-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: var(--paper);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+/* popup submit status line */
+.popup-status {
+  margin: 12px 0 0;
+  font-size: 0.875rem;
+  color: var(--ink-65);
+}
+
+/* ============================================================
+   SPLIT SECTION (A.3)
+   mobile: photo above, copy below
+   desktop: photo left, copy right
+   ============================================================ */
+
+.split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-block);
+  align-items: start;
+}
+
+.split-photo figure { margin: 0; }
+.split-photo img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 2px;
+}
+.split-photo figcaption {
+  margin-top: 14px;
+  font-size: 0.8125rem;
+  color: var(--ink-65);
+  font-style: italic;
+  line-height: 1.5;
+  max-width: 420px;
+}
+
+.split-copy h2 { margin-bottom: 24px; }
+
+.split-copy p {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--ink-65);
+}
+
+/* welcome benefit callout — boxed, hairline border, no terracotta */
+.welcome-benefit {
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  padding: 28px 28px 32px;
+  margin: 36px 0 28px;
+  border-radius: 2px;
+}
+.welcome-benefit .eyebrow { margin-bottom: 12px; }
+.welcome-benefit h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  margin: 0 0 12px;
+  letter-spacing: -0.015em;
+}
+.welcome-benefit p {
+  font-size: 0.9375rem;
+  margin: 0;
+  color: var(--ink-65);
+}
+
+.split-cta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+.trust-line {
+  font-size: 0.8125rem;
+  color: var(--ink-65);
+  margin: 0;
+}
+
+/* ============================================================
+   HOW IT WORKS (A.4)
+   three steps · equal-weight cards
+   ============================================================ */
+
+.how-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-top: var(--sp-block);
+}
+
+.how-step {
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 28px;
+}
+.how-step .num {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-65);
+  display: block;
+  margin-bottom: 16px;
+}
+.how-step h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  letter-spacing: -0.015em;
+  margin: 0 0 14px;
+}
+.how-step p {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-65);
+  margin: 0;
+}
+
+/* ============================================================
+   HERO TESTIMONIAL (A.5)
+   single large pull-quote · centered · weighted per §4.4
+   ============================================================ */
+
+.testimonial-wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.testimonial-quote {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.5rem, 3.2vw, 2.25rem);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin: 32px 0 36px;
+}
+.testimonial-quote::before { content: "\201C"; }
+.testimonial-quote::after  { content: "\201D"; }
+
+.testimonial-attr {
+  font-family: var(--body);
+  font-size: 0.875rem;
+  color: var(--ink-65);
+  font-style: normal;
+  letter-spacing: 0.01em;
+}
+
+/* placeholder marker for [PLACEHOLDER] testimonials per copy doc */
+.placeholder-tag {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  background: rgba(26, 24, 21, 0.06);
+  color: var(--ink-65);
+  border-radius: 2px;
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+
+/* ============================================================
+   PLANS TEASER (A.6)
+   three tier cards · Tier 3 highlighted with stronger border
+   per knowledge base §4: MOST CHOSEN badge is on PLAN page, not landing
+   so Tier 3 on landing teaser is emphasized with border weight only
+   ============================================================ */
+
+.plans-intro {
+  max-width: 620px;
+  margin-bottom: var(--sp-block);
+}
+.plans-intro .h-section { margin-bottom: 20px; }
+.plans-intro p {
+  font-size: 1.0625rem;
+  color: var(--ink-65);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tiers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.tier {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  padding: 32px 28px;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--t-med) var(--ease),
+              transform var(--t-med) var(--ease);
+}
+.tier:hover {
+  border-color: var(--rule-strong);
+}
+
+.tier-emphasized {
+  border-color: var(--ink);
+  border-width: 1.5px;
+  position: relative;
+}
+
+.tier .eyebrow { margin-bottom: 14px; }
+.tier h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  letter-spacing: -0.015em;
+  margin: 0 0 22px;
+}
+
+.tier ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  border-top: 1px solid var(--rule);
+}
+.tier li {
+  padding: 12px 0;
+  font-size: 0.9375rem;
+  color: var(--ink-65);
+  line-height: 1.45;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tier-price {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1rem;
+  margin: 0 0 24px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.tier-price .placeholder {
+  background: rgba(26, 24, 21, 0.06);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-family: var(--body);
+  font-size: 0.875rem;
+  color: var(--ink-65);
+}
+
+.tier .btn { width: 100%; margin-top: auto; }
+
+.plans-section-ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: var(--sp-block);
+  align-items: flex-start;
+}
+
+/* ============================================================
+   FAQ (A.7)
+   ============================================================ */
+
+.faq-wrap { max-width: 820px; }
+
+.faq-header { margin-bottom: var(--sp-block); }
+.faq-header .h-section { margin: 0; }
+
+details.faq {
+  border-bottom: 1px solid var(--rule-strong);
+  padding: 0;
+}
+details.faq:first-of-type {
+  border-top: 1px solid var(--rule-strong);
+}
+
+details.faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 26px 36px 26px 0;
+  position: relative;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.0625rem, 1.5vw, 1.25rem);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1.3;
+  transition: color var(--t-fast) var(--ease);
+}
+details.faq summary::-webkit-details-marker { display: none; }
+details.faq summary::after {
+  content: "+";
+  position: absolute;
+  right: 0; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.5rem;
+  color: var(--ink-65);
+  transition: transform var(--t-med) var(--ease),
+              color var(--t-fast) var(--ease);
+  line-height: 1;
+}
+details.faq[open] summary::after {
+  content: "\2212"; /* minus sign */
+  color: var(--ink);
+}
+details.faq summary:hover { color: var(--ink); }
+details.faq summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.faq-answer {
+  padding: 0 60px 32px 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--ink-65);
+}
+.faq-answer p:last-child { margin-bottom: 0; }
+
+/* ============================================================
+   FINAL CTA BLOCK (A.8)
+   ============================================================ */
+
+.final-cta {
+  text-align: center;
+}
+
+.final-cta-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.final-cta .h-section {
+  margin-bottom: 24px;
+}
+.final-cta-body {
+  font-size: 1.0625rem;
+  color: var(--ink-65);
+  line-height: 1.6;
+  margin-bottom: 36px;
+}
+
+.final-cta-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.final-cta-tertiary {
+  font-size: 0.875rem;
+  color: var(--ink-65);
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.footer {
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  padding: 60px 0 32px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+
+.footer-brand .logo {
+  color: var(--ink);
+  font-size: 1.25rem;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.footer-tagline {
+  font-size: 0.875rem;
+  color: var(--ink-65);
+  margin: 0;
+}
+
+.footer-col h4 {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  margin: 0 0 18px;
+}
+.footer-col ul {
+  list-style: none;
+  padding: 0; margin: 0;
+}
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 0.9375rem;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color var(--t-fast) var(--ease);
+}
+.footer-col a:hover { color: var(--ink-65); }
+.footer-col .footer-contact-item {
+  font-size: 0.9375rem;
+  color: var(--ink);
+}
+
+.footer-baseline {
+  padding-top: 28px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--ink-65);
+}
+
+/* ============================================================
+   POPUP HOOK (Burrow-pattern overlay)
+   THIS IS THE ONLY TERRACOTTA DEPLOYMENT ON APPROACH A
+   ============================================================ */
+
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 24, 21, 0.55);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-slow) var(--ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+.popup-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.popup {
+  background: var(--paper);
+  max-width: 480px;
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(26, 24, 21, 0.25);
+  transform: translateY(20px) scale(0.98);
+  opacity: 0;
+  transition: transform var(--t-slow) var(--ease), opacity var(--t-slow) var(--ease);
+  margin: auto;
+}
+.popup-backdrop.open .popup {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.popup-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: rgba(250, 247, 241, 0.92);
+  border: 0;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--t-fast) var(--ease);
+}
+.popup-close:hover { background: var(--paper); }
+
+.popup-photo {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+.popup-photo img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+
+.popup-body {
+  padding: 32px 28px 28px;
+}
+
+.popup-body .eyebrow { margin-bottom: 14px; }
+
+.popup-headline {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.625rem;
+  line-height: 1.15;
+  letter-spacing: -0.018em;
+  margin: 0 0 14px;
+}
+.popup-subhead {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--ink-65);
+  margin: 0 0 24px;
+}
+
+.popup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+}
+.field input {
+  font: inherit;
+  font-size: 0.9375rem;
+  padding: 12px 14px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  border-radius: 4px;
+  color: var(--ink);
+  transition: border-color var(--t-fast) var(--ease);
+}
+.field input:focus {
+  outline: 0;
+  border-color: var(--accent);
+}
+
+.popup .btn-accent { width: 100%; padding: 16px 22px; font-size: 1rem; }
+
+.popup-dismiss {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 4px;
+  background: none;
+  border: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-65);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+  padding: 8px;
+  cursor: pointer;
+}
+.popup-dismiss:hover { color: var(--ink); }
+
+.popup-fine {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--ink-65);
+  margin: 18px 0 8px;
+}
+.popup-fine a { color: var(--ink); }
+
+.popup-terms {
+  font-size: 0.75rem;
+  color: var(--ink-65);
+}
+
+/* ============================================================
+   MICRO-INTERACTIONS — reveal on scroll
+   ============================================================ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity var(--t-slow) var(--ease),
+              transform var(--t-slow) var(--ease);
+  will-change: opacity, transform;
+}
+.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   RESPONSIVE — desktop layouts at min-width breakpoints
+   ============================================================ */
+
+@media (min-width: 720px) {
+  .hero-ctas {
+    flex-direction: row;
+    align-items: center;
+  }
+  .split-cta-row {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .final-cta-buttons {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 860px) {
+  .nav-links { display: flex; }
+  .nav-toggle { display: none; }
+
+  .how-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+  }
+
+  .tiers {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 48px;
+  }
+
+  .footer-baseline {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+  }
+}
+
+@media (min-width: 980px) {
+  .split {
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+  }
+  .split-photo img { aspect-ratio: 5 / 6; }
+}
+
+/* extra-tight padding adjustments on very large viewports */
+@media (min-width: 1400px) {
+  :root { --gutter: 56px; }
+}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip">Skip to main content</a>
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<header class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="/" class="logo" aria-label="Designer Plan — home">Designer Plan</a>
+
+    <nav aria-label="Primary">
+      <ul class="nav-links">
+        <li><a href="#partner">Partner with us</a></li>
+        <li><a href="/plans">Shop plans</a></li>
+        <li><a href="/plans#white-glove">White-glove service</a></li>
+        <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+      </ul>
+    </nav>
+
+    <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<!-- mobile drawer -->
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<aside class="nav-drawer" id="nav-drawer" aria-label="Mobile navigation" hidden>
+  <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  <ul>
+    <li><a href="#partner">Partner with us</a></li>
+    <li><a href="/plans">Shop plans</a></li>
+    <li><a href="/plans#white-glove">White-glove service</a></li>
+    <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+  </ul>
+</aside>
+
+<main id="main">
+
+  <!-- ============================================================
+       HERO  (A.1)
+       ============================================================ -->
+  <section class="hero" aria-label="Introduction">
+    <div class="hero-photo">
+      <!-- REPLACE-BEFORE-LAUNCH: furniture-forward hero (a statement piece in natural light).
+           Current placeholder is an Unsplash editorial living-room shot, distinct from the plans-page hero. -->
+      <img
+        src="https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=2400&q=80"
+        alt="A bright living room with a linen sofa and styled accent pieces in warm natural light"
+        loading="eager">
+    </div>
+
+    <div class="container">
+      <div class="hero-content">
+        <span class="eyebrow">For independent interior designers</span>
+        <h1 class="h-display hero-headline">The part of the room your clients experience after the reveal.</h1>
+        <p class="hero-subhead">Designer Plan is a 36-month protection program for the furniture you specify. Offer it to your clients at project closeout — we handle every claim. Your first plan, on us — up to $5,000 of coverage.</p>
+
+        <div class="hero-ctas">
+          <a href="#partner" class="btn btn-photo">Become a partner <span class="arrow">&rarr;</span></a>
+          <a href="/plans" class="btn btn-photo-outline">Shop plans <span class="arrow">&rarr;</span></a>
+        </div>
+
+        <p class="hero-tertiary">Your client wants to purchase a plan directly? <a href="/plans">Buy direct &rarr;</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       REFRAME BLOCK (A.2) — "the room is finished. real life is not."
+       ============================================================ -->
+  <section class="reframe">
+    <div class="container container-narrow reveal">
+      <span class="eyebrow">The promise</span>
+      <h2 class="h-section">The room is finished. Real life is not.</h2>
+      <figure class="reframe-figure">
+        <img src="/assets/img/reframe-wine-spill.png"
+             alt="A spilled glass of red wine pooling on a cream linen sofa while a white-gloved attendant tends to a styled living room"
+             loading="lazy">
+        <figcaption>A spilled glass of wine. A handled situation.</figcaption>
+      </figure>
+      <p>Beautiful rooms still live real lives. Wine, pets, scratches, everyday use — sooner or later, something happens to a key piece. When it does, the client calls you first.</p>
+      <p>There is a quieter way to handle this.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SPLIT SECTION (A.3) — "a quiet layer behind your beautiful work"
+       photo left · narrative right · CTA echo · welcome benefit
+       ============================================================ -->
+  <section id="partner">
+    <div class="container split reveal">
+
+      <div class="split-photo">
+        <figure>
+          <!-- placeholder: designer at work — desk, samples, swatches, hand on materials -->
+          <img
+            src="https://images.unsplash.com/photo-1581539250439-c96689b516dd?auto=format&fit=crop&w=1600&q=80"
+            alt="An interior designer at a workspace surrounded by fabric swatches and material samples in natural light">
+          <figcaption>A designer's name is on the install, the invoice, and every online review.</figcaption>
+        </figure>
+      </div>
+
+      <div class="split-copy">
+        <span class="eyebrow">For designers</span>
+        <h2 class="h-section">A quiet layer behind your beautiful work.</h2>
+
+        <p>Your name is on the door, the install, and the online review. Some of what your reputation depends on, though, you don&rsquo;t fully control &mdash; a frame that fails after eighteen months, a finish that doesn&rsquo;t hold up, a stain that won&rsquo;t come out. When that happens, the client calls you first.</p>
+
+        <p>Designer Plan sits in the background of your projects. Your client calls a concierge contact, we handle the claim, the piece gets repaired or replaced. You stay focused on the design.</p>
+
+        <p>This frees you to recommend better. Specify the higher-grade upholstery. Choose the piece you actually wanted. Reassure the anxious client with a concrete plan instead of a hopeful one.</p>
+
+        <div class="welcome-benefit">
+          <span class="eyebrow">A welcome benefit</span>
+          <h3>Your first plan, on us — up to $5,000 of coverage.</h3>
+          <p>Approved studios receive their first plan complimentary. Test it on a real project before deciding whether to make it part of your standard closeout.</p>
+        </div>
+
+        <div class="split-cta-row">
+          <a href="/partner-apply" class="btn btn-primary">Become a partner <span class="arrow">&rarr;</span></a>
+          <p class="trust-line">A two-step application. Six fields. No phone number required.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       HOW IT WORKS (A.4)
+       ============================================================ -->
+  <section>
+    <div class="container reveal">
+      <div class="section-header">
+        <span class="eyebrow">How it works</span>
+        <h2 class="h-section">Three quiet steps. Then we take it from there.</h2>
+      </div>
+
+      <div class="how-grid">
+
+        <article class="how-step">
+          <span class="num">01</span>
+          <h3>Specify</h3>
+          <p>Choose the pieces worth protecting at project closeout. Indoor furniture, adjustable bed bases, rugs.</p>
+        </article>
+
+        <article class="how-step">
+          <span class="num">02</span>
+          <h3>Enroll</h3>
+          <p>Coverage begins at delivery. Your client receives a single concierge contact for the household &mdash; no waiting period, no fine print to navigate.</p>
+        </article>
+
+        <article class="how-step">
+          <span class="num">03</span>
+          <h3>Real life</h3>
+          <p>When something happens, your client calls our concierge. We handle the claim, the repair, and the resolution. You stay the designer.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       HERO TESTIMONIAL (A.5) — single large pull-quote · weighted per §4.4
+       ============================================================ -->
+  <section>
+    <div class="container reveal">
+      <div class="testimonial-wrap">
+        <span class="eyebrow">From designers in the program</span>
+        <span class="placeholder-tag" aria-label="Placeholder testimonial — replace before launch">Placeholder &mdash; replace before launch</span>
+        <blockquote class="testimonial-quote">I used to dread the post-install call. Now my clients have a concierge contact, and I get to keep being the designer. That single change has done more for my referrals than anything I&rsquo;ve added in five years.</blockquote>
+        <p class="testimonial-attr">&mdash; [Designer Name] &middot; [Studio Name] &middot; [City, State]</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PLANS TEASER (A.6)
+       ============================================================ -->
+  <section>
+    <div class="container reveal">
+
+      <div class="plans-intro">
+        <span class="eyebrow">The plans</span>
+        <h2 class="h-section">Three tiers. 36 months. Like-new restoration.</h2>
+        <p>Indoor furniture, adjustable bed bases, rugs. Coverage begins at delivery. A single concierge contact for the household.</p>
+      </div>
+
+      <div class="tiers">
+
+        <article class="tier">
+          <span class="eyebrow">Tier one</span>
+          <h3>Stain Protection</h3>
+          <ul>
+            <li>Food, beverage, pet &amp; human accidents</li>
+            <li>Ink and water marks</li>
+            <li>36 months of coverage</li>
+            <li>No waiting period</li>
+          </ul>
+          <p class="tier-price">From <span class="placeholder">$[XX]</span></p>
+          <a href="/plans#tier-one" class="btn btn-secondary">View details <span class="arrow">&rarr;</span></a>
+        </article>
+
+        <article class="tier">
+          <span class="eyebrow">Tier two</span>
+          <h3>Premium Protection</h3>
+          <ul>
+            <li>Everything in Stain Protection</li>
+            <li>Rips, tears, burns</li>
+            <li>Electrical components</li>
+            <li>36 months of coverage</li>
+          </ul>
+          <p class="tier-price">From <span class="placeholder">$[XX]</span></p>
+          <a href="/plans#tier-two" class="btn btn-secondary">View details <span class="arrow">&rarr;</span></a>
+        </article>
+
+        <article class="tier tier-emphasized">
+          <div class="tier-badge" aria-label="Most chosen plan">MOST CHOSEN</div>
+          <span class="eyebrow">Tier three</span>
+          <h3>Premium Plus Protection</h3>
+          <ul>
+            <li>Everything in Premium Protection</li>
+            <li>Wood frames &amp; structural components</li>
+            <li>Motion mechanisms</li>
+            <li>36 months of coverage</li>
+          </ul>
+          <p class="tier-price">From <span class="placeholder">$[XX]</span></p>
+          <a href="/plans#tier-three" class="btn btn-primary">View details <span class="arrow">&rarr;</span></a>
+        </article>
+
+      </div>
+
+      <div class="plans-section-ctas">
+        <a href="/plans" class="btn btn-primary">View all plans <span class="arrow">&rarr;</span></a>
+        <a href="/plans" class="link-inline">Buy a plan &rarr;</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FAQ (A.7)
+       ============================================================ -->
+  <section>
+    <div class="container faq-wrap reveal">
+
+      <div class="faq-header">
+        <span class="eyebrow">Honest questions</span>
+        <h2 class="h-section">Direct answers.</h2>
+      </div>
+
+      <details class="faq">
+        <summary>Is this a protection plan?</summary>
+        <div class="faq-answer">
+          <p>Yes. Designer Plan is a 36-month protection program administered by Risk Assurance Partners. What&rsquo;s different from the protection plans most people have run into: it isn&rsquo;t sold at a retail register, the service is built around a concierge contact rather than a call-center handoff, and it&rsquo;s designed for fine furniture rather than retail-volume goods.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Will my studio have to handle claims?</summary>
+        <div class="faq-answer">
+          <p>No. The client calls a concierge number. We field the call, the claim, and the resolution. You stay focused on the design work.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>What&rsquo;s actually covered?</summary>
+        <div class="faq-answer">
+          <p>Stains, rips, tears, burns, and accidental damage. Structural failure of frames and joints. Mechanical and electrical failure on motion components. Three tiers &mdash; Stain Protection, Premium Protection, Premium Plus Protection. Full terms are viewable before purchase on each plan card.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>How does the program work?</summary>
+        <div class="faq-answer">
+          <p>Apply, get approved, log in. Add coverage to client projects at checkout. The system attributes the project to your studio, and your client receives the same concierge service regardless of which tier they choose. Full program terms appear in your partner account.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Can my client buy a plan directly?</summary>
+        <div class="faq-answer">
+          <p>Yes. Some designers add coverage at project closeout. Others send their client to the plans page to purchase directly. Either way, the service is identical &mdash; and if you&rsquo;re a partner, you earn commission regardless of which path the client takes.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>How much commission do designers earn?</summary>
+        <div class="faq-answer">
+          <p>Up to 35% per plan, depending on tier and volume. Full commission structure is detailed in your partner agreement.</p>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FINAL CTA BLOCK (A.8)
+       ============================================================ -->
+  <section class="final-cta">
+    <div class="container final-cta-wrap reveal">
+      <span class="eyebrow">Begin</span>
+      <h2 class="h-section">Give every project a plan for what happens after the reveal.</h2>
+      <p class="final-cta-body">The program is open to independent designers and small studios. Approved members receive their first plan on us, and a private path for clients who prefer to purchase directly.</p>
+
+      <div class="final-cta-buttons">
+        <a href="/partner-apply" class="btn btn-primary">Become a partner <span class="arrow">&rarr;</span></a>
+        <a href="/plans" class="btn btn-secondary">Shop plans <span class="arrow">&rarr;</span></a>
+      </div>
+
+      <p class="final-cta-tertiary"><a href="https://rap-designer-programs.netlify.app/whitepaper/keeps-you-up-at-night.html" rel="noopener">Read the whitepaper: What keeps you up at night &nearr;</a></p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="footer">
+  <div class="container">
+
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="logo">Designer Plan</a>
+        <p class="footer-tagline">A program by Risk Assurance Partners</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Program</h4>
+        <ul>
+          <li><a href="/about">About us</a></li>
+          <li><a href="/partnership">Benefits of partnership</a></li>
+          <li><a href="/terms">Terms of use</a></li>
+          <li><a href="/privacy">Privacy policy</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:designer.programs@raptns.com">designer.programs@raptns.com</a></li>
+          <li><a href="tel:+15613743147">561-374-3147</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>For existing customers</h4>
+        <ul>
+          <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+          <li><a href="mailto:designer.programs@raptns.com">Talk to a specialist</a></li>
+          <li><a href="/login">Login</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-baseline">
+      <span>&copy; 2026 Risk Assurance Partners. All rights reserved.</span>
+      <span>Designer Plan is administered by Risk Assurance Partners.</span>
+    </div>
+
+  </div>
+</footer>
+
+<!-- ============================================================
+     POPUP HOOK (Burrow-pattern overlay)
+     Trigger: 20s OR 40% scroll, first visit only, suppressed on dismiss/submit
+     ============================================================ -->
+<div class="popup-backdrop" id="popup-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="popup-headline" aria-describedby="popup-subhead">
+  <div class="popup" role="document">
+    <button class="popup-close" id="popup-close" aria-label="Close">&times;</button>
+
+    <div class="popup-photo">
+      <!-- placeholder: airy room with linen sofa, atmospheric -->
+      <img
+        src="https://images.unsplash.com/photo-1567016432779-094069958ea5?auto=format&fit=crop&w=1200&q=80"
+        alt="A bright living room with a linen sofa, ocean view, and warm natural light">
+    </div>
+
+    <div class="popup-body">
+      <span class="eyebrow">Welcome gift</span>
+      <h2 class="popup-headline" id="popup-headline">Your first plan, on us — up to $5,000 of coverage.</h2>
+      <p class="popup-subhead" id="popup-subhead">Become a partner today and we&rsquo;ll cover your first client&rsquo;s plan, complimentary. Test it on a real project before you decide whether to add it to your standard closeout.</p>
+
+      <form class="popup-form" id="popup-form" novalidate>
+        <!-- honeypot — bots fill, humans don't see it -->
+        <div style="position:absolute;left:-9999px;" aria-hidden="true">
+          <label>Do not fill <input type="text" name="hp" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <input type="hidden" name="source" value="landing_popup">
+        <input type="hidden" name="consent_text" value="By submitting this form, you agree to receive occasional emails from Designer Plan about the partner program. We don&rsquo;t share your information. Unsubscribe anytime.">
+        <div class="field">
+          <label for="popup-email">Email Address</label>
+          <input type="email" id="popup-email" name="email" required autocomplete="email" placeholder="you@studio.com">
+        </div>
+        <div class="field">
+          <label for="popup-studio">Studio Name (optional)</label>
+          <input type="text" id="popup-studio" name="company" autocomplete="organization" placeholder="Your studio">
+        </div>
+
+        <button type="submit" class="btn btn-accent" id="popup-submit">Claim my $5,000 <span class="arrow">&rarr;</span></button>
+        <p class="popup-status" id="popup-status" role="status" aria-live="polite" hidden></p>
+      </form>
+
+      <button type="button" class="popup-dismiss" id="popup-dismiss">No thanks, just looking</button>
+
+      <p class="popup-fine">By submitting this form, you agree to receive occasional emails from Designer Plan about the partner program. We don&rsquo;t share your information. Unsubscribe anytime.</p>
+      <p class="popup-terms"><a href="/terms">View terms &amp; conditions</a></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ===== NAV =====
+  var nav = document.getElementById('nav');
+  var navToggle = document.getElementById('nav-toggle');
+  var navDrawer = document.getElementById('nav-drawer');
+  var navDrawerClose = document.getElementById('nav-drawer-close');
+  var navBackdrop = document.getElementById('nav-backdrop');
+
+  function openDrawer(){
+    navDrawer.hidden = false;
+    navBackdrop.hidden = false;
+    requestAnimationFrame(function(){
+      navDrawer.classList.add('open');
+      navBackdrop.classList.add('open');
+    });
+    navToggle.setAttribute('aria-expanded','true');
+    navToggle.setAttribute('aria-label','Close menu');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer(){
+    navDrawer.classList.remove('open');
+    navBackdrop.classList.remove('open');
+    navToggle.setAttribute('aria-expanded','false');
+    navToggle.setAttribute('aria-label','Open menu');
+    document.body.style.overflow = '';
+    setTimeout(function(){
+      navDrawer.hidden = true;
+      navBackdrop.hidden = true;
+    }, 280);
+  }
+  navToggle.addEventListener('click', openDrawer);
+  navDrawerClose.addEventListener('click', closeDrawer);
+  navBackdrop.addEventListener('click', closeDrawer);
+  // close drawer on link tap
+  navDrawer.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', closeDrawer);
+  });
+
+  // scroll-state on nav
+  var navScrolled = false;
+  function onScroll(){
+    var shouldScroll = window.scrollY > 80;
+    if(shouldScroll !== navScrolled){
+      navScrolled = shouldScroll;
+      nav.classList.toggle('scrolled', shouldScroll);
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // ===== REVEAL ON SCROLL =====
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in-view'); });
+  }
+
+  // ===== POPUP =====
+  var POPUP_KEY = 'dp_popup_v1';
+  var popup = document.getElementById('popup-backdrop');
+  var popupClose = document.getElementById('popup-close');
+  var popupDismiss = document.getElementById('popup-dismiss');
+  var popupForm = document.getElementById('popup-form');
+
+  function popupSeen(){ return sessionStorage.getItem(POPUP_KEY) === '1'; }
+  function suppress(){ try { sessionStorage.setItem(POPUP_KEY,'1'); } catch(e){} }
+
+  var popupShown = false;
+  function showPopup(){
+    if(popupShown || popupSeen()) return;
+    popupShown = true;
+    popup.hidden = false;
+    requestAnimationFrame(function(){ popup.classList.add('open'); });
+    document.body.style.overflow = 'hidden';
+    // focus management
+    setTimeout(function(){
+      var input = document.getElementById('popup-email');
+      if(input) input.focus();
+    }, 300);
+  }
+  function hidePopup(){
+    popup.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(function(){ popup.hidden = true; }, 600);
+    suppress();
+  }
+
+  popupClose.addEventListener('click', hidePopup);
+  popupDismiss.addEventListener('click', hidePopup);
+  popup.addEventListener('click', function(e){
+    if(e.target === popup) hidePopup();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && popup.classList.contains('open')) hidePopup();
+  });
+
+  popupForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var submitBtn = document.getElementById('popup-submit');
+    var statusEl = document.getElementById('popup-status');
+    var fd = new FormData(popupForm);
+    var payload = {};
+    fd.forEach(function(v,k){ payload[k] = v; });
+    // capture UTM/referrer
+    payload.referrer = document.referrer || null;
+    payload.landing_url = window.location.href;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+    fetch('/.netlify/functions/popup-capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function(r){
+      if(!r.ok) throw new Error('network');
+      statusEl.hidden = false;
+      statusEl.textContent = 'Got it. Check your inbox for next steps.';
+      setTimeout(hidePopup, 1800);
+    }).catch(function(){
+      statusEl.hidden = false;
+      statusEl.textContent = 'Something went wrong. Email us at designer.programs@raptns.com.';
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Try again <span class="arrow">&rarr;</span>';
+    });
+  });
+
+  // trigger: 20s OR 40% scroll, first visit only
+  if(!popupSeen()){
+    var timer = setTimeout(showPopup, 20000);
+    var onScrollPopup = function(){
+      var scrolled = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
+      if(scrolled > 0.4){
+        clearTimeout(timer);
+        showPopup();
+        window.removeEventListener('scroll', onScrollPopup);
+      }
+    };
+    window.addEventListener('scroll', onScrollPopup, { passive: true });
+  }
+
+})();
+</script>
+
+</body>
+</html>

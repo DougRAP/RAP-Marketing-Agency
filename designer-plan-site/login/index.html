@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in — Designer Plan</title>
+<meta name="description" content="Partner log in for the Designer Plan program.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared/_partials.css">
+</head>
+<body>
+
+<header class="nav-simple">
+  <div class="container nav-inner">
+    <a href="/" class="logo">Designer Plan</a>
+    <nav><ul>
+      <li><a href="/#partner">Partner with us</a></li>
+      <li><a href="/plans">Shop plans</a></li>
+    </ul></nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container container-narrow">
+    <span class="eyebrow">Partner sign-in</span>
+    <h1>Log in.</h1>
+    <p class="lead">Approved partners: enter your email and we&rsquo;ll send a one-tap link.</p>
+
+    <div class="placeholder-note">
+      <strong>Stub UI.</strong> Magic-link auth via Supabase will be wired by the dev team once <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> are configured. The form below is a working placeholder.
+    </div>
+
+    <form class="simple-form" id="login-form">
+      <div>
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" name="email" required autocomplete="email" placeholder="you@studio.com">
+      </div>
+      <button type="submit" class="btn-primary">Send magic link &rarr;</button>
+      <p id="login-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
+    </form>
+
+    <p style="margin-top: 32px;">Not a partner yet? <a href="/partner-apply">Apply to the program</a>.</p>
+  </div>
+</main>
+
+<footer class="footer-simple">
+  <div class="container footer-inner">
+    <div>&copy; 2026 Risk Assurance Partners</div>
+    <div>
+      <a href="/about">About</a>
+      <a href="/partnership">Partnership</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  var status = document.getElementById('login-status');
+  status.textContent = 'Magic-link sign-in is not yet wired. Email designer.programs@raptns.com for help.';
+});
+</script>
+
+</body>
+</html>
