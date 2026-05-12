@@ -1,0 +1,14 @@
+{
+  "name": "rap-marketing-agency",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo for RAP-Marketing-Agency sites (rap-public-site, marketing-center-site, designer-assets-site, designer-plan-site). Top-level dependencies are shared by Netlify Functions across the sites.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DougRAP/RAP-Marketing-Agency.git"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4"
+  }
+}
