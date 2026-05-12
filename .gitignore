@@ -4,3 +4,7 @@ Thumbs.db
 .netlify/
 node_modules/
 .claude/
+.vscode/
+.env
+.env.*
+!.env.example
