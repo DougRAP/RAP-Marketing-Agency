@@ -427,18 +427,19 @@ button { font: inherit; cursor: pointer; }
   object-fit: cover;
 }
 
-/* subtle gradient overlay for text legibility — bottom-weighted, warm */
+/* directional vignette — darker bottom-left where text sits,
+   clear upper-right so the photo breathes. */
 .hero::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
   background: linear-gradient(
-    180deg,
-    rgba(26, 24, 21, 0.15) 0%,
-    rgba(26, 24, 21, 0) 30%,
-    rgba(26, 24, 21, 0) 50%,
-    rgba(26, 24, 21, 0.55) 100%
+    to top right,
+    rgba(26, 24, 21, 0.68) 0%,
+    rgba(26, 24, 21, 0.45) 25%,
+    rgba(26, 24, 21, 0.18) 55%,
+    rgba(26, 24, 21, 0) 80%
   );
 }
 
@@ -447,7 +448,10 @@ button { font: inherit; cursor: pointer; }
   max-width: 720px;
 }
 
-.hero .eyebrow { color: rgba(250, 247, 241, 0.85); }
+.hero .eyebrow {
+  color: rgba(250, 247, 241, 0.85);
+  margin-top: clamp(24px, 5vw, 56px);
+}
 
 .hero-headline {
   color: var(--paper);
