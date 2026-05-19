@@ -1,22 +1,43 @@
 // /.netlify/functions/env-check
-// TEMPORARY diagnostic. Reports whether Supabase env vars are visible
-// to the function runtime. Leaks no secret values — only names,
-// presence booleans, and lengths. Delete after debugging.
+// TEMPORARY diagnostic. Reports env-var visibility AND attempts a
+// read + write against the leads table, returning the raw Supabase
+// error. Leaks no secret values. Delete after debugging.
+
+const { createClient } = require('@supabase/supabase-js');
 
 exports.handler = async () => {
   const url = process.env.SUPABASE_URL || '';
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
   const supabaseNames = Object.keys(process.env)
     .filter(k => k.toUpperCase().includes('SUPABASE'));
+
+  const out = {
+    has_url: !!url,
+    has_key: !!key,
+    key_length: key.length,
+    env_var_names: supabaseNames,
+    select_error: null,
+    insert_error: null,
+    insert_ok: false
+  };
+
+  if (url && key) {
+    try {
+      const supabase = createClient(url, key, { auth: { persistSession: false } });
+      const sel = await supabase.from('leads').select('id').limit(1);
+      out.select_error = sel.error ? sel.error.message : null;
+      const testEmail = 'diag-' + Date.now() + '@example.com';
+      const ins = await supabase.from('leads').insert({ email: testEmail }).select();
+      out.insert_error = ins.error ? ins.error.message : null;
+      out.insert_ok = !!(ins.data && ins.data.length);
+    } catch (e) {
+      out.insert_error = 'exception: ' + String(e);
+    }
+  }
+
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      has_SUPABASE_URL: !!url,
-      has_SUPABASE_SERVICE_ROLE_KEY: !!key,
-      SUPABASE_URL_starts_with: url.slice(0, 13),
-      SUPABASE_SERVICE_ROLE_KEY_length: key.length,
-      all_env_var_names_containing_supabase: supabaseNames
-    })
+    body: JSON.stringify(out)
   };
 };
