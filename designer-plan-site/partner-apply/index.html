@@ -9,6 +9,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/_shared/_partials.css">
+<style>
+  .field-row { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 560px) { .field-row.two { grid-template-columns: 1fr 1fr; } .field-row.cityzip { grid-template-columns: 2fr 1fr 1fr; } }
+  .simple-form select {
+    width: 100%; padding: 12px 14px; border: 1px solid var(--rule-strong);
+    border-radius: 4px; background: var(--paper); font: inherit; color: var(--ink);
+  }
+  .field-hint { font-size: 0.75rem; color: var(--ink-45); margin: 4px 0 0; }
+  fieldset { border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; margin: 0; }
+  fieldset legend { font-size: 0.8rem; font-weight: 600; color: var(--ink-65); padding: 0 6px; }
+  .check-grid { display: grid; gap: 10px; grid-template-columns: 1fr; }
+  @media (min-width: 480px) { .check-grid { grid-template-columns: 1fr 1fr; } }
+  .check-opt, .radio-opt { display: flex; align-items: center; gap: 9px; font-size: 0.92rem; cursor: pointer; }
+  .check-opt input, .radio-opt input { width: 16px; height: 16px; }
+  .verify-box { background: var(--surface-2, #f3eee2); border-radius: 6px; padding: 18px; margin-top: 8px; }
+  .verify-box p { font-size: 0.875rem; color: var(--ink-65); }
+</style>
 </head>
 <body>
 
@@ -16,7 +33,8 @@
   <div class="container nav-inner">
     <a href="/" class="logo">Designer Plan</a>
     <nav><ul>
-      <li><a href="/#partner">Partner with us</a></li>
+      <li><a href="/">Home</a></li>
+      <li><a href="/partner">Partner with us</a></li>
       <li><a href="/plans">Shop plans</a></li>
       <li><a href="/login">Log in</a></li>
     </ul></nav>
@@ -27,42 +45,119 @@
   <div class="container container-narrow">
     <span class="eyebrow">Become a partner</span>
     <h1>Apply to the program.</h1>
-    <p class="lead">A two-step application. Approved studios earn up to 35% commission and receive their first plan, on us — up to $5,000 of coverage. Most applications are reviewed within one business day.</p>
+    <p class="lead">Approved studios earn up to 35% commission and receive their first plan, on us &mdash; up to $5,000 of coverage. Most applications are reviewed within one business day.</p>
 
-    <form class="simple-form" id="apply-form" novalidate>
+    <form class="simple-form" id="apply-form" novalidate style="max-width:none;">
       <div style="position:absolute;left:-9999px;" aria-hidden="true">
         <label>Do not fill <input type="text" name="hp" tabindex="-1" autocomplete="off"></label>
       </div>
       <input type="hidden" name="consent_text" value="By submitting this application, you agree to be contacted about your partner application and to receive program-related email. Unsubscribe anytime.">
 
-      <div>
-        <label for="full_name">Your name</label>
-        <input type="text" id="full_name" name="full_name" required autocomplete="name">
+      <div class="field-row two">
+        <div>
+          <label for="full_name">Your name</label>
+          <input type="text" id="full_name" name="full_name" required autocomplete="name">
+        </div>
+        <div>
+          <label for="studio_name">Studio / business name</label>
+          <input type="text" id="studio_name" name="studio_name" required autocomplete="organization">
+          <p class="field-hint">Use your legal business name &mdash; include the suffix (LLC, Inc., Co., or none).</p>
+        </div>
       </div>
-      <div>
-        <label for="studio_name">Studio name</label>
-        <input type="text" id="studio_name" name="studio_name" required autocomplete="organization">
+
+      <div class="field-row two">
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autocomplete="email">
+        </div>
+        <div>
+          <label for="phone">Mobile phone</label>
+          <input type="tel" id="phone" name="phone" autocomplete="tel">
+        </div>
       </div>
+
       <div>
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required autocomplete="email">
+        <label for="address">Street address</label>
+        <input type="text" id="address" name="address" autocomplete="address-line1">
       </div>
+
+      <div class="field-row cityzip">
+        <div>
+          <label for="city">City</label>
+          <input type="text" id="city" name="city" autocomplete="address-level2">
+        </div>
+        <div>
+          <label for="state">State</label>
+          <select id="state" name="state" autocomplete="address-level1">
+            <option value="">Select…</option>
+            <option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option>
+            <option>CO</option><option>CT</option><option>DE</option><option>DC</option><option>FL</option>
+            <option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option>
+            <option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option>
+            <option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+            <option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option>
+            <option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option>
+            <option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option>
+            <option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option>
+            <option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option>
+            <option>WY</option>
+          </select>
+        </div>
+        <div>
+          <label for="zip">ZIP</label>
+          <input type="text" id="zip" name="zip" inputmode="numeric" autocomplete="postal-code" maxlength="10">
+        </div>
+      </div>
+
+      <div class="field-row two">
+        <div>
+          <label for="average_project_size">Typical project size</label>
+          <select id="average_project_size" name="average_project_size">
+            <option value="">Select…</option>
+            <option>Under $5,000</option>
+            <option>$5,000 – $20,000</option>
+            <option>$20,000 – $50,000</option>
+            <option>$50,000 – $100,000</option>
+            <option>Over $100,000</option>
+          </select>
+        </div>
+        <div>
+          <label for="clients_per_year">Clients per year</label>
+          <select id="clients_per_year" name="clients_per_year">
+            <option value="">Select…</option>
+            <option>1 – 5</option>
+            <option>6 – 15</option>
+            <option>16 – 30</option>
+            <option>31 – 50</option>
+            <option>More than 50</option>
+          </select>
+        </div>
+      </div>
+
+      <fieldset>
+        <legend>What do you specify? (select all that apply)</legend>
+        <div class="check-grid">
+          <label class="check-opt"><input type="checkbox" name="products" value="Furnishings"> Furnishings</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Lighting"> Lighting</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Upholstery/Goods"> Upholstery / Goods</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Decor & Accessories"> Decor &amp; Accessories</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Rugs"> Rugs</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Outdoor Furnishings"> Outdoor Furnishings</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Other"> Other</label>
+        </div>
+      </fieldset>
+
       <div>
-        <label for="phone">Phone (optional)</label>
-        <input type="tel" id="phone" name="phone" autocomplete="tel">
+        <label for="extra_profile_notes">Anything else we should know? (optional)</label>
+        <textarea id="extra_profile_notes" name="extra_profile_notes" rows="3"></textarea>
       </div>
-      <div>
-        <label for="address">Studio city &amp; state</label>
-        <input type="text" id="address" name="address" autocomplete="address-level2">
-      </div>
-      <div>
-        <label for="average_project_size">Typical project size</label>
-        <input type="text" id="average_project_size" name="average_project_size" placeholder="e.g. $50k–$150k">
-      </div>
-      <div>
-        <label for="clients_per_year">Clients per year</label>
-        <input type="text" id="clients_per_year" name="clients_per_year" placeholder="approx.">
-      </div>
+
+      <fieldset>
+        <legend>Preferred contact method</legend>
+        <p class="field-hint" style="margin:0 0 10px;">We&rsquo;ll send a verification code to confirm this, then use it to reach you.</p>
+        <label class="radio-opt"><input type="radio" name="contact_method" value="email" checked> Email</label>
+        <label class="radio-opt" style="margin-top:8px;"><input type="radio" name="contact_method" value="phone"> Mobile phone (text)</label>
+      </fieldset>
 
       <p style="font-size: 0.75rem; color: var(--ink-45); margin: 0;">
         By submitting, you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy policy</a>.
@@ -71,6 +166,18 @@
       <button type="submit" class="btn-primary" id="apply-submit">Submit application &rarr;</button>
       <p id="apply-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
     </form>
+
+    <!-- verification step (shown after submit when verification is wired) -->
+    <div class="verify-box" id="verify-box" hidden>
+      <h3 style="margin:0 0 6px;">Confirm your <span id="verify-channel">email</span></h3>
+      <p>Enter the 6-digit code we sent to <strong id="verify-dest"></strong>.</p>
+      <form class="simple-form" id="verify-form" style="max-width:320px;">
+        <input type="text" id="verify-code" inputmode="numeric" maxlength="6" placeholder="000000" required
+               style="font-size:1.4rem;letter-spacing:0.3em;text-align:center;">
+        <button type="submit" class="btn-primary">Verify &amp; finish</button>
+        <p id="verify-status" role="status" aria-live="polite" style="font-size:0.85rem;color:var(--ink-65);margin:0;"></p>
+      </form>
+    </div>
   </div>
 </main>
 
@@ -91,11 +198,30 @@
   var form = document.getElementById('apply-form');
   var status = document.getElementById('apply-status');
   var btn = document.getElementById('apply-submit');
+
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var fd = new FormData(form);
     var payload = {};
-    fd.forEach(function(v,k){ payload[k] = v; });
+    fd.forEach(function(v,k){
+      if (k === 'products') { (payload.products = payload.products || []).push(v); }
+      else { payload[k] = v; }
+    });
+
+    // basic required-field check
+    if (!payload.full_name || !payload.studio_name || !payload.email) {
+      status.textContent = 'Please fill in your name, studio, and email.';
+      return;
+    }
+    if (payload.contact_method === 'phone' && !payload.phone) {
+      status.textContent = 'You chose phone as your contact method — please add a mobile number.';
+      return;
+    }
+
+    // compose a single-line address for the leads.address field
+    payload.full_address = [payload.address, payload.city, payload.state, payload.zip]
+      .filter(Boolean).join(', ');
+
     btn.disabled = true; btn.textContent = 'Sending…';
     fetch('/.netlify/functions/partner-apply', {
       method: 'POST',
@@ -106,9 +232,12 @@
       return r.json();
     }).then(function(){
       form.style.display = 'none';
-      status.textContent = 'Application received. We\'ll be in touch within one business day at the email you provided.';
-      status.style.fontSize = '1.125rem';
+      var method = payload.contact_method === 'phone' ? 'mobile number' : 'email';
+      status.textContent = 'Application received. We\'ll confirm your ' + method +
+        ' and be in touch within one business day.';
+      status.style.fontSize = '1.05rem';
       status.style.color = 'var(--ink)';
+      status.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }).catch(function(){
       status.textContent = 'Something went wrong. Email designer.programs@raptns.com and we\'ll take it from there.';
       btn.disabled = false; btn.textContent = 'Try again →';

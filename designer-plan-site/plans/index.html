@@ -981,10 +981,20 @@ section:first-of-type { padding-top: 0; }
 }
 
 .care-item {
-  border-top: 1px solid var(--rule-strong);
-  padding-top: 28px;
   display: flex;
   flex-direction: column;
+}
+.care-item-photo {
+  margin: 0 0 18px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--rule);
+}
+.care-item-photo img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
 }
 .care-item .num {
   font-family: var(--display);
@@ -993,7 +1003,7 @@ section:first-of-type { padding-top: 0; }
   letter-spacing: 0.04em;
   color: var(--ink-65);
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 .care-item h3 {
   font-family: var(--display);
@@ -1181,8 +1191,14 @@ section:first-of-type { padding-top: 0; }
   }
 
   .care-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 40px;
+  }
+}
+@media (min-width: 980px) {
+  .care-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
   }
 
   .footer-grid {
@@ -1216,10 +1232,12 @@ section:first-of-type { padding-top: 0; }
 
     <nav aria-label="Primary">
       <ul class="nav-links">
-        <li><a href="/#partner">Partner with us</a></li>
+        <li><a href="/">Home</a></li>
+        <li><a href="/partner">Partner with us</a></li>
         <li><a href="/plans">Shop plans</a></li>
         <li><a href="#white-glove">White-glove service</a></li>
         <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+        <li><a href="/login">Log in</a></li>
       </ul>
     </nav>
 
@@ -1237,10 +1255,12 @@ section:first-of-type { padding-top: 0; }
 <aside class="nav-drawer" id="nav-drawer" aria-label="Mobile navigation" hidden>
   <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
   <ul>
-    <li><a href="/#partner">Partner with us</a></li>
+    <li><a href="/">Home</a></li>
+    <li><a href="/partner">Partner with us</a></li>
     <li><a href="/plans">Shop plans</a></li>
     <li><a href="#white-glove">White-glove service</a></li>
     <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+    <li><a href="/login">Log in</a></li>
   </ul>
 </aside>
 
@@ -1251,10 +1271,9 @@ section:first-of-type { padding-top: 0; }
        ============================================================ -->
   <section class="hero" aria-label="Shop plans">
     <div class="hero-photo">
-      <!-- placeholder: sunlit room aspiration, full-bleed, same register as landing-a hero -->
       <img
-        src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=2400&q=80"
-        alt="A sunlit dining room with a long wooden table, upholstered chairs, and warm afternoon light through tall windows"
+        src="/assets/img/plan-hero.png"
+        alt="A finished room with the furniture Designer Plan covers — sofa, chairs, rugs, wood"
         loading="eager">
     </div>
 
@@ -1524,27 +1543,47 @@ section:first-of-type { padding-top: 0; }
       <div class="care-grid">
 
         <article class="care-item">
+          <figure class="care-item-photo">
+            <img src="/assets/img/fabric-kit.jpg" alt="Fabric care kit — spot treatment, fabric protector, and microfiber cloths" loading="lazy">
+          </figure>
           <span class="num">01</span>
-          <h3>Fabric Cleaning Kit</h3>
+          <h3>Fabric Care Kit</h3>
           <p>Spot treatment, fabric protector, and microfiber cloths. Sized for one full project.</p>
           <p class="care-item-price">$[XX]</p>
           <a href="/care/fabric" class="link-inline">Learn more &rarr;</a>
         </article>
 
         <article class="care-item">
+          <figure class="care-item-photo">
+            <img src="/assets/img/leather-kit.jpg" alt="Leather care kit — conditioner, cleaner, and applicator cloths" loading="lazy">
+          </figure>
           <span class="num">02</span>
-          <h3>Leather Cleaning Kit</h3>
+          <h3>Leather Care Kit</h3>
           <p>Conditioner, cleaner, and applicator cloths. Safe on leather and faux leather.</p>
           <p class="care-item-price">$[XX]</p>
           <a href="/care/leather" class="link-inline">Learn more &rarr;</a>
         </article>
 
         <article class="care-item">
+          <figure class="care-item-photo">
+            <img src="/assets/img/wood-kit.jpg" alt="Wood care kit — fillers, finish-matching markers, felt pads" loading="lazy">
+          </figure>
           <span class="num">03</span>
-          <h3>Touch-Up &amp; Repair Kit</h3>
+          <h3>Wood Care Kit</h3>
           <p>Wood fillers, finish-matching markers, felt pads, and minor repair tools.</p>
           <p class="care-item-price">$[XX]</p>
-          <a href="/care/touch-up" class="link-inline">Learn more &rarr;</a>
+          <a href="/care/wood" class="link-inline">Learn more &rarr;</a>
+        </article>
+
+        <article class="care-item">
+          <figure class="care-item-photo">
+            <img src="/assets/img/carpet-rug-kit.jpg" alt="Carpet and rug care kit — fiber cleaner, stain lifter, and brush" loading="lazy">
+          </figure>
+          <span class="num">04</span>
+          <h3>Carpet &amp; Rug Care Kit</h3>
+          <p>Fiber-safe cleaner, stain lifter, and grooming brush. Sized for hand-knotted and machine-loomed rugs.</p>
+          <p class="care-item-price">$[XX]</p>
+          <a href="/care/carpet-rug" class="link-inline">Learn more &rarr;</a>
         </article>
 
       </div>
@@ -1562,7 +1601,7 @@ section:first-of-type { padding-top: 0; }
 
       <div class="final-cta-buttons">
         <a href="/partner-apply" class="btn btn-primary">Become a partner <span class="arrow">&rarr;</span></a>
-        <a href="/#partner" class="btn btn-secondary">Learn about partnership <span class="arrow">&rarr;</span></a>
+        <a href="/partner" class="btn btn-secondary">Learn about partnership <span class="arrow">&rarr;</span></a>
       </div>
     </div>
   </section>

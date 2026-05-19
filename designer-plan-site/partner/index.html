@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partner with us — Designer Plan</title>
+<meta name="description" content="The Designer Plan partner program: what you get, how to start, and the four steps from application to your first specified plan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared/_partials.css">
+<style>
+  /* page-specific bits */
+  .hero-strip {
+    padding: 80px 0 56px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .hero-strip h1 { font-size: clamp(2.25rem, 5vw, 3.75rem); margin: 0 0 18px; line-height: 1.05; letter-spacing: -0.02em; }
+  .hero-strip .lead { max-width: 640px; }
+
+  .benefits {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr;
+    margin: 48px 0 16px;
+  }
+  @media (min-width: 720px) { .benefits { grid-template-columns: repeat(3, 1fr); } }
+  .benefit-card {
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 28px 24px;
+    background: var(--surface, #fbfaf6);
+  }
+  .benefit-card .num {
+    font-family: var(--display);
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 0.875rem;
+    letter-spacing: 0.04em;
+    display: block;
+    margin-bottom: 10px;
+  }
+  .benefit-card h3 { font-size: 1.1rem; margin: 0 0 8px; }
+  .benefit-card p { margin: 0; font-size: 0.9375rem; color: var(--ink-65); line-height: 1.55; }
+
+  .steps {
+    margin: 32px 0 0;
+    counter-reset: step;
+  }
+  .step {
+    display: grid;
+    gap: 16px 28px;
+    grid-template-columns: 1fr;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .step:last-child { border-bottom: 0; }
+  @media (min-width: 720px) {
+    .step { grid-template-columns: 90px 1fr; }
+  }
+  .step-num {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 2.5rem;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .step h3 { font-size: 1.5rem; margin: 0 0 10px; }
+  .step p { color: var(--ink-65); margin: 0 0 16px; max-width: 60ch; }
+  .step .meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8125rem;
+    color: var(--ink-45);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 0 0 14px;
+  }
+  .step .btn-primary,
+  .step .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font: inherit;
+    font-weight: 500;
+    font-size: 0.9375rem;
+  }
+  .step .btn-primary { background: var(--ink); color: var(--paper); border: 1px solid var(--ink); }
+  .step .btn-primary:hover { background: #2a2723; }
+  .step .btn-secondary { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+  .step .btn-secondary:hover { background: var(--ink); color: var(--paper); }
+  .step .pending {
+    color: var(--ink-45);
+    font-size: 0.875rem;
+    font-style: italic;
+  }
+
+  .expectations {
+    background: var(--surface-2, #f3eee2);
+    border-radius: 4px;
+    padding: 32px 28px;
+    margin: 48px 0;
+  }
+  .expectations h2 { margin: 0 0 16px; }
+  .expectations ul { margin: 0; padding: 0 0 0 18px; }
+  .expectations li { margin: 8px 0; color: var(--ink-65); }
+
+  .support-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr;
+    margin: 24px 0 56px;
+  }
+  @media (min-width: 720px) { .support-grid { grid-template-columns: repeat(2, 1fr); } }
+  .support-card { padding: 24px; border: 1px solid var(--rule); border-radius: 4px; }
+  .support-card h3 { font-size: 1.05rem; margin: 0 0 8px; }
+  .support-card p { margin: 0; color: var(--ink-65); font-size: 0.9375rem; }
+
+  .final-cta-band {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 4px;
+    padding: 48px 32px;
+    text-align: center;
+    margin: 24px 0 0;
+  }
+  .final-cta-band h2 { color: var(--paper); margin: 0 0 12px; font-size: clamp(1.5rem, 3vw, 2rem); }
+  .final-cta-band p { color: rgba(250, 247, 241, 0.8); margin: 0 0 24px; max-width: 50ch; margin-left: auto; margin-right: auto; }
+  .final-cta-band .btn-primary {
+    background: var(--paper);
+    color: var(--ink);
+    padding: 14px 24px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header class="nav-simple">
+  <div class="container nav-inner">
+    <a href="/" class="logo">Designer Plan</a>
+    <nav><ul>
+      <li><a href="/partner">Partner with us</a></li>
+      <li><a href="/plans">Shop plans</a></li>
+      <li><a href="/plans#white-glove">White-glove service</a></li>
+      <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+    </ul></nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container container-narrow">
+
+    <!-- HERO STRIP -->
+    <section class="hero-strip">
+      <span class="eyebrow">For independent interior designers</span>
+      <h1>Partner with us.</h1>
+      <p class="lead">A short path, designed for solo studios and small firms. Most studios are approved within one business day and ready to specify their first plan inside of a week.</p>
+    </section>
+
+    <!-- BENEFITS -->
+    <section>
+      <span class="eyebrow" style="margin-top: 48px;">What you get</span>
+      <h2>The economics, simplified.</h2>
+      <div class="benefits">
+        <article class="benefit-card">
+          <span class="num">35%</span>
+          <h3>Commission on every plan</h3>
+          <p>Up to 35% on plans you specify, whether your client purchases at closeout or later through our plans page.</p>
+        </article>
+        <article class="benefit-card">
+          <span class="num">$5,000</span>
+          <h3>Your first plan, on us</h3>
+          <p>Approved studios receive their first plan complimentary &mdash; up to $5,000 of coverage. Test it on a real project before committing.</p>
+        </article>
+        <article class="benefit-card">
+          <span class="num">1:1</span>
+          <h3>Concierge claims</h3>
+          <p>Your client calls one number. We handle the claim, the repair, and the resolution. You stay the designer.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- HOW TO START -->
+    <section>
+      <span class="eyebrow" style="margin-top: 48px;">How to start</span>
+      <h2>Four steps from interested to specifying.</h2>
+
+      <div class="steps">
+
+        <article class="step">
+          <div class="step-num">01</div>
+          <div>
+            <p class="meta">~2 minutes</p>
+            <h3>Apply</h3>
+            <p>Six fields, no phone number required. We ask about your studio so we know how to support you. The application takes most designers about two minutes.</p>
+            <a href="/partner-apply" class="btn-primary">Start the application <span class="arrow">&rarr;</span></a>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="step-num">02</div>
+          <div>
+            <p class="meta">~1 business day</p>
+            <h3>Get approved</h3>
+            <p>We review every application personally &mdash; this is a small, hand-curated program, not an open marketplace. We&rsquo;ll email you to confirm and send your partner welcome, including your unique referral code and login.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="step-num">03</div>
+          <div>
+            <p class="meta">~5 minutes</p>
+            <h3>Connect your Stripe account</h3>
+            <p>We pay commission through Stripe Connect. After approval, you&rsquo;ll receive a single onboarding link that walks Stripe through setting up your account so we can pay you directly &mdash; no invoices, no chasing. Existing Stripe users connect in under a minute.</p>
+            <p class="pending">A personalized Stripe Connect link is included in your approval email.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="step-num">04</div>
+          <div>
+            <p class="meta">~30 minutes</p>
+            <h3>Schedule your onboarding</h3>
+            <p>A 30-minute video walkthrough with our partner-success team. We cover how to present the plan at closeout, how the commission shows up in your dashboard, how a claim moves through the concierge desk, and how to handle the awkward "have you thought about protection?" conversation.</p>
+            <a href="mailto:designer.programs@raptns.com?subject=Schedule%20onboarding%20training" class="btn-secondary">Schedule onboarding <span class="arrow">&rarr;</span></a>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- EXPECTATIONS -->
+    <section class="expectations">
+      <h2>What we ask of you.</h2>
+      <p style="color: var(--ink-65); margin: 0 0 14px;">The program is intentionally light-touch. We're not adding a service department to your studio.</p>
+      <ul>
+        <li>Present the plan at project closeout to clients you think would benefit. No quotas, ever.</li>
+        <li>Use your referral path (a link or QR code we generate) when a client buys direct.</li>
+        <li>If a client calls you about a covered item, hand them off to our concierge contact. They take it from there.</li>
+      </ul>
+    </section>
+
+    <!-- SUPPORT -->
+    <section>
+      <span class="eyebrow">Support, once you're in</span>
+      <h2>You won't be on your own.</h2>
+      <div class="support-grid">
+        <div class="support-card">
+          <h3>Direct partner-success contact</h3>
+          <p>One named person at our end, reachable by email or phone. Not a ticketing queue.</p>
+        </div>
+        <div class="support-card">
+          <h3>Partner dashboard</h3>
+          <p>See every plan you&rsquo;ve specified, every commission paid, and every claim status &mdash; from one login.</p>
+        </div>
+        <div class="support-card">
+          <h3>Quarterly check-in (optional)</h3>
+          <p>A 20-minute review of what&rsquo;s working and what isn&rsquo;t. We adjust to how your studio actually operates.</p>
+        </div>
+        <div class="support-card">
+          <h3>Concierge desk for your clients</h3>
+          <p>The number your clients call when something happens. Same desk, same person, every time.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="final-cta-band">
+      <h2>Ready to start?</h2>
+      <p>Most studios are reviewed within one business day. Six fields. No phone number required.</p>
+      <a href="/partner-apply" class="btn-primary">Apply to the program <span class="arrow">&rarr;</span></a>
+    </section>
+
+  </div>
+</main>
+
+<footer class="footer-simple">
+  <div class="container footer-inner">
+    <div>&copy; 2026 Risk Assurance Partners</div>
+    <div>
+      <a href="/about">About</a>
+      <a href="/partnership">Partnership</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

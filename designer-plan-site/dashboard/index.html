@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — Designer Plan</title>
+<meta name="description" content="Your Designer Plan partner dashboard.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGNER PLAN — PARTNER DASHBOARD
+   Mobile-first. Works in preview mode (?preview=1) with mock data
+   so it can be viewed before Supabase auth is wired.
+   ============================================================ */
+:root{
+  --paper:#faf7f1; --ink:#1a1815;
+  --ink-65:rgba(26,24,21,0.65); --ink-45:rgba(26,24,21,0.45);
+  --rule:#e3d9c6; --rule-strong:#cdbf9f;
+  --accent:#c4582a; --accent-soft:#f6e0cb;
+  --surface:#fbfaf6; --surface-2:#f3eee2;
+  --ok:#2f7a4f; --pending:#b07d2a;
+  --display:"Inter Tight",system-ui,-apple-system,sans-serif;
+  --body:"Inter",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;font-family:var(--body);font-size:16px;line-height:1.55;color:var(--ink);background:var(--surface-2);-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{font-family:var(--display);font-weight:500;letter-spacing:-0.015em;line-height:1.15;margin:0;}
+p{margin:0;}
+a{color:var(--ink);}
+button{font:inherit;cursor:pointer;}
+img{max-width:100%;display:block;}
+
+.eyebrow{font-family:var(--body);font-weight:500;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-65);display:block;}
+
+/* top bar */
+.topbar{background:var(--ink);color:var(--paper);padding:14px 0;}
+.topbar-inner{max-width:1080px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.topbar .logo{font-family:var(--display);font-weight:600;font-size:1.0625rem;color:var(--paper);text-decoration:none;}
+.topbar nav{display:flex;gap:18px;align-items:center;}
+.topbar nav a{color:rgba(250,247,241,0.8);text-decoration:none;font-size:0.875rem;}
+.topbar nav a:hover{color:var(--paper);}
+
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 64px;}
+
+/* preview banner */
+.preview-banner{background:var(--accent-soft);border:1px solid var(--rule-strong);border-radius:6px;padding:10px 16px;font-size:0.8125rem;color:var(--ink-65);margin-bottom:20px;}
+
+/* card */
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:24px;margin-bottom:20px;}
+.card h2{font-size:1.25rem;margin-bottom:4px;}
+.card .card-sub{font-size:0.875rem;color:var(--ink-65);margin-bottom:18px;}
+
+/* header card */
+.acct-head{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;justify-content:space-between;}
+.acct-name h1{font-size:1.6rem;}
+.acct-name .studio{color:var(--ink-65);font-size:0.95rem;margin-top:2px;}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:0.75rem;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;}
+.badge-active{background:rgba(47,122,79,0.14);color:var(--ok);}
+.badge-pending{background:rgba(176,125,42,0.16);color:var(--pending);}
+.acct-ids{display:flex;flex-wrap:wrap;gap:24px;margin-top:8px;}
+.acct-id-block .lbl{font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-45);}
+.acct-id-block .val{font-family:var(--display);font-weight:600;font-size:1.05rem;display:flex;align-items:center;gap:8px;}
+.copy-btn{background:var(--surface-2);border:1px solid var(--rule);border-radius:4px;padding:3px 9px;font-size:0.72rem;color:var(--ink-65);cursor:pointer;}
+.copy-btn:hover{background:var(--rule);}
+
+/* onboarding checklist */
+.checklist{list-style:none;margin:0;padding:0;}
+.check-step{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--rule);}
+.check-step:last-child{border-bottom:0;}
+.check-mark{flex:none;width:26px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600;}
+.check-done .check-mark{background:var(--ok);color:#fff;}
+.check-current .check-mark{background:var(--accent);color:#fff;}
+.check-todo .check-mark{background:var(--surface-2);color:var(--ink-45);border:1px solid var(--rule);}
+.check-body h3{font-size:1rem;}
+.check-body p{font-size:0.875rem;color:var(--ink-65);margin-top:2px;}
+.check-body .step-action{margin-top:10px;}
+.check-done .check-body h3{color:var(--ink-65);}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:5px;font-weight:500;font-size:0.9rem;text-decoration:none;border:1px solid transparent;cursor:pointer;}
+.btn-primary{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.btn-primary:hover{background:#2a2723;}
+.btn-accent{background:var(--accent);color:var(--paper);border-color:var(--accent);}
+.btn-accent:hover{background:#a8481f;}
+.btn-quiet{background:var(--surface-2);color:var(--ink);border-color:var(--rule);}
+.btn-quiet:hover{background:var(--rule);}
+.btn-sm{padding:8px 13px;font-size:0.82rem;}
+
+/* action grid */
+.action-grid{display:grid;gap:12px;grid-template-columns:1fr 1fr;}
+@media(min-width:680px){.action-grid{grid-template-columns:repeat(3,1fr);}}
+.action-tile{display:flex;flex-direction:column;gap:6px;padding:16px;background:var(--surface);border:1px solid var(--rule);border-radius:6px;text-decoration:none;color:var(--ink);}
+.action-tile:hover{border-color:var(--rule-strong);}
+.action-tile .at-title{font-weight:600;font-size:0.95rem;}
+.action-tile .at-desc{font-size:0.8rem;color:var(--ink-65);}
+
+/* commission summary */
+.commission-row{display:flex;flex-wrap:wrap;gap:24px;}
+.commission-stat{flex:1;min-width:160px;}
+.commission-stat .amt{font-family:var(--display);font-weight:600;font-size:2rem;letter-spacing:-0.02em;}
+.commission-stat .lbl{font-size:0.8rem;color:var(--ink-65);}
+.commission-stat.payable .amt{color:var(--ok);}
+.commission-note{font-size:0.8rem;color:var(--ink-45);margin-top:12px;}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:0.875rem;}
+.tbl thead th{text-align:left;font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-45);padding:8px 10px;border-bottom:1px solid var(--rule);}
+.tbl tbody td{padding:11px 10px;border-bottom:1px solid var(--rule);}
+.tbl tbody tr:last-child td{border-bottom:0;}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:0.72rem;font-weight:500;}
+.pill-ok{background:rgba(47,122,79,0.14);color:var(--ok);}
+.pill-pending{background:rgba(176,125,42,0.16);color:var(--pending);}
+.tbl-empty{padding:24px;text-align:center;color:var(--ink-45);font-style:italic;}
+.tbl-scroll{overflow-x:auto;}
+
+/* toolkit */
+.toolkit-grid{display:grid;gap:12px;grid-template-columns:1fr;}
+@media(min-width:680px){.toolkit-grid{grid-template-columns:1fr 1fr;}}
+.tool-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px;background:var(--surface);border:1px solid var(--rule);border-radius:6px;}
+.tool-item .ti-title{font-weight:600;font-size:0.9rem;}
+.tool-item .ti-desc{font-size:0.78rem;color:var(--ink-65);}
+
+/* promotions */
+.promo{border:1px solid var(--rule-strong);border-radius:8px;padding:20px;margin-bottom:14px;background:var(--accent-soft);}
+.promo:last-child{margin-bottom:0;}
+.promo h3{font-size:1.1rem;margin-bottom:4px;}
+.promo p{font-size:0.875rem;color:var(--ink-65);margin-bottom:14px;}
+.promo .promo-claimed{font-size:0.82rem;color:var(--ok);font-weight:500;}
+
+/* support */
+.support-row{display:flex;flex-wrap:wrap;gap:16px;}
+.support-item{flex:1;min-width:200px;}
+.support-item .si-name{font-weight:600;}
+.support-item .si-detail{font-size:0.875rem;color:var(--ink-65);}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(26,24,21,0.45);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--paper);border-radius:8px;padding:26px;max-width:440px;width:100%;}
+.modal h3{font-size:1.2rem;margin-bottom:6px;}
+.modal p{font-size:0.875rem;color:var(--ink-65);margin-bottom:16px;}
+.modal label{display:block;font-size:0.8rem;color:var(--ink-65);margin:10px 0 4px;}
+.modal input{width:100%;padding:10px 12px;border:1px solid var(--rule-strong);border-radius:5px;font:inherit;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+.section-gap{height:4px;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="logo">Designer Plan</a>
+    <nav>
+      <a href="/plans">Shop plans</a>
+      <a href="#" id="logout-link">Log out</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap" id="dash" hidden>
+
+  <div class="preview-banner" id="preview-banner" hidden>
+    Preview mode — showing sample data. Add <code>?preview=1</code> stays on; real data loads once Supabase auth is wired.
+  </div>
+
+  <!-- ACCOUNT HEADER -->
+  <section class="card">
+    <div class="acct-head">
+      <div class="acct-name">
+        <span class="eyebrow">Partner dashboard</span>
+        <h1 id="d-name">—</h1>
+        <div class="studio" id="d-studio">—</div>
+      </div>
+      <span class="badge" id="d-status-badge">—</span>
+    </div>
+    <div class="acct-ids">
+      <div class="acct-id-block">
+        <div class="lbl">Account number</div>
+        <div class="val"><span id="d-account-number">—</span></div>
+      </div>
+      <div class="acct-id-block">
+        <div class="lbl">Referral code</div>
+        <div class="val">
+          <span id="d-referral-code">—</span>
+          <button class="copy-btn" data-copy="code">Copy</button>
+        </div>
+      </div>
+      <div class="acct-id-block">
+        <div class="lbl">Client link</div>
+        <div class="val">
+          <button class="copy-btn" data-copy="link">Copy link</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ONBOARDING CHECKLIST -->
+  <section class="card" id="onboarding-card">
+    <h2>Get set up</h2>
+    <p class="card-sub">You can sell before finishing every step. Stripe is last and only needed to get paid.</p>
+    <ul class="checklist" id="checklist"></ul>
+  </section>
+
+  <!-- PRIMARY ACTIONS -->
+  <section class="card">
+    <h2>Quick actions</h2>
+    <p class="card-sub">Everything you need at project closeout.</p>
+    <div class="action-grid">
+      <a class="action-tile" href="#" data-copy="link">
+        <span class="at-title">Copy client link</span>
+        <span class="at-desc">Share or paste at closeout</span>
+      </a>
+      <a class="action-tile" href="#" id="qr-tile">
+        <span class="at-title">Download QR code</span>
+        <span class="at-desc">For in-person conversations</span>
+      </a>
+      <a class="action-tile" href="/plans" target="_blank" rel="noopener">
+        <span class="at-title">Shop plans</span>
+        <span class="at-desc">Review tiers &amp; coverage</span>
+      </a>
+      <a class="action-tile" href="#" id="stripe-tile">
+        <span class="at-title">Set up Stripe</span>
+        <span class="at-desc">Connect to get paid</span>
+      </a>
+      <a class="action-tile" href="#" id="schedule-tile">
+        <span class="at-title">Schedule a call</span>
+        <span class="at-desc">Onboarding or any question</span>
+      </a>
+      <a class="action-tile" href="https://5starservice.net" target="_blank" rel="noopener">
+        <span class="at-title">File a claim</span>
+        <span class="at-desc">Opens the claims app</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- COMMISSION SUMMARY -->
+  <section class="card">
+    <h2>Commission</h2>
+    <p class="card-sub">Tracked the moment a plan sells. Payable once your Stripe account is connected.</p>
+    <div class="commission-row">
+      <div class="commission-stat">
+        <div class="amt" id="d-commission-tracked">$0.00</div>
+        <div class="lbl">Tracked (lifetime)</div>
+      </div>
+      <div class="commission-stat payable">
+        <div class="amt" id="d-commission-payable">$0.00</div>
+        <div class="lbl">Payable now</div>
+      </div>
+    </div>
+    <p class="commission-note" id="d-commission-note"></p>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section class="card">
+    <h2>Your plans</h2>
+    <p class="card-sub">Every purchase attributed to your account or referral code.</p>
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead>
+          <tr><th>Client</th><th>Tier</th><th>Date</th><th>Source</th><th>Commission</th><th>Status</th></tr>
+        </thead>
+        <tbody id="activity-body"></tbody>
+      </table>
+    </div>
+    <p class="tbl-empty" id="activity-empty" hidden>No plans yet. Share your link to get started.</p>
+  </section>
+
+  <!-- PROMOTIONS -->
+  <section class="card">
+    <h2>Promotions</h2>
+    <p class="card-sub">Active offers for partners.</p>
+
+    <div class="promo">
+      <h3>First plan on us</h3>
+      <p>Your first specified plan earns a boosted <strong>40% commission</strong> (35% standard + 5%), up to $5,000 of coverage value. Claim it and tell us the client.</p>
+      <div id="promo-a-state"></div>
+    </div>
+
+    <div class="promo">
+      <h3>Refer a designer</h3>
+      <p>Send another designer your invite link. When they sign up and make their first purchase, you earn a one-time <strong>10% bonus commission</strong> on that sale.</p>
+      <button class="btn btn-accent btn-sm" data-copy="referlink">Copy my designer-invite link</button>
+    </div>
+  </section>
+
+  <!-- TOOLKIT -->
+  <section class="card">
+    <h2>Selling toolkit</h2>
+    <p class="card-sub">Materials for project closeout.</p>
+    <div class="toolkit-grid">
+      <div class="tool-item">
+        <div><div class="ti-title">Plan one-pager (PDF)</div><div class="ti-desc">Printable leave-behind</div></div>
+        <a class="btn btn-quiet btn-sm" href="#" data-toolkit="one-pager">Open</a>
+      </div>
+      <div class="tool-item">
+        <div><div class="ti-title">Tier comparison sheet</div><div class="ti-desc">Three tiers, side by side</div></div>
+        <a class="btn btn-quiet btn-sm" href="#" data-toolkit="comparison">Open</a>
+      </div>
+      <div class="tool-item">
+        <div><div class="ti-title">Client email copy</div><div class="ti-desc">Pre-filled with your link</div></div>
+        <a class="btn btn-quiet btn-sm" href="#" data-toolkit="email-copy">Copy</a>
+      </div>
+      <div class="tool-item">
+        <div><div class="ti-title">Client text copy</div><div class="ti-desc">Short version for SMS</div></div>
+        <a class="btn btn-quiet btn-sm" href="#" data-toolkit="text-copy">Copy</a>
+      </div>
+      <div class="tool-item">
+        <div><div class="ti-title">Talk tracks</div><div class="ti-desc">What to say at closeout</div></div>
+        <a class="btn btn-quiet btn-sm" href="#" data-toolkit="talk-tracks">Open</a>
+      </div>
+      <div class="tool-item">
+        <div><div class="ti-title">Success stories</div><div class="ti-desc">Proof you can share</div></div>
+        <a class="btn btn-quiet btn-sm" href="#" data-toolkit="stories">Open</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUPPORT -->
+  <section class="card">
+    <h2>Support</h2>
+    <div class="support-row">
+      <div class="support-item">
+        <div class="si-name" id="d-success-contact">Your partner-success contact</div>
+        <div class="si-detail">Reach out any time — not a ticket queue.</div>
+      </div>
+      <div class="support-item">
+        <div class="si-name"><a href="mailto:designer.programs@raptns.com">designer.programs@raptns.com</a></div>
+        <div class="si-detail"><a href="tel:+15613743147">561-374-3147</a></div>
+      </div>
+      <div class="support-item">
+        <button class="btn btn-quiet btn-sm" id="support-schedule">Schedule a call</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- loading / signed-out states -->
+<div class="wrap" id="loading-state">
+  <div class="card"><p>Loading your dashboard…</p></div>
+</div>
+<div class="wrap" id="signedout-state" hidden>
+  <div class="card">
+    <h2>Please log in</h2>
+    <p class="card-sub">You need to be signed in to view your dashboard.</p>
+    <a class="btn btn-primary" href="/login">Go to login</a>
+    <span class="section-gap"></span>
+    <p style="font-size:0.85rem;color:var(--ink-65);margin-top:14px;">
+      Only have a referral code? <a href="/lookup">Look up your referrals</a> instead.
+    </p>
+  </div>
+</div>
+
+<!-- Promo A claim modal -->
+<div class="modal-bg" id="promo-a-modal">
+  <div class="modal">
+    <h3>Claim &ldquo;First plan on us&rdquo;</h3>
+    <p>Tell us the client this applies to. Your commission on this first deal is boosted to 40%.</p>
+    <label for="pa-client-name">Client name</label>
+    <input type="text" id="pa-client-name" placeholder="Client name">
+    <label for="pa-client-email">Client email (optional)</label>
+    <input type="email" id="pa-client-email" placeholder="client@email.com">
+    <div class="modal-actions">
+      <button class="btn btn-quiet btn-sm" id="pa-cancel">Cancel</button>
+      <button class="btn btn-accent btn-sm" id="pa-submit">Claim promotion</button>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule modal -->
+<div class="modal-bg" id="schedule-modal">
+  <div class="modal">
+    <h3>Schedule a call</h3>
+    <p>Pick a time for onboarding or any question. Opens our scheduler in a new tab.</p>
+    <div class="modal-actions">
+      <button class="btn btn-quiet btn-sm" id="sched-cancel">Cancel</button>
+      <a class="btn btn-accent btn-sm" id="sched-open" href="#" target="_blank" rel="noopener">Open scheduler</a>
+    </div>
+  </div>
+</div>
+
+<script src="/js/dashboard.js"></script>
+</body>
+</html>

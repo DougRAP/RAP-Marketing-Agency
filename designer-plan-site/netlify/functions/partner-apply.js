@@ -35,6 +35,7 @@ exports.handler = async (event) => {
   }
 
   const studio = body.studio_name || body.company || null;
+  const fullAddress = body.full_address || body.address || null;
 
   // 1. Upsert lead
   const { data: lead, error: leadErr } = await supabase
@@ -44,7 +45,7 @@ exports.handler = async (event) => {
       full_name: body.full_name || null,
       phone: body.phone || null,
       company: studio,
-      address: body.address || null,
+      address: fullAddress,
       average_project_size: body.average_project_size || null,
       clients_per_year: body.clients_per_year || null,
       consent_at: new Date().toISOString(),
@@ -58,20 +59,38 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'lead_upsert_failed' }) };
   }
 
-  // 2. Upsert partner row (one per lead)
-  const { data: partner, error: partnerErr } = await supabase
+  // 2. Upsert partner row (one per lead).
+  // New profiling columns (specializes_in, avg_job_size) are written
+  // best-effort — if the 20260518 migration has not been applied yet,
+  // retry without them so the application still succeeds.
+  const partnerBase = {
+    lead_id: lead.id,
+    studio_name: studio,
+    referral_code: slugReferral(studio, email),
+    status: 'pending'
+  };
+  const partnerExtended = Object.assign({}, partnerBase, {
+    specializes_in: Array.isArray(body.products) ? body.products : null,
+    avg_job_size: body.average_project_size || null
+  });
+
+  let partner = null;
+  let partnerErr = null;
+  ({ data: partner, error: partnerErr } = await supabase
     .from('partners')
-    .upsert({
-      lead_id: lead.id,
-      studio_name: studio,
-      referral_code: slugReferral(studio, email),
-      status: 'pending'
-    }, { onConflict: 'lead_id' })
+    .upsert(partnerExtended, { onConflict: 'lead_id' })
     .select()
-    .single();
+    .single());
 
   if (partnerErr) {
-    console.error('partner upsert failed', partnerErr);
+    // likely the new columns do not exist yet — retry with base fields only
+    console.warn('partner extended upsert failed, retrying base', partnerErr.message);
+    ({ data: partner, error: partnerErr } = await supabase
+      .from('partners')
+      .upsert(partnerBase, { onConflict: 'lead_id' })
+      .select()
+      .single());
+    if (partnerErr) console.error('partner upsert failed', partnerErr);
   }
 
   // 3. Event
