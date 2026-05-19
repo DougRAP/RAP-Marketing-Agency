@@ -21,6 +21,8 @@ Every inbound submission across all four sites flows into one Supabase Postgres 
 
 - `20260511_base_schema.sql` — `leads` + `lead_events` + `touch_updated_at` trigger. **Run first.**
 - `20260512_designer_plan_extensions.sql` — additive only: `partners`, `plans`, `orders`, `email_lists`, `email_list_members`, `admin_leads_view`, plus `leads.consent_at` / `leads.consent_text`.
+- `20260514_data_api_grants.sql` — explicit table-level `GRANT`s for the 8 public objects. Required because Supabase removed implicit Data API exposure on `public.*` (enforced 2026-10-30 on existing projects; this repo adopted the strict regime on 2026-05-14).
+- `20260515_revoke_default_privileges.sql` — kills the auto-grant pathway so any new table without explicit grants is immediately invisible to PostgREST. See **Supabase grants — explicit, today** below.
 
 ### Ingestion path — always the same
 
@@ -35,6 +37,29 @@ When adding a new form/webhook, follow the existing function pattern: validate i
 ### Known `lead_events.source` values
 
 `whitepaper-request`, `designer-sign-up` (rap-public-site), `landing_popup`, `plans_credit_capture`, `partner_application`, `cart_started`, `plan_purchase` (designer-plan-site). Extend by adding new string values — no schema change required.
+
+## Supabase grants — explicit, today
+
+**Explicit table grants are mandatory in every new migration.** This project enforces the strict Data API regime **today**, not at Supabase's 2026-10-30 cutover deadline. Default-privileges auto-grants are revoked at the DB layer (`supabase/migrations/20260515_revoke_default_privileges.sql`), so any new table created without explicit grants in its own migration is immediately invisible to PostgREST. Failure surfaces in the next PR, not five months from now.
+
+Pattern, placed right after every `create table public.<t>` plus its `alter table ... enable row level security` line:
+
+```sql
+grant select, insert, update, delete on public.<t> to service_role;
+grant select on public.<t> to authenticated;   -- only if logged-in users read it from the browser
+grant select on public.<t> to anon;            -- only if anonymous public pages read it
+grant usage, select on sequence public.<seq> to service_role;  -- only if bigserial
+```
+
+Rules:
+
+- **`service_role`** always gets full CRUD on operational tables — the Netlify Functions path needs it. Use `select, insert` only for append-only tables (precedent: `public.lead_events`, line 79).
+- **`authenticated`** is granted only when a logged-in user reads the table directly from the browser via the anon SDK + their JWT. Always pair with an RLS policy that narrows rows by `auth.uid()` (precedents: `partners_self_read`, `orders_partner_read` in `supabase/migrations/20260512_designer_plan_extensions.sql`).
+- **`anon`** is an architecture call worth flagging in the PR. The repo has exactly one anon-readable object today (`public.plans`, for the public plans page on `rap-public-site`). Adding another is fine but deliberate.
+- **Never use `alter default privileges`** to "fix grants" — keep grants explicit and co-located with the table they cover. The repo's `20260515` migration already revoked the default-privileges pathway; re-enabling it would silently mask missing grants.
+- RLS is the per-row gate; grants are the per-table gate. Both are required for Data API exposure.
+
+See `docs/db-plan.md` rule 6a for the same convention with rationale.
 
 ## Common commands
 
