@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My clients &amp; plans — Designer Plan</title>
+<meta name="description" content="Every client, project, plan, and commission connected to your Designer Plan account.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGNER PLAN — CLIENTS & PLANS PAGE
+   ============================================================ */
+
+:root{
+  --paper:#ffffff; --ink:#1a1815;
+  --ink-65:rgba(26,24,21,0.65); --ink-45:rgba(26,24,21,0.45);
+  --rule:#e3d9c6; --rule-strong:#cdbf9f;
+  --accent:#c4582a; --accent-soft:#f4e4d6;
+  --display:"Inter Tight",system-ui,-apple-system,sans-serif;
+  --body:"Inter",system-ui,-apple-system,sans-serif;
+  --sp-section:clamp(48px,6vw,80px);
+  --sp-block:clamp(32px,4vw,56px);
+  --sp-tight:clamp(16px,2vw,24px);
+  --container:1200px; --gutter:clamp(20px,4vw,40px);
+  --ease:cubic-bezier(0.2,0.6,0.2,1);
+  --t-fast:180ms; --t-med:280ms; --t-slow:600ms;
+}
+@media (min-width:1400px){:root{--gutter:56px;}}
+
+*,*::before,*::after{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; font-family:var(--body); font-weight:400;
+  font-size:16px; line-height:1.6;
+  color:var(--ink); background:var(--paper);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+img{max-width:100%; height:auto; display:block;}
+h1,h2,h3,h4{
+  font-family:var(--display); font-weight:500;
+  letter-spacing:-0.015em; line-height:1.1; margin:0; color:var(--ink);
+}
+p{margin:0 0 1em;} p:last-child{margin-bottom:0;}
+a{
+  color:var(--ink); text-decoration:underline;
+  text-decoration-thickness:1px; text-underline-offset:3px;
+  text-decoration-color:var(--rule-strong);
+  transition:text-decoration-color var(--t-fast) var(--ease);
+}
+a:hover{text-decoration-color:var(--ink);}
+button{font:inherit; cursor:pointer;}
+
+.skip{position:absolute;left:-9999px;top:0;background:var(--ink);color:var(--paper);padding:12px 16px;z-index:1000;text-decoration:none;}
+.skip:focus{left:16px;top:16px;}
+
+.container{
+  width:100%; max-width:var(--container);
+  margin:0 auto;
+  padding-left:var(--gutter); padding-right:var(--gutter);
+}
+.container-narrow{max-width:880px;}
+
+.eyebrow{
+  font-family:var(--body); font-weight:500;
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--ink-65); margin:0 0 20px; display:block;
+}
+.h-display{font-size:clamp(2.25rem,5.5vw,4.25rem); line-height:1.05; letter-spacing:-0.02em; font-weight:500;}
+.h-section{font-size:clamp(1.75rem,3.8vw,2.75rem); line-height:1.1; letter-spacing:-0.018em;}
+.h-block  {font-size:clamp(1.35rem,2.4vw,1.75rem); line-height:1.15;}
+.lead     {font-size:clamp(1.05rem,1.5vw,1.2rem); line-height:1.55; color:var(--ink-65);}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  gap:8px; padding:14px 22px;
+  font-family:var(--body); font-weight:500;
+  font-size:0.9375rem; line-height:1; letter-spacing:0.005em;
+  text-decoration:none; border-radius:4px;
+  border:1px solid var(--ink); background:transparent; color:var(--ink);
+  cursor:pointer;
+  transition:background-color var(--t-med) var(--ease), color var(--t-med) var(--ease), border-color var(--t-med) var(--ease);
+  white-space:nowrap;
+}
+.btn:hover{background:var(--ink); color:var(--paper);}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:3px;}
+.btn .arrow{display:inline-block; transition:transform var(--t-med) var(--ease);}
+.btn:hover .arrow{transform:translateX(3px);}
+.btn--primary{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+.btn--primary:hover{background:#2a2723; border-color:#2a2723; color:var(--paper);}
+.btn--accent{background:var(--accent); color:var(--paper); border-color:var(--accent);}
+.btn--accent:hover{background:#a8481f; border-color:#a8481f; color:var(--paper);}
+.btn-row{display:flex; flex-wrap:wrap; gap:12px;}
+
+.link-inline{
+  font-family:var(--body); font-weight:500; font-size:0.875rem;
+  color:var(--ink-65); text-decoration:underline;
+  text-decoration-color:var(--rule-strong); text-underline-offset:3px;
+  transition:color var(--t-fast) var(--ease);
+}
+.link-inline:hover{color:var(--ink); text-decoration-color:var(--ink);}
+
+/* NAV */
+.nav{
+  border-bottom:1px solid var(--rule);
+  background:rgba(255,255,255,0.95);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  position:sticky; top:0; z-index:50;
+}
+.nav__inner{display:flex; align-items:center; justify-content:space-between; gap:24px; padding-top:16px; padding-bottom:16px;}
+.logo{font-family:var(--display); font-weight:600; font-size:1.0625rem; letter-spacing:-0.01em; color:var(--ink); text-decoration:none; white-space:nowrap;}
+.nav__links{display:none; list-style:none; padding:0; margin:0; gap:28px; align-items:center;}
+.nav__links a{font-size:0.875rem; font-weight:400; color:var(--ink-65); text-decoration:none; letter-spacing:0.005em; position:relative; padding:4px 0; transition:color var(--t-fast) var(--ease);}
+.nav__links a:hover, .nav__links a.is-active{color:var(--ink);}
+.nav__links a.is-active::after{content:""; position:absolute; left:0; right:0; bottom:-20px; height:2px; background:var(--accent);}
+.nav-toggle{background:transparent; border:0; padding:8px; margin:-8px; display:flex; flex-direction:column; gap:5px; cursor:pointer;}
+.nav-toggle span{display:block; width:22px; height:1.5px; background:var(--ink);}
+.nav-drawer{position:fixed; top:0; right:0; width:min(85%,360px); height:100vh; background:var(--paper); z-index:100; padding:80px 32px 32px; transform:translateX(100%); transition:transform var(--t-med) var(--ease); box-shadow:-20px 0 40px rgba(26,24,21,0.08); overflow-y:auto;}
+.nav-drawer.open{transform:translateX(0);}
+.nav-drawer-close{position:absolute; top:22px; right:22px; background:transparent; border:0; padding:8px; font-size:24px; line-height:1; color:var(--ink); cursor:pointer;}
+.nav-drawer ul{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:4px;}
+.nav-drawer a{display:block; padding:14px 0; font-family:var(--display); font-weight:500; font-size:1.5rem; color:var(--ink); text-decoration:none; border-bottom:1px solid var(--rule); letter-spacing:-0.01em;}
+.nav-backdrop{position:fixed; inset:0; background:rgba(26,24,21,0.3); z-index:90; opacity:0; pointer-events:none; transition:opacity var(--t-med) var(--ease);}
+.nav-backdrop.open{opacity:1; pointer-events:auto;}
+
+/* SECTIONS */
+section{padding:var(--sp-section) 0 0;}
+section:last-of-type{padding-bottom:var(--sp-section);}
+.section-header{margin-bottom:var(--sp-block); max-width:720px;}
+.section-header.center{margin-left:auto; margin-right:auto; text-align:center;}
+.section-header .h-section{margin-bottom:16px;}
+.section-header .lead{margin:0;}
+
+/* PAGE HERO — centered */
+.page-hero{
+  text-align:center;
+  padding:clamp(56px,8vw,96px) 0 var(--sp-section);
+}
+.page-hero-wrap{max-width:820px; margin:0 auto;}
+.page-hero .eyebrow{margin-bottom:24px;}
+.page-hero h1{margin-bottom:24px;}
+.page-hero .lead{margin:0 auto; max-width:640px;}
+.back-link{
+  display:inline-block; margin-bottom:20px;
+  font-size:0.8125rem; color:var(--ink-65);
+  text-decoration:underline; text-decoration-color:var(--rule-strong);
+}
+.back-link:hover{color:var(--ink); text-decoration-color:var(--ink);}
+
+/* STATS STRIP — quick at-a-glance row */
+.stats-strip{
+  display:grid; grid-template-columns:1fr;
+  border-top:1px solid var(--rule-strong);
+  border-bottom:1px solid var(--rule-strong);
+}
+.stats-strip__cell{
+  padding:24px 24px 26px;
+  border-bottom:1px solid var(--rule);
+}
+.stats-strip__cell:last-child{border-bottom:none;}
+.stats-strip__label{
+  font-family:var(--body); font-weight:500;
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--ink-65); display:block; margin-bottom:8px;
+}
+.stats-strip__value{
+  font-family:var(--display); font-weight:500;
+  font-size:clamp(1.5rem,2.4vw,1.875rem);
+  letter-spacing:-0.018em; line-height:1.1;
+  color:var(--ink);
+}
+
+/* FILTERS */
+.filters{
+  display:flex; flex-wrap:wrap; gap:10px;
+  margin-bottom:24px;
+}
+.filters input[type="search"], .filter-select{
+  border:1px solid var(--ink);
+  border-radius:4px;
+  padding:11px 14px;
+  font-family:var(--body); font-size:0.875rem;
+  background:var(--paper); color:var(--ink);
+  transition:border-color var(--t-fast) var(--ease);
+}
+.filters input[type="search"]{flex:1; min-width:240px;}
+.filters input[type="search"]::placeholder{color:var(--ink-45);}
+.filter-select{padding-right:30px; cursor:pointer; appearance:none;}
+.filters input[type="search"]:focus, .filter-select:focus{
+  outline:none; border-color:var(--accent);
+}
+
+/* STATUS PILLS */
+.status-pill{
+  display:inline-block;
+  font-size:0.6875rem; font-weight:500;
+  letter-spacing:0.08em; text-transform:uppercase;
+  padding:3px 9px;
+  border:1px solid var(--rule-strong);
+  border-radius:2px;
+  color:var(--ink-65);
+}
+.status-pill--active{color:var(--ink); border-color:var(--ink);}
+.status-pill--sent{color:var(--accent); border-color:var(--accent);}
+
+/* CLIENT TABLE — scrollable with sticky header */
+.client-table-wrap{
+  overflow:auto;
+  max-height:min(64vh,560px);
+  border:1px solid var(--rule);
+  border-radius:2px;
+}
+.client-table{
+  width:100%; border-collapse:collapse;
+  font-size:0.9375rem;
+  min-width:760px;
+}
+.client-table thead th{
+  position:sticky; top:0;
+  background:var(--paper); z-index:2;
+  font-family:var(--body); font-weight:500;
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--ink-65);
+  text-align:left;
+  padding:16px 16px 16px 22px;
+  border-bottom:1px solid var(--rule-strong);
+  box-shadow:0 1px 0 var(--rule-strong);
+}
+.client-table thead th:last-child{text-align:right; padding-right:22px;}
+.client-table td{
+  padding:18px 16px 18px 22px;
+  border-bottom:1px solid var(--rule);
+  vertical-align:middle;
+}
+.client-table td:last-child{text-align:right; padding-right:22px;}
+.client-table tr.client-row{cursor:pointer;}
+.client-table tr.client-row:hover{background:rgba(26,24,21,0.025);}
+.client-table .client-name{font-weight:500; color:var(--ink);}
+.client-table .commission-cell{color:var(--ink-65); font-variant-numeric:tabular-nums;}
+.client-table .commission-cell strong{color:var(--ink); font-weight:500;}
+.link-action{
+  font-size:0.8125rem;
+  color:var(--ink); text-decoration:underline;
+  text-decoration-color:var(--rule-strong); text-underline-offset:3px;
+  cursor:pointer;
+}
+.link-action:hover{text-decoration-color:var(--ink);}
+
+/* EXPANDED ROW */
+.expanded-row td{
+  background:rgba(26,24,21,0.025);
+  padding:24px 24px 28px;
+}
+.expanded-row.is-hidden{display:none;}
+.expanded-card{display:flex; flex-direction:column; gap:6px;}
+.expanded-card .line{font-size:0.9375rem;}
+.expanded-card .service-actions{
+  margin-top:14px;
+  display:flex; align-items:center;
+  gap:8px; flex-wrap:wrap;
+}
+.expanded-card .service-actions-label{font-size:0.875rem; margin-right:4px;}
+.expanded-card .notes{margin-top:14px; font-size:0.875rem; color:var(--ink-65);}
+
+/* TABLE FOOTER */
+.table-footer{
+  margin-top:24px;
+  display:flex; justify-content:space-between; align-items:center;
+  flex-wrap:wrap; gap:12px;
+  padding-top:22px;
+  border-top:1px solid var(--rule);
+}
+.row-actions-note{font-size:0.8125rem; color:var(--ink-65); margin:0;}
+.row-actions-note strong{color:var(--ink); font-weight:500;}
+
+/* SERVICE QUICK-LINK BAR */
+.service-bar{
+  border-top:1px solid var(--rule-strong);
+  border-bottom:1px solid var(--rule-strong);
+  padding:24px 0;
+}
+.service-bar p{font-size:0.9375rem; color:var(--ink); margin:0 0 14px;}
+.service-bar p strong{font-weight:500;}
+
+/* FOOTER */
+.footer{background:var(--paper); border-top:1px solid var(--rule); padding:60px 0 32px; margin-top:var(--sp-section);}
+.footer-grid{display:grid; grid-template-columns:1fr; gap:40px; margin-bottom:48px;}
+.footer-brand .logo{color:var(--ink); font-size:1.25rem; display:inline-block; margin-bottom:10px;}
+.footer-tagline{font-size:0.875rem; color:var(--ink-65); margin:0;}
+.footer-col h4{font-family:var(--body); font-weight:500; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--ink-65); margin:0 0 18px;}
+.footer-col ul{list-style:none; padding:0; margin:0;}
+.footer-col li{margin-bottom:10px;}
+.footer-col a{font-size:0.9375rem; color:var(--ink); text-decoration:none; transition:color var(--t-fast) var(--ease);}
+.footer-col a:hover{color:var(--ink-65);}
+.footer-baseline{padding-top:28px; border-top:1px solid var(--rule); display:flex; flex-direction:column; gap:8px; font-size:0.8125rem; color:var(--ink-65);}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  html{scroll-behavior:auto;}
+}
+
+@media (min-width:720px){
+  .stats-strip{grid-template-columns:repeat(2,1fr);}
+  .stats-strip__cell{border-bottom:none; border-right:1px solid var(--rule);}
+  .stats-strip__cell:nth-child(2n){border-right:none;}
+}
+@media (min-width:860px){
+  .nav__links{display:flex;}
+  .nav-toggle{display:none;}
+  .stats-strip{grid-template-columns:repeat(4,1fr);}
+  .stats-strip__cell{border-right:1px solid var(--rule);}
+  .stats-strip__cell:last-child{border-right:none;}
+  .footer-grid{grid-template-columns:2fr 1fr 1fr 1fr; gap:48px;}
+  .footer-baseline{flex-direction:row; justify-content:space-between; align-items:center; gap:24px;}
+}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip">Skip to main content</a>
+
+<header class="nav" id="nav">
+  <div class="container nav__inner">
+    <a href="/" class="logo">Designer Plan</a>
+    <nav aria-label="Primary">
+      <ul class="nav__links">
+        <li><a href="/dashboard/overview">Dashboard</a></li>
+        <li><a href="/dashboard/clients" class="is-active">Clients</a></li>
+        <li><a href="/dashboard/sales-tools">Sales tools</a></li>
+        <li><a href="/dashboard/service">Service</a></li>
+        <li><a href="/login">Account / Log in</a></li>
+      </ul>
+    </nav>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<aside class="nav-drawer" id="nav-drawer" aria-label="Mobile navigation" hidden>
+  <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  <ul>
+    <li><a href="/dashboard/overview">Dashboard</a></li>
+    <li><a href="/dashboard/clients">Clients</a></li>
+    <li><a href="/dashboard/sales-tools">Sales tools</a></li>
+    <li><a href="/dashboard/service">Service</a></li>
+    <li><a href="/login">Account / Log in</a></li>
+  </ul>
+</aside>
+
+<main id="main">
+
+  <!-- ============================================================
+       PAGE HERO
+       ============================================================ -->
+  <section class="page-hero">
+    <div class="container page-hero-wrap">
+      <a href="/dashboard/overview" class="back-link">&larr; Dashboard overview</a>
+      <span class="eyebrow">Your projects</span>
+      <h1 class="h-display">My clients &amp; plans.</h1>
+      <p class="lead">Every client, every plan, every coverage date. Searchable, sortable, expandable &mdash; with service routing one click away.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       STATS STRIP — at-a-glance summary
+       DATA: active_plans_count, links_sent_count, commission_tracked, recent_clients_count
+       ============================================================ -->
+  <section aria-label="Account at a glance" style="padding-top:0;">
+    <div class="container">
+      <div class="stats-strip">
+        <div class="stats-strip__cell">
+          <span class="stats-strip__label">Active plans</span>
+          <span class="stats-strip__value" data-field="active-plans">2</span>
+        </div>
+        <div class="stats-strip__cell">
+          <span class="stats-strip__label">Link sent</span>
+          <span class="stats-strip__value" data-field="links-sent">1</span>
+        </div>
+        <div class="stats-strip__cell">
+          <span class="stats-strip__label">Commission tracked</span>
+          <span class="stats-strip__value" data-field="commission-tracked">$196</span>
+        </div>
+        <div class="stats-strip__cell">
+          <span class="stats-strip__label">Total clients</span>
+          <span class="stats-strip__value" data-field="total-clients">5</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CLIENT TABLE
+       DATA: rows from clients table.
+       Row fields: client_name, project, plan_tier, status, commission_amount, commission_status, primary_service_action
+       Expanded fields: coverage_start, coverage_end, notes
+       ============================================================ -->
+  <section aria-labelledby="clients-table-title">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">All clients</span>
+        <h2 id="clients-table-title" class="h-section">Search, filter, and open any row.</h2>
+        <p class="lead">Click a row to see coverage dates and service actions for that client.</p>
+      </div>
+
+      <div class="filters">
+        <input type="search" placeholder="Search clients or projects" aria-label="Search" data-action="filter-search">
+        <select class="filter-select" aria-label="Filter by plan" data-action="filter-plan"><option>Plan: All</option></select>
+        <select class="filter-select" aria-label="Filter by status" data-action="filter-status"><option>Status: All</option></select>
+        <select class="filter-select" aria-label="Filter by commission" data-action="filter-commission"><option>Commission: All</option></select>
+        <select class="filter-select" aria-label="Sort" data-action="sort"><option>Sort: Newest</option></select>
+      </div>
+
+      <div class="client-table-wrap">
+        <table class="client-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Project</th>
+              <th>Plan</th>
+              <th>Status</th>
+              <th>Commission</th>
+              <th>Service</th>
+            </tr>
+          </thead>
+          <tbody data-field="clients-table">
+
+            <tr class="client-row" data-row-toggle>
+              <td class="client-name">Miller Residence</td>
+              <td>Living Room</td>
+              <td>Premium Plus</td>
+              <td><span class="status-pill status-pill--active">Active</span></td>
+              <td class="commission-cell"><strong>$122</strong> pending</td>
+              <td><span class="link-action">File claim</span></td>
+            </tr>
+            <tr class="expanded-row is-hidden">
+              <td colspan="6">
+                <div class="expanded-card">
+                  <div class="line"><strong>Miller Residence</strong></div>
+                  <div class="line">Project: Living Room</div>
+                  <div class="line">Plan: Premium Plus</div>
+                  <div class="line">Coverage: Jan 12, 2026 &ndash; Jan 12, 2029</div>
+                  <div class="line">Commission: $122 pending</div>
+                  <div class="service-actions">
+                    <span class="service-actions-label">Service:</span>
+                    <button class="btn" data-action="file-claim">File claim</button>
+                    <button class="btn" data-action="send-claim-link">Send claim link</button>
+                    <button class="btn" data-action="call-rap">Call RAP</button>
+                    <button class="btn" data-action="email-rap">Email RAP</button>
+                  </div>
+                  <p class="notes">Notes: Client purchased after project closeout email.</p>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="client-row" data-row-toggle>
+              <td class="client-name">Harper Project</td>
+              <td>Dining Room</td>
+              <td>Premium</td>
+              <td><span class="status-pill status-pill--sent">Link sent</span></td>
+              <td class="commission-cell">Pending</td>
+              <td><span class="link-action">Resend link</span></td>
+            </tr>
+            <tr class="expanded-row is-hidden">
+              <td colspan="6">
+                <div class="expanded-card">
+                  <div class="line"><strong>Harper Project</strong></div>
+                  <div class="line">Project: Dining Room</div>
+                  <div class="line">Plan: Premium</div>
+                  <div class="line">Status: Link sent</div>
+                  <div class="line">Commission: Pending</div>
+                  <div class="service-actions">
+                    <span class="service-actions-label">Service:</span>
+                    <button class="btn" data-action="resend-link">Resend link</button>
+                    <button class="btn" data-action="call-rap">Call RAP</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="client-row" data-row-toggle>
+              <td class="client-name">Weston Condo</td>
+              <td>Bedroom</td>
+              <td>Stain</td>
+              <td><span class="status-pill status-pill--active">Active</span></td>
+              <td class="commission-cell"><strong>$74</strong> payable</td>
+              <td><span class="link-action">File claim</span></td>
+            </tr>
+            <tr class="expanded-row is-hidden">
+              <td colspan="6">
+                <div class="expanded-card">
+                  <div class="line"><strong>Weston Condo</strong></div>
+                  <div class="line">Project: Bedroom</div>
+                  <div class="line">Plan: Stain</div>
+                  <div class="line">Status: Active</div>
+                  <div class="line">Commission: $74 payable</div>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="client-row" data-row-toggle>
+              <td class="client-name">Ashford Loft</td>
+              <td>Whole Home</td>
+              <td>Premium Plus</td>
+              <td><span class="status-pill status-pill--active">Active</span></td>
+              <td class="commission-cell"><strong>$310</strong> paid</td>
+              <td><span class="link-action">File claim</span></td>
+            </tr>
+            <tr class="expanded-row is-hidden">
+              <td colspan="6">
+                <div class="expanded-card">
+                  <div class="line"><strong>Ashford Loft</strong></div>
+                  <div class="line">Project: Whole Home</div>
+                  <div class="line">Plan: Premium Plus</div>
+                  <div class="line">Coverage: Feb 04, 2026 &ndash; Feb 04, 2029</div>
+                  <div class="line">Commission: $310 paid</div>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="client-row" data-row-toggle>
+              <td class="client-name">Brown Residence</td>
+              <td>Bedroom</td>
+              <td>Premium</td>
+              <td><span class="status-pill status-pill--sent">Link sent</span></td>
+              <td class="commission-cell">Pending</td>
+              <td><span class="link-action">Resend link</span></td>
+            </tr>
+            <tr class="expanded-row is-hidden">
+              <td colspan="6">
+                <div class="expanded-card">
+                  <div class="line"><strong>Brown Residence</strong></div>
+                  <div class="line">Project: Bedroom</div>
+                  <div class="line">Plan: Premium</div>
+                  <div class="line">Status: Link sent</div>
+                  <div class="line">Commission: Pending</div>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-footer">
+        <p class="row-actions-note"><strong>Row actions:</strong> View details &middot; Resend link &middot; File claim &middot; Call RAP &middot; Email RAP</p>
+        <div class="btn-row">
+          <button class="btn" data-action="export-csv">Export CSV</button>
+          <button class="btn btn--primary" data-action="add-client">Add client / project</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SERVICE QUICK BAR
+       ============================================================ -->
+  <section aria-labelledby="client-help-title">
+    <div class="container">
+      <div class="service-bar">
+        <p><strong>Client needs help?</strong> Send them to 5Star Service, or contact RAP and we&rsquo;ll route it.</p>
+        <div class="btn-row">
+          <a href="https://5starservice.net" rel="noopener" class="btn btn--primary" data-action="file-claim">File claim at 5Star Service <span class="arrow">&rarr;</span></a>
+          <a href="tel:5613743147" class="btn">Call RAP</a>
+          <a href="mailto:designer.programs@raptns.com" class="btn">Email RAP</a>
+          <button class="btn" data-action="copy-claim-instructions">Copy claim instructions</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="logo">Designer Plan</a>
+        <p class="footer-tagline">A program by Risk Assurance Partners</p>
+      </div>
+      <div class="footer-col"><h4>Program</h4><ul>
+        <li><a href="/about">About us</a></li>
+        <li><a href="/partnership">Benefits of partnership</a></li>
+        <li><a href="/terms">Terms of use</a></li>
+        <li><a href="/privacy">Privacy policy</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>Contact</h4><ul>
+        <li><a href="mailto:designer.programs@raptns.com">designer.programs@raptns.com</a></li>
+        <li><a href="tel:+15613743147">561-374-3147</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>For existing customers</h4><ul>
+        <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+        <li><a href="mailto:designer.programs@raptns.com">Talk to a specialist</a></li>
+        <li><a href="/login">Login</a></li>
+      </ul></div>
+    </div>
+    <div class="footer-baseline">
+      <span>&copy; 2026 Risk Assurance Partners. All rights reserved.</span>
+      <span>Designer Plan is administered by Risk Assurance Partners.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var navToggle = document.getElementById('nav-toggle');
+  var navDrawer = document.getElementById('nav-drawer');
+  var navDrawerClose = document.getElementById('nav-drawer-close');
+  var navBackdrop = document.getElementById('nav-backdrop');
+  function openDrawer(){
+    navDrawer.hidden=false; navBackdrop.hidden=false;
+    requestAnimationFrame(function(){ navDrawer.classList.add('open'); navBackdrop.classList.add('open'); });
+    navToggle.setAttribute('aria-expanded','true');
+    document.body.style.overflow='hidden';
+  }
+  function closeDrawer(){
+    navDrawer.classList.remove('open'); navBackdrop.classList.remove('open');
+    navToggle.setAttribute('aria-expanded','false');
+    document.body.style.overflow='';
+    setTimeout(function(){ navDrawer.hidden=true; navBackdrop.hidden=true; }, 280);
+  }
+  if(navToggle && navDrawer){
+    navToggle.addEventListener('click', openDrawer);
+    navDrawerClose.addEventListener('click', closeDrawer);
+    navBackdrop.addEventListener('click', closeDrawer);
+    navDrawer.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeDrawer); });
+  }
+
+  // Row expansion
+  document.querySelectorAll('[data-row-toggle]').forEach(function(r){
+    r.addEventListener('click', function(e){
+      if(e.target.classList.contains('link-action')) return;
+      var next = r.nextElementSibling;
+      if(next && next.classList.contains('expanded-row')) next.classList.toggle('is-hidden');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

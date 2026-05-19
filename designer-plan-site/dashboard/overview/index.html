@@ -1,0 +1,1234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Designer Plan — Partner Dashboard</title>
+<meta name="description" content="Your partner dashboard. Private client link, referral code, tracked commissions, client activity, sales tools, and service support — in one place.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGNER PLAN — DASHBOARD HOME (lightened)
+   Static UI for Adrian to wire to backend.
+   Shares register with dashboard-white-bg.html (welcome page).
+   ============================================================ */
+
+:root{
+  --paper:        #ffffff;
+  --ink:          #1a1815;
+  --ink-65:       rgba(26, 24, 21, 0.65);
+  --ink-45:       rgba(26, 24, 21, 0.45);
+  --rule:         #e3d9c6;
+  --rule-strong:  #cdbf9f;
+  --accent:       #c4582a;
+  --accent-soft:  #f4e4d6;
+
+  --display: "Inter Tight", system-ui, -apple-system, sans-serif;
+  --body:    "Inter", system-ui, -apple-system, sans-serif;
+
+  --sp-section: clamp(48px, 6vw, 80px);
+  --sp-block:   clamp(32px, 4vw, 56px);
+  --sp-tight:   clamp(16px, 2vw, 24px);
+
+  --container:        1200px;
+  --container-narrow: 720px;
+  --gutter:           clamp(20px, 4vw, 40px);
+
+  --ease:    cubic-bezier(0.2, 0.6, 0.2, 1);
+  --t-fast:  180ms;
+  --t-med:   280ms;
+  --t-slow:  600ms;
+}
+@media (min-width: 1400px) { :root { --gutter: 56px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+
+h1, h2, h3, h4 {
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--ink);
+}
+p { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+
+a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+  transition: text-decoration-color var(--t-fast) var(--ease);
+}
+a:hover { text-decoration-color: var(--ink); }
+
+button { font: inherit; cursor: pointer; }
+
+.skip {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--ink); color: var(--paper);
+  padding: 12px 16px; z-index: 1000; text-decoration: none;
+}
+.skip:focus { left: 16px; top: 16px; }
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+.container-narrow { max-width: var(--container-narrow); }
+
+/* ============================================================
+   TYPOGRAPHY UTILITIES
+   ============================================================ */
+.eyebrow {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  margin: 0 0 20px;
+  display: block;
+}
+.h-display { font-size: clamp(2.25rem, 5.5vw, 4.25rem); line-height: 1.05; letter-spacing: -0.02em; font-weight: 500; }
+.h-section { font-size: clamp(1.75rem, 3.8vw, 2.75rem); line-height: 1.1; letter-spacing: -0.018em; }
+.h-block   { font-size: clamp(1.35rem, 2.4vw, 1.75rem); line-height: 1.15; }
+.lead      { font-size: clamp(1.05rem, 1.5vw, 1.2rem); line-height: 1.55; color: var(--ink-65); }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px;
+  padding: 14px 22px;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  text-decoration: none;
+  border-radius: 4px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--t-med) var(--ease),
+              color var(--t-med) var(--ease),
+              border-color var(--t-med) var(--ease);
+  white-space: nowrap;
+}
+.btn:hover { background: var(--ink); color: var(--paper); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.btn .arrow { display: inline-block; transition: transform var(--t-med) var(--ease); }
+.btn:hover .arrow { transform: translateX(3px); }
+.btn--primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.btn--primary:hover { background: #2a2723; border-color: #2a2723; color: var(--paper); }
+.btn--accent { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.btn--accent:hover { background: #a8481f; border-color: #a8481f; color: var(--paper); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.link-inline {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--ink-65);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+  transition: color var(--t-fast) var(--ease);
+}
+.link-inline:hover { color: var(--ink); text-decoration-color: var(--ink); }
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.nav {
+  border-bottom: 1px solid var(--rule);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.nav__inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.logo {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav__links {
+  display: none;
+  list-style: none; padding: 0; margin: 0;
+  gap: 28px;
+  align-items: center;
+}
+.nav__links a {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--ink-65);
+  text-decoration: none;
+  letter-spacing: 0.005em;
+  position: relative;
+  padding: 4px 0;
+  transition: color var(--t-fast) var(--ease);
+}
+.nav__links a:hover, .nav__links a.is-active { color: var(--ink); }
+.nav__links a.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -20px;
+  height: 2px;
+  background: var(--accent);
+}
+.nav-toggle {
+  background: transparent; border: 0;
+  padding: 8px; margin: -8px;
+  display: flex; flex-direction: column; gap: 5px;
+  cursor: pointer;
+}
+.nav-toggle span { display: block; width: 22px; height: 1.5px; background: var(--ink); }
+.nav-drawer {
+  position: fixed; top: 0; right: 0;
+  width: min(85%, 360px);
+  height: 100vh;
+  background: var(--paper);
+  z-index: 100;
+  padding: 80px 32px 32px;
+  transform: translateX(100%);
+  transition: transform var(--t-med) var(--ease);
+  box-shadow: -20px 0 40px rgba(26, 24, 21, 0.08);
+  overflow-y: auto;
+}
+.nav-drawer.open { transform: translateX(0); }
+.nav-drawer-close {
+  position: absolute; top: 22px; right: 22px;
+  background: transparent; border: 0;
+  padding: 8px;
+  font-size: 24px; line-height: 1;
+  color: var(--ink); cursor: pointer;
+}
+.nav-drawer ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.nav-drawer a {
+  display: block;
+  padding: 14px 0;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  letter-spacing: -0.01em;
+}
+.nav-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(26, 24, 21, 0.3);
+  z-index: 90;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--t-med) var(--ease);
+}
+.nav-backdrop.open { opacity: 1; pointer-events: auto; }
+
+/* ============================================================
+   SECTION SCAFFOLDING
+   ============================================================ */
+section { padding: var(--sp-section) 0 0; }
+section:last-of-type { padding-bottom: var(--sp-section); }
+
+.section-header { margin-bottom: var(--sp-block); max-width: 720px; }
+.section-header.center { margin-left: auto; margin-right: auto; text-align: center; }
+.section-header .h-section { margin-bottom: 16px; }
+.section-header .lead { margin: 0; }
+
+.rule-divider { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+
+/* ============================================================
+   HERO — preview card (left) + pitch (right)
+   ============================================================ */
+.hero { padding-top: var(--sp-block); padding-bottom: 0; }
+.hero__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-block);
+  align-items: stretch;
+}
+
+.hero__preview {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-ribbon {
+  display: flex; align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.8125rem;
+  color: var(--ink);
+  flex-wrap: wrap;
+}
+.preview-ribbon .status-dot { background: var(--accent); }
+.preview-ribbon strong { font-weight: 500; }
+.preview-ribbon a { margin-left: auto; font-weight: 500; text-decoration-color: var(--ink); }
+
+.hero__preview-body {
+  padding: 32px;
+  display: flex; flex-direction: column;
+  gap: 28px;
+}
+
+.hero__title-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.hero__title h2 {
+  font-family: var(--display);
+  font-size: clamp(1.5rem, 2.6vw, 1.875rem);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+.hero__title p {
+  color: var(--ink-65);
+  font-size: 0.8125rem;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+.hero__status {
+  display: inline-flex; align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-65);
+  padding: 6px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.field-block { display: flex; flex-direction: column; gap: 10px; }
+.field-label {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+}
+.field-value {
+  font-family: var(--display);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  word-break: break-all;
+}
+.field-value--code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  background: var(--accent-soft);
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+  color: var(--ink);
+}
+
+.commission-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.commission-summary__cell {
+  padding: 18px 0;
+  display: flex; flex-direction: column;
+  gap: 4px;
+}
+.commission-summary__cell + .commission-summary__cell {
+  border-left: 1px solid var(--rule);
+  padding-left: 22px;
+}
+.commission-summary__label { font-size: 0.8125rem; color: var(--ink-65); }
+.commission-summary__value {
+  font-family: var(--display);
+  font-size: 1.625rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.hero__sample-note {
+  font-size: 0.6875rem;
+  color: var(--ink-45);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* RIGHT rail */
+.hero__help {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 32px;
+  background: var(--paper);
+  display: flex; flex-direction: column;
+  gap: var(--sp-block);
+}
+.hero__help .eyebrow { margin: 0; }
+.hero__help h2 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.5rem, 2.4vw, 1.875rem);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  margin: -8px 0 14px;
+}
+.hero__help p { color: var(--ink-65); font-size: 0.9375rem; margin: 0; }
+.hero__help-cta { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.hero__help-cta .btn { width: 100%; }
+.hero__help-tertiary { margin-top: 6px; font-size: 0.875rem; color: var(--ink-65); text-align: center; }
+.hero__help-aside { font-size: 0.9375rem; color: var(--ink-65); margin: 0; }
+.hero__help-aside strong { color: var(--ink); font-weight: 500; }
+.hero__help-contact { font-family: var(--display); font-size: 0.9375rem; line-height: 1.6; }
+.hero__help-contact a { color: var(--ink); }
+
+/* ============================================================
+   STATUS BAND (DEV-PREVIEW TOOL)
+   ============================================================ */
+.status-band-section { padding-top: var(--sp-block); }
+.status-band {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 22px 0;
+}
+.state-switcher {
+  display: flex; gap: 6px; align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.state-switcher__label {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+  margin-right: 10px;
+}
+.state-switcher button {
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 5px 11px;
+  font-family: var(--body);
+  font-size: 0.75rem;
+  color: var(--ink-65);
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease),
+              color var(--t-fast) var(--ease),
+              background-color var(--t-fast) var(--ease);
+}
+.state-switcher button:hover { color: var(--ink); border-color: var(--rule-strong); }
+.state-switcher button.is-active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.status-state { display: none; }
+.status-state.is-active { display: block; }
+.status-state__line {
+  display: flex; align-items: center;
+  gap: 10px;
+  font-size: 0.9375rem;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.status-state__actions {
+  display: flex; align-items: center;
+  gap: 12px; flex-wrap: wrap;
+  font-size: 0.875rem;
+  color: var(--ink-65);
+}
+.status-state__actions .sep { color: var(--ink-45); }
+.status-link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+}
+.status-link:hover { text-decoration-color: var(--ink); }
+
+/* ============================================================
+   AT-A-GLANCE — Commission + Setup, two cards
+   ============================================================ */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+.card {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 32px;
+  display: flex; flex-direction: column;
+  gap: 22px;
+  background: var(--paper);
+}
+.card__title {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+  margin: 0;
+  display: block;
+}
+
+.ledger { display: flex; flex-direction: column; }
+.ledger__row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.9375rem;
+}
+.ledger__row:last-child { border-bottom: none; }
+.ledger__label { color: var(--ink-65); }
+.ledger__value {
+  font-family: var(--display);
+  font-size: 1.125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.ledger__note {
+  font-size: 0.875rem;
+  color: var(--ink-65);
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  margin: 0;
+}
+
+.checklist { list-style: none; padding: 0; margin: 0; }
+.checklist li {
+  display: flex; align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.9375rem;
+}
+.checklist li:last-child { border-bottom: none; }
+.check-icon {
+  width: 18px; height: 18px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.check-icon--done {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.checklist li.is-done { color: var(--ink-65); }
+
+/* ============================================================
+   EXPLORE CARDS — 3-up grid, each card links to a sub-page
+   Uses the welcome page's tier-card register
+   ============================================================ */
+.explore-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+.explore-card {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 36px 30px 32px;
+  display: flex; flex-direction: column;
+  gap: 16px;
+  background: var(--paper);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color var(--t-med) var(--ease);
+}
+.explore-card:hover { border-color: var(--ink); text-decoration: none; }
+.explore-card .eyebrow { margin: 0; color: var(--ink-65); }
+.explore-card h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.explore-card p {
+  font-size: 0.9375rem;
+  color: var(--ink-65);
+  line-height: 1.55;
+  margin: 0;
+}
+.explore-card .summary {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  font-size: 0.8125rem;
+  color: var(--ink-65);
+}
+.explore-card .summary strong { color: var(--ink); font-weight: 500; }
+.explore-card .explore-cta {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+}
+.explore-card:hover .explore-cta { text-decoration-color: var(--ink); }
+
+/* ============================================================
+   QUICK ACTIONS — editorial framing
+   ============================================================ */
+.quick-actions__grid { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* ============================================================
+   UPDATES — three separate cards (welcome page tier register)
+   ============================================================ */
+.updates-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.update-card {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 32px;
+  display: flex; flex-direction: column;
+  gap: 14px;
+  background: var(--paper);
+}
+.update-card .eyebrow { margin: 0 0 4px; }
+.update-card h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.update-card .btn { margin-top: auto; align-self: flex-start; }
+
+/* ============================================================
+   FINAL CTA — centered
+   ============================================================ */
+.final-cta { text-align: center; }
+.final-cta-wrap { max-width: 720px; margin: 0 auto; }
+.final-cta .h-section { margin-bottom: 20px; }
+.final-cta-body { font-size: 1.0625rem; color: var(--ink-65); line-height: 1.6; margin-bottom: 32px; }
+.final-cta-buttons {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.final-cta-tertiary { font-size: 0.875rem; color: var(--ink-65); }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer {
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  padding: 60px 0 32px;
+  margin-top: var(--sp-section);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+.footer-brand .logo { color: var(--ink); font-size: 1.25rem; display: inline-block; margin-bottom: 10px; }
+.footer-tagline { font-size: 0.875rem; color: var(--ink-65); margin: 0; }
+.footer-col h4 {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-65);
+  margin: 0 0 18px;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 0.9375rem;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color var(--t-fast) var(--ease);
+}
+.footer-col a:hover { color: var(--ink-65); }
+.footer-baseline {
+  padding-top: 28px;
+  border-top: 1px solid var(--rule);
+  display: flex; flex-direction: column;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--ink-65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (min-width: 720px) {
+  .final-cta-buttons { flex-direction: row; justify-content: center; }
+}
+@media (min-width: 860px) {
+  .nav__links { display: flex; }
+  .nav-toggle { display: none; }
+  .two-col { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .explore-grid { grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .updates-grid { grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; }
+  .footer-baseline {
+    flex-direction: row; justify-content: space-between; align-items: center;
+    gap: 24px;
+  }
+}
+@media (min-width: 980px) {
+  .hero__grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 40px; }
+}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip">Skip to main content</a>
+
+<!-- ============================================================
+     NAV — Adrian: set is-active per page, server-side.
+     ============================================================ -->
+<header class="nav" id="nav">
+  <div class="container nav__inner">
+    <a href="/" class="logo" aria-label="Designer Plan — home">Designer Plan</a>
+    <nav aria-label="Primary">
+      <ul class="nav__links">
+        <li><a href="/dashboard/overview" class="is-active">Dashboard</a></li>
+        <li><a href="/dashboard/clients">Clients</a></li>
+        <li><a href="/dashboard/sales-tools">Sales tools</a></li>
+        <li><a href="/dashboard/service">Service</a></li>
+        <li><a href="/login">Account / Log in</a></li>
+      </ul>
+    </nav>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<aside class="nav-drawer" id="nav-drawer" aria-label="Mobile navigation" hidden>
+  <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  <ul>
+    <li><a href="/dashboard/overview">Dashboard</a></li>
+    <li><a href="/dashboard/clients">Clients</a></li>
+    <li><a href="/dashboard/sales-tools">Sales tools</a></li>
+    <li><a href="/dashboard/service">Service</a></li>
+    <li><a href="/login">Account / Log in</a></li>
+  </ul>
+</aside>
+
+<main id="main">
+
+  <!-- ============================================================
+       HERO — preview card + pitch
+       DATA (preview card):
+         studio_name, client_link, referral_code,
+         commission.tracked_total, commission.plans_sold_count
+       Ribbon shows in PUBLIC state only.
+       ============================================================ -->
+  <section class="hero" aria-labelledby="hero-pitch-title">
+    <div class="container">
+      <div class="hero__grid">
+
+        <div class="hero__preview" aria-label="Dashboard preview">
+
+          <div class="preview-ribbon" id="preview-ribbon">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span><strong>Sample dashboard.</strong> This is what your dashboard will look like.</span>
+            <a href="/login">Log in to see yours &rarr;</a>
+          </div>
+
+          <div class="hero__preview-body">
+
+            <div class="hero__title-row">
+              <div class="hero__title">
+                <h2 data-field="studio-name">Example Designer Studio</h2>
+                <p>Partner dashboard preview</p>
+              </div>
+              <span class="hero__status">
+                <span class="status-dot" aria-hidden="true"></span>
+                Ready
+              </span>
+            </div>
+
+            <div class="field-block">
+              <span class="field-label">Private client link</span>
+              <span class="field-value" data-field="client-link">thedesignerplan.com/plans?ref=EXAMPLESTUDIO</span>
+              <div class="btn-row">
+                <button class="btn" data-action="copy-client-link">Copy link</button>
+                <button class="btn" data-action="send-to-client">Send to client</button>
+              </div>
+            </div>
+
+            <div class="field-block">
+              <span class="field-label">Referral code</span>
+              <span class="field-value field-value--code" data-field="referral-code">EXAMPLESTUDIO</span>
+              <div class="btn-row">
+                <button class="btn" data-action="copy-referral-code">Copy referral code</button>
+              </div>
+            </div>
+
+            <div>
+              <span class="field-label" style="display:block; margin-bottom:10px;">Commission summary</span>
+              <div class="commission-summary">
+                <div class="commission-summary__cell">
+                  <span class="commission-summary__label">Tracked commission</span>
+                  <span class="commission-summary__value" data-field="commission-tracked">$843</span>
+                </div>
+                <div class="commission-summary__cell">
+                  <span class="commission-summary__label">Plans sold</span>
+                  <span class="commission-summary__value" data-field="plans-sold">3</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="hero__sample-note">Sample data shown</p>
+
+          </div>
+        </div>
+
+        <aside class="hero__help" aria-labelledby="hero-pitch-title">
+          <div>
+            <span class="eyebrow">Partner dashboard</span>
+            <h2 id="hero-pitch-title">See how Designer Plan works for your studio.</h2>
+            <p>Track clients, see commissions, send clients to claims, find sales tools &mdash; in one place.</p>
+          </div>
+
+          <div class="hero__help-cta">
+            <a href="/partner-apply" class="btn btn--accent">Create my account <span class="arrow">&rarr;</span></a>
+            <a href="/login" class="btn btn--primary">Log in <span class="arrow">&rarr;</span></a>
+            <p class="hero__help-tertiary"><a href="tel:5613743147" class="link-inline">Or call us to set it up &rarr;</a></p>
+          </div>
+
+          <div>
+            <p class="hero__help-aside"><strong>Already talked to us?</strong> Your account may already be waiting.</p>
+          </div>
+
+          <div>
+            <span class="eyebrow" style="margin-bottom:8px;">Need help?</span>
+            <div class="hero__help-contact">
+              <a href="tel:5613743147">561-374-3147</a><br>
+              <a href="mailto:designer.programs@raptns.com">designer.programs@raptns.com</a>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       STATUS BAND — dev-preview tool. Remove or feature-flag for production.
+       DATA: server-side determines which state to show.
+       ============================================================ -->
+  <section class="status-band-section" aria-label="Account status">
+    <div class="container">
+      <div class="status-band">
+
+        <div class="state-switcher" role="group" aria-label="Preview state (dev tool)">
+          <span class="state-switcher__label">View state</span>
+          <button class="is-active" data-state="public">Public</button>
+          <button data-state="incomplete">Logged-in incomplete</button>
+          <button data-state="active">Logged-in active</button>
+        </div>
+
+        <div class="status-state is-active" data-state="public">
+          <div class="status-state__line">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>Preview mode &mdash; you are viewing a sample Designer Plan partner dashboard.</span>
+          </div>
+          <div class="status-state__actions">
+            <span>Already talked to us? Your account may already be waiting.</span>
+            <a class="status-link" href="/login">Log in</a>
+            <span class="sep">|</span>
+            <a class="status-link" href="#">Find my account</a>
+            <span class="sep">|</span>
+            <a class="status-link" href="tel:5613743147">Call</a>
+          </div>
+        </div>
+
+        <div class="status-state" data-state="incomplete">
+          <div class="status-state__line">
+            <span data-field="setup-progress-line">Account setup: 3 of 5 complete. Next: connect Stripe so you can receive commission.</span>
+          </div>
+          <div class="status-state__actions">
+            <button class="btn" data-action="continue-setup">Continue setup</button>
+            <button class="btn" data-action="connect-stripe">Connect Stripe</button>
+            <button class="btn" data-action="call-rap">Call RAP</button>
+          </div>
+        </div>
+
+        <div class="status-state" data-state="active">
+          <div class="status-state__line">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>Account active. Your client link and referral code are ready.</span>
+          </div>
+          <div class="status-state__actions">
+            <button class="btn" data-action="copy-client-link">Copy client link</button>
+            <button class="btn" data-action="copy-referral-code">Copy referral code</button>
+            <button class="btn" data-action="call-rap">Call RAP</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       AT A GLANCE — Commission snapshot + Setup checklist
+       DATA: commission ledger amounts; checklist done/undone state
+       ============================================================ -->
+  <section aria-labelledby="at-a-glance-title">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">Where you stand</span>
+        <h2 id="at-a-glance-title" class="h-section">Commission and setup, at a glance.</h2>
+        <p class="lead">What you&rsquo;ve earned and what&rsquo;s left to set up.</p>
+      </div>
+
+      <div class="two-col">
+
+        <div class="card">
+          <span class="card__title">Commission snapshot</span>
+          <div class="ledger">
+            <div class="ledger__row">
+              <span class="ledger__label">Tracked commission</span>
+              <span class="ledger__value" data-field="commission-tracked">$843</span>
+            </div>
+            <div class="ledger__row">
+              <span class="ledger__label">Pending commission</span>
+              <span class="ledger__value" data-field="commission-pending">$598</span>
+            </div>
+            <div class="ledger__row">
+              <span class="ledger__label">Payable now</span>
+              <span class="ledger__value" data-field="commission-payable">$245</span>
+            </div>
+            <div class="ledger__row">
+              <span class="ledger__label">Paid to date</span>
+              <span class="ledger__value" data-field="commission-paid">$0</span>
+            </div>
+          </div>
+          <p class="ledger__note" data-field="stripe-note">Stripe setup is required before payouts.</p>
+          <div class="btn-row">
+            <button class="btn" data-action="connect-stripe">Connect Stripe</button>
+            <button class="btn" data-action="how-commissions-work">How commissions work</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="card__title">Setup checklist</span>
+          <ul class="checklist" data-field="setup-checklist">
+            <li class="is-done"><span class="check-icon check-icon--done" aria-hidden="true">&#10003;</span> Account created</li>
+            <li class="is-done"><span class="check-icon check-icon--done" aria-hidden="true">&#10003;</span> Client link assigned</li>
+            <li class="is-done"><span class="check-icon check-icon--done" aria-hidden="true">&#10003;</span> Referral code assigned</li>
+            <li><span class="check-icon" aria-hidden="true"></span> Stripe connected</li>
+            <li><span class="check-icon" aria-hidden="true"></span> First client link sent</li>
+            <li><span class="check-icon" aria-hidden="true"></span> Onboarding call scheduled</li>
+          </ul>
+          <div class="btn-row">
+            <button class="btn" data-action="continue-setup">Continue setup</button>
+            <button class="btn" data-action="ask-rap-to-help">Ask RAP to help</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       EXPLORE — three cards linking to dedicated pages
+       Each card replaces what used to be an accordion.
+       DATA (summary line per card):
+         - clients: "{active_plans} active · {links_sent} link sent · ${commission} tracked"
+         - service: static "Send to 5Star Service · Call · Email" or similar
+         - sales: "Email scripts · Talk tracks · Closeout checklist"
+       ============================================================ -->
+  <section aria-labelledby="explore-title">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">Go deeper</span>
+        <h2 id="explore-title" class="h-section">Three areas of your dashboard.</h2>
+        <p class="lead">Open the one you need. Each lives on its own page so it has room to breathe.</p>
+      </div>
+
+      <div class="explore-grid">
+
+        <a href="/dashboard/clients" class="explore-card">
+          <span class="eyebrow">Your projects</span>
+          <h3>My clients &amp; plans.</h3>
+          <p>Every client, project, plan, and commission &mdash; in one searchable list.</p>
+          <span class="summary" data-field="clients-summary"><strong>2 active plans</strong> &middot; 1 link sent &middot; $196 tracked</span>
+          <span class="explore-cta">Open clients &amp; plans &rarr;</span>
+        </a>
+
+        <a href="/dashboard/service" class="explore-card">
+          <span class="eyebrow">Service</span>
+          <h3>Service &amp; claims.</h3>
+          <p>Send clients to 5Star Service, reach RAP, and find what they need to file.</p>
+          <span class="summary">File a claim &middot; Call RAP &middot; Email RAP</span>
+          <span class="explore-cta">Open service &amp; claims &rarr;</span>
+        </a>
+
+        <a href="/dashboard/sales-tools" class="explore-card">
+          <span class="eyebrow">Tools</span>
+          <h3>Sales tools.</h3>
+          <p>Ready-to-send emails, talk tracks, one-pagers, and closeout materials.</p>
+          <span class="summary">Email scripts &middot; Talk tracks &middot; Plan one-pagers</span>
+          <span class="explore-cta">Open sales tools &rarr;</span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       QUICK ACTIONS
+       ============================================================ -->
+  <section aria-labelledby="quick-actions-title">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">Shortcuts</span>
+        <h2 id="quick-actions-title" class="h-section">Common actions, one click away.</h2>
+        <p class="lead">Copy a link, send a plan, connect payouts, file a claim, reach us.</p>
+      </div>
+      <div class="quick-actions__grid">
+        <button class="btn" data-action="copy-client-link">Copy client link</button>
+        <button class="btn" data-action="copy-referral-code">Copy referral code</button>
+        <button class="btn" data-action="send-plan-to-client">Send plan to client</button>
+        <button class="btn" data-action="buy-plan-now">Buy plan now</button>
+        <button class="btn" data-action="connect-stripe">Connect Stripe</button>
+        <button class="btn" data-action="file-claim">File claim</button>
+        <button class="btn" data-action="call-rap">Call RAP</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       UPDATES & SUCCESS STORIES
+       DATA: three cards from CMS / RSS / hand-edited content
+       ============================================================ -->
+  <section aria-labelledby="updates-title">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">From the program</span>
+        <h2 id="updates-title" class="h-section">Updates and ideas.</h2>
+      </div>
+
+      <div class="updates-grid">
+        <article class="update-card">
+          <span class="eyebrow">Success story</span>
+          <h3>How a designer protected a full living room project.</h3>
+          <a href="#" class="btn">Read story <span class="arrow">&rarr;</span></a>
+        </article>
+        <article class="update-card">
+          <span class="eyebrow">Selling tip</span>
+          <h3>When to introduce protection at project closeout.</h3>
+          <a href="#" class="btn">Read tip <span class="arrow">&rarr;</span></a>
+        </article>
+        <article class="update-card">
+          <span class="eyebrow">Partner updates</span>
+          <h3>Get scripts, success stories, and updates.</h3>
+          <a href="#" class="btn" data-action="subscribe">Subscribe <span class="arrow">&rarr;</span></a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FINAL CTA
+       ============================================================ -->
+  <section class="final-cta" aria-labelledby="final-cta-title">
+    <div class="container final-cta-wrap">
+      <span class="eyebrow">Begin</span>
+      <h2 id="final-cta-title" class="h-section">Ready to see your studio in the dashboard?</h2>
+      <p class="final-cta-body">Create your account, log in if RAP already created one, or call us and we&rsquo;ll help set it up.</p>
+
+      <div class="final-cta-buttons">
+        <a href="/partner-apply" class="btn btn--accent">Create my account <span class="arrow">&rarr;</span></a>
+        <a href="/login" class="btn btn--primary">Log in <span class="arrow">&rarr;</span></a>
+        <a href="tel:5613743147" class="btn">Call RAP <span class="arrow">&rarr;</span></a>
+      </div>
+
+      <p class="final-cta-tertiary"><a href="/plans" class="link-inline">Shop plans first &rarr;</a></p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="logo">Designer Plan</a>
+        <p class="footer-tagline">A program by Risk Assurance Partners</p>
+      </div>
+      <div class="footer-col">
+        <h4>Program</h4>
+        <ul>
+          <li><a href="/about">About us</a></li>
+          <li><a href="/partnership">Benefits of partnership</a></li>
+          <li><a href="/terms">Terms of use</a></li>
+          <li><a href="/privacy">Privacy policy</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:designer.programs@raptns.com">designer.programs@raptns.com</a></li>
+          <li><a href="tel:+15613743147">561-374-3147</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>For existing customers</h4>
+        <ul>
+          <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+          <li><a href="mailto:designer.programs@raptns.com">Talk to a specialist</a></li>
+          <li><a href="/login">Login</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-baseline">
+      <span>&copy; 2026 Risk Assurance Partners. All rights reserved.</span>
+      <span>Designer Plan is administered by Risk Assurance Partners.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============================================================
+     SCRIPT — nav drawer + dev state switcher only
+     data-action="*" buttons are no-ops; Adrian wires them.
+     ============================================================ -->
+<script>
+(function(){
+  'use strict';
+
+  var navToggle = document.getElementById('nav-toggle');
+  var navDrawer = document.getElementById('nav-drawer');
+  var navDrawerClose = document.getElementById('nav-drawer-close');
+  var navBackdrop = document.getElementById('nav-backdrop');
+
+  function openDrawer(){
+    navDrawer.hidden = false;
+    navBackdrop.hidden = false;
+    requestAnimationFrame(function(){
+      navDrawer.classList.add('open');
+      navBackdrop.classList.add('open');
+    });
+    navToggle.setAttribute('aria-expanded','true');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer(){
+    navDrawer.classList.remove('open');
+    navBackdrop.classList.remove('open');
+    navToggle.setAttribute('aria-expanded','false');
+    document.body.style.overflow = '';
+    setTimeout(function(){ navDrawer.hidden = true; navBackdrop.hidden = true; }, 280);
+  }
+  if (navToggle && navDrawer) {
+    navToggle.addEventListener('click', openDrawer);
+    navDrawerClose.addEventListener('click', closeDrawer);
+    navBackdrop.addEventListener('click', closeDrawer);
+    navDrawer.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeDrawer); });
+  }
+
+  // Dev-preview state switcher
+  (function() {
+    var switcher = document.querySelector('.state-switcher');
+    if (!switcher) return;
+    var buttons = switcher.querySelectorAll('button[data-state]');
+    var states = document.querySelectorAll('.status-state');
+    var ribbon = document.getElementById('preview-ribbon');
+    buttons.forEach(function(b) {
+      b.addEventListener('click', function() {
+        var s = this.getAttribute('data-state');
+        buttons.forEach(function(x){ x.classList.toggle('is-active', x === b); });
+        states.forEach(function(el){ el.classList.toggle('is-active', el.getAttribute('data-state') === s); });
+        if (ribbon) ribbon.style.display = (s === 'public') ? '' : 'none';
+      });
+    });
+  })();
+
+})();
+</script>
+
+</body>
+</html>
