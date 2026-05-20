@@ -97,10 +97,23 @@ The three pages:
 - **claude browser agents** — one per page, design only, tightly controlled by brief.
 - **Adrian** — owns the Supabase database.
 
+## Recently completed
+
+- **2026-05-20 — Quick-wins batch** (second-agent engagement; landed via cherry-pick `4d57046`).
+  10 items from `docs/qa-audit-2026-05-19.md`: H3 `#how-it-works` anchor, H4 dashboard-overview
+  anchor IDs (3 on explore cards, 1 on commission section — chief deviation from "wrapping
+  section" rule), H5 footer "Log in" normalization, H6 radio/checkbox CSS specificity fix
+  (`form.simple-form input:not([type="radio"]):not([type="checkbox"])`), H8 Promo A wording
+  reconciled to designer-side framing across 7 in-page occurrences + 2 meta descriptions,
+  M1 phone format normalized to `tel:+15613743147`, M7 `/partnership` apply button moved
+  to `.btn-primary` (inline styles dropped), M8 `/login` env-var note rewritten, M9 deleted
+  unused `_shared/page-shell.html`, M10 dashboard-overview `href="#"` placeholders → `/dashboard`
+  with `aria-disabled` + `title="Coming soon"`.
+
 ## Open items (after the three pages ship + a bug re-check)
 
 - Real auth (Supabase Auth, magic link) — needs RLS unlocked + anon key
 - Promotions wiring (Promo A 40% claim, Promo B 10% referral)
 - Netlify functions: dashboard-data, otp-send/verify, promo-claim, account-create
 - Admin console build (marketing-center vs designer-site — see PRD open item)
-- Reconcile Promo A public wording
+- Reconcile Promo A public wording — ✅ DONE 2026-05-20 (see Recently completed)
