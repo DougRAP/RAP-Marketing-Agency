@@ -1,7 +1,8 @@
 # Brief — Quick-wins implementation agent
 
 **Audience:** Fresh Claude Code agent assigned a limited, mechanical implementation pass.
-**Repo:** `DougRAP/RAP-Marketing-Agency`, local at `C:\Newco\AI\Designer\rap-designer-agency`.
+**Repo:** `DougRAP/RAP-Marketing-Agency`.
+**Working directory (IMPORTANT):** `C:\Newco\AI\Designer\rap-designer-agency-cc-parallel` — a parallel clone of the same repo. **Do all work here, not in the chief's directory.** This directory shares `origin` with the main repo, which is why the no-push rule below matters.
 **Date issued:** 2026-05-19
 **Issued by:** Chief agent (current session) on Doug's behalf.
 
@@ -31,9 +32,10 @@ You are completing 10 specific items from the QA audit. Every item has a file pa
 2. **Do NOT modify CSS design tokens** (`--paper`, `--ink`, `--accent`, fonts, etc.) anywhere.
 3. **Do NOT change the canonical nav structure.** It is now: Home · Partner with us · Shop plans · Dashboard · File a claim · Log in. Don't add, remove, or reorder.
 4. **Do NOT create new CSS files** or new shared partials. Inline styles in the existing pages where needed.
-5. **Commit atomically** — one logical commit per group (suggested groups below), or one commit covering all 10 items if simpler. Push at the end. Don't force-push, don't amend, don't skip hooks.
-6. **Use the standard commit message format** with the trailing line `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`.
-7. **Stop conditions:** if anything is ambiguous, if a file looks different from what this brief says, or if a fix uncovers a deeper problem — STOP and report to Doug in chat. Do not improvise.
+5. **Commit atomically** — work on a branch named `quickwins-2026-05-19` (`git checkout -b quickwins-2026-05-19` from `main`). One logical commit per group (suggested groups below), or one commit covering all 10 items if simpler. Don't force-push, don't amend, don't skip hooks.
+6. **DO NOT push to `origin`.** Commits stay local. Doug merges your work into the main repo himself after review. The parallel directory shares the same GitHub `origin` as the chief's directory — a push from here would land directly on `main`, defeating the whole point of working in parallel.
+7. **Use the standard commit message format** with the trailing line `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`.
+8. **Stop conditions:** if anything is ambiguous, if a file looks different from what this brief says, or if a fix uncovers a deeper problem — STOP and report to Doug in chat. Do not improvise.
 
 ---
 
@@ -218,15 +220,39 @@ Two or three commits is fine. Suggested:
 
 Or a single commit covering everything if that reads cleaner.
 
-Push to `main` when done.
+**Do NOT push.** Leave the branch local for Doug's review.
 
 ---
 
 ## After you finish
 
-1. Confirm in chat: which items completed, the commit SHA(s) pushed, anything you stopped on.
-2. Update `HANDOFF.md` if appropriate — add a brief line under a new "Recently completed" section noting the quick-wins batch landed.
-3. **STOP.** Do not pick up the next workstream. The chief agent will direct what's next.
+1. Confirm in chat: which items completed, the **local** commit SHA(s) on branch `quickwins-2026-05-19`, anything you stopped on.
+2. Output `git log main..quickwins-2026-05-19 --oneline` so Doug sees the commits at a glance.
+3. Output `git diff --stat main..quickwins-2026-05-19` so Doug sees scope at a glance.
+4. Do NOT update `HANDOFF.md` — the chief agent will update it once changes merge to main.
+5. **STOP.** Do not pick up the next workstream. The chief agent will direct what's next.
+
+## How Doug merges your work back into the main repo
+
+Doug will, in the chief's directory (`C:\Newco\AI\Designer\rap-designer-agency`):
+
+```bash
+# Option A — pull the branch from the parallel dir as a local remote and merge it
+git remote add parallel C:/Newco/AI/Designer/rap-designer-agency-cc-parallel
+git fetch parallel quickwins-2026-05-19
+git merge parallel/quickwins-2026-05-19    # or cherry-pick individual commits
+git push origin main
+git remote remove parallel
+
+# Option B — review the patches and apply
+cd C:/Newco/AI/Designer/rap-designer-agency-cc-parallel
+git format-patch main..quickwins-2026-05-19 -o /tmp/quickwins-patches
+cd C:/Newco/AI/Designer/rap-designer-agency
+git am /tmp/quickwins-patches/*
+git push origin main
+```
+
+You don't need to do either — just leave a clean local branch and clear logs/diffs.
 
 If you finish in a fraction of expected tokens, that's the desired outcome — return budget to the chief agent.
 
