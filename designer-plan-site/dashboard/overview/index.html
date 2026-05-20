@@ -873,7 +873,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
           <div class="hero__help-cta">
             <a href="/partner-apply" class="btn btn--accent">Create my account <span class="arrow">&rarr;</span></a>
             <a href="/login" class="btn btn--primary">Log in <span class="arrow">&rarr;</span></a>
-            <p class="hero__help-tertiary"><a href="tel:5613743147" class="link-inline">Or call us to set it up &rarr;</a></p>
+            <p class="hero__help-tertiary"><a href="tel:+15613743147" class="link-inline">Or call us to set it up &rarr;</a></p>
           </div>
 
           <div>
@@ -883,7 +883,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
           <div>
             <span class="eyebrow" style="margin-bottom:8px;">Need help?</span>
             <div class="hero__help-contact">
-              <a href="tel:5613743147">561-374-3147</a><br>
+              <a href="tel:+15613743147">561-374-3147</a><br>
               <a href="mailto:designer.programs@raptns.com">designer.programs@raptns.com</a>
             </div>
           </div>
@@ -917,9 +917,9 @@ section:last-of-type { padding-bottom: var(--sp-section); }
             <span>Already talked to us? Your account may already be waiting.</span>
             <a class="status-link" href="/login">Log in</a>
             <span class="sep">|</span>
-            <a class="status-link" href="#">Find my account</a>
+            <a class="status-link" href="/dashboard" aria-disabled="true" title="Coming soon">Find my account</a>
             <span class="sep">|</span>
-            <a class="status-link" href="tel:5613743147">Call</a>
+            <a class="status-link" href="tel:+15613743147">Call</a>
           </div>
         </div>
 
@@ -954,7 +954,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
        AT A GLANCE — Commission snapshot + Setup checklist
        DATA: commission ledger amounts; checklist done/undone state
        ============================================================ -->
-  <section aria-labelledby="at-a-glance-title">
+  <section id="commission" aria-labelledby="at-a-glance-title">
     <div class="container">
       <div class="section-header">
         <span class="eyebrow">Where you stand</span>
@@ -1029,7 +1029,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
 
       <div class="explore-grid">
 
-        <a href="/dashboard/clients" class="explore-card">
+        <a id="clients" href="/dashboard/clients" class="explore-card">
           <span class="eyebrow">Your projects</span>
           <h3>My clients &amp; plans.</h3>
           <p>Every client, project, plan, and commission &mdash; in one searchable list.</p>
@@ -1037,7 +1037,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
           <span class="explore-cta">Open clients &amp; plans &rarr;</span>
         </a>
 
-        <a href="/dashboard/service" class="explore-card">
+        <a id="service" href="/dashboard/service" class="explore-card">
           <span class="eyebrow">Service</span>
           <h3>Service &amp; claims.</h3>
           <p>Send clients to 5Star Service, reach RAP, and find what they need to file.</p>
@@ -1045,7 +1045,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
           <span class="explore-cta">Open service &amp; claims &rarr;</span>
         </a>
 
-        <a href="/dashboard/sales-tools" class="explore-card">
+        <a id="sales" href="/dashboard/sales-tools" class="explore-card">
           <span class="eyebrow">Tools</span>
           <h3>Sales tools.</h3>
           <p>Ready-to-send emails, talk tracks, one-pagers, and closeout materials.</p>
@@ -1094,17 +1094,17 @@ section:last-of-type { padding-bottom: var(--sp-section); }
         <article class="update-card">
           <span class="eyebrow">Success story</span>
           <h3>How a designer protected a full living room project.</h3>
-          <a href="#" class="btn">Read story <span class="arrow">&rarr;</span></a>
+          <a href="/dashboard" class="btn" aria-disabled="true" title="Coming soon">Read story <span class="arrow">&rarr;</span></a>
         </article>
         <article class="update-card">
           <span class="eyebrow">Selling tip</span>
           <h3>When to introduce protection at project closeout.</h3>
-          <a href="#" class="btn">Read tip <span class="arrow">&rarr;</span></a>
+          <a href="/dashboard" class="btn" aria-disabled="true" title="Coming soon">Read tip <span class="arrow">&rarr;</span></a>
         </article>
         <article class="update-card">
           <span class="eyebrow">Partner updates</span>
           <h3>Get scripts, success stories, and updates.</h3>
-          <a href="#" class="btn" data-action="subscribe">Subscribe <span class="arrow">&rarr;</span></a>
+          <a href="/dashboard" class="btn" data-action="subscribe" aria-disabled="true" title="Coming soon">Subscribe <span class="arrow">&rarr;</span></a>
         </article>
       </div>
     </div>
@@ -1122,7 +1122,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
       <div class="final-cta-buttons">
         <a href="/partner-apply" class="btn btn--accent">Create my account <span class="arrow">&rarr;</span></a>
         <a href="/login" class="btn btn--primary">Log in <span class="arrow">&rarr;</span></a>
-        <a href="tel:5613743147" class="btn">Call RAP <span class="arrow">&rarr;</span></a>
+        <a href="tel:+15613743147" class="btn">Call RAP <span class="arrow">&rarr;</span></a>
       </div>
 
       <p class="final-cta-tertiary"><a href="/plans" class="link-inline">Shop plans first &rarr;</a></p>
@@ -1162,7 +1162,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
         <ul>
           <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
           <li><a href="mailto:designer.programs@raptns.com">Talk to a specialist</a></li>
-          <li><a href="/login">Login</a></li>
+          <li><a href="/login">Log in</a></li>
         </ul>
       </div>
     </div>
