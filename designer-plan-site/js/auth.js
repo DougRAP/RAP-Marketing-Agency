@@ -23,8 +23,50 @@
     requireAuth: function () { return false; }
   };
 
+  // Swap nav "Log in" links to "<email> · Log out" when a session is
+  // present. Scoped to header/footer/nav/aside — leaves in-content CTAs
+  // like "Log in to my dashboard" alone.
+  var ACCOUNT_LINK_SELECTOR = [
+    'header a[href="/login"]',
+    'footer a[href="/login"]',
+    'aside a[href="/login"]',
+    'nav a[href="/login"]'
+  ].join(', ');
+
+  function renderAccountLinks(){
+    var user = window.DP_AUTH.user;
+    document.querySelectorAll(ACCOUNT_LINK_SELECTOR).forEach(function(a){
+      if (user) {
+        if (!a.dataset.dpOriginalText) {
+          a.dataset.dpOriginalText = a.textContent.trim();
+        }
+        a.textContent = user.email + ' · Log out';
+        a.dataset.dpAccountLink = 'signed-in';
+      } else if (a.dataset.dpAccountLink === 'signed-in') {
+        a.textContent = a.dataset.dpOriginalText || 'Log in';
+        a.dataset.dpAccountLink = '';
+      }
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    var a = e.target.closest('a[data-dp-account-link="signed-in"]');
+    if (!a) return;
+    e.preventDefault();
+    if (!window.DP_AUTH.signOut) return;
+    window.DP_AUTH.signOut().then(function(){
+      renderAccountLinks();
+      window.location.replace('/');
+    });
+  });
+
   function markReady(){
     window.DP_AUTH.ready = true;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', renderAccountLinks, { once: true });
+    } else {
+      renderAccountLinks();
+    }
     document.dispatchEvent(new Event('dp-auth-ready'));
   }
 
@@ -83,6 +125,8 @@
 
       sb.auth.onAuthStateChange(function(_event, session){
         window.DP_AUTH.user = session ? session.user : null;
+        if (!window.DP_AUTH.user) window.DP_AUTH.partner = null;
+        renderAccountLinks();
       });
 
       return sb.auth.getSession().then(function(res){
