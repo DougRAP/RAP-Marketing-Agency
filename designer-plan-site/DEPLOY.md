@@ -28,7 +28,26 @@ Site #4 in the `RAP-Marketing-Agency` monorepo. Publishes from `designer-plan-si
 5. **Site settings → Environment variables:** add
    - `SUPABASE_URL` — from the Supabase project's API page
    - `SUPABASE_SERVICE_ROLE_KEY` — from the Supabase project's API page (**server-side only — never exposed in client JS**)
+   - `SUPABASE_ANON_KEY` — the publishable / anon key from the same API page. Served to the browser via `/.netlify/functions/public-config`. Safe to expose: it's gated by Row-Level Security on every table.
    - `EMAILOCTOPUS_API_KEY` — *(optional, for when list-sync is wired)*
+
+## Supabase Auth — one-time dashboard config (magic link)
+
+Required for `/login` magic-link sign-in. Supabase dashboard → **Authentication → URL Configuration**:
+
+1. **Site URL** — production URL of this site, e.g. `https://thedesignerplan.com` (or the current Netlify URL, e.g. `https://thedesignerplan.netlify.app`).
+2. **Redirect URLs (allow-list)** — every origin that should be allowed as the magic-link redirect target. Add all of:
+   - `https://thedesignerplan.com/dashboard`
+   - `https://thedesignerplan.com/login`
+   - `https://thedesignerplan.netlify.app/dashboard`
+   - `https://thedesignerplan.netlify.app/login`
+   - `https://deploy-preview-*--thedesignerplan.netlify.app/dashboard` *(Netlify preview deploys, optional)*
+   - `http://localhost:8888/dashboard` *(for `netlify dev`)*
+   - `http://localhost:8888/login`
+
+Without these the magic-link redirect lands on Supabase's default error page.
+
+3. **Email templates → Magic Link** — optional polish. The default "Click here to sign in" works as-is.
 
 ## One-time Supabase setup
 
@@ -81,7 +100,7 @@ This serves the static site at http://localhost:8888 with functions live.
 
 The dev team owns these:
 
-1. **Real auth** — uncomment the Supabase block in `designer-plan-site/js/auth.js` and add `SUPABASE_URL` + `SUPABASE_ANON_KEY` as inline `window.*` values at the top of pages that need auth (or via a build step).
+1. ~~**Real auth** — uncomment the Supabase block in `designer-plan-site/js/auth.js` and add `SUPABASE_URL` + `SUPABASE_ANON_KEY` as inline `window.*` values at the top of pages that need auth (or via a build step).~~ **Done.** `auth.js` is live; config served via `netlify/functions/public-config.js`. The `/login` page calls `signInWithOtp`; dashboard pages redirect to `/login` when no session. Requires `SUPABASE_ANON_KEY` env var and Supabase Auth URL Configuration above.
 2. **Real checkout** — replace the stub in `designer-plan-site/netlify/functions/cart-checkout.js` with the actual checkout integration (Stripe Checkout session creation, or the existing cart backend handoff). Should return `{ checkout_url: <url> }`.
 3. **EmailOctopus sync** — when an email list has an `emailoctopus_id`, member adds/removes should also call EmailOctopus's API. Use `EMAILOCTOPUS_API_KEY` env var. The admin UI already shows the column; just needs the API calls in `marketing-center-site/netlify/functions/admin-leads.js`.
 4. **Partner-approval workflow** — currently `partners.status` is set to `pending` on application. Build an admin tool (or a thin "approve" button in `/private/lists/` or a sibling page) that flips `status` to `approved`, sets `approved_at`, sends the welcome email, and moves the lead from the `designers-pending` to `designers-partners` list.

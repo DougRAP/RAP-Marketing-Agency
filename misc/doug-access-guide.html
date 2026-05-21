@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setting up Adrian to push to RAP-Marketing-Agency</title>
+<style>
+  :root {
+    --bg: #F7F2E8;
+    --bg-card: #FBF7EE;
+    --ink: #2E2620;
+    --ink-soft: #5A4F44;
+    --rule: #D7CFC0;
+    --accent: #8C5A2B;
+    --accent-soft: #BFA37A;
+    --code-bg: #EFE7D6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body {
+    font-family: Georgia, "Bitstream Charter", "Iowan Old Style", "Palatino Linotype", serif;
+    font-size: 18px;
+    line-height: 1.72;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 56px 28px 96px;
+  }
+  header.doc-head {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+  header.doc-head .eyebrow {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 28px;
+    line-height: 1.25;
+    margin: 0 0 12px;
+    color: var(--ink);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  header.doc-head .meta {
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  h2 {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 21px;
+    margin-top: 44px;
+    margin-bottom: 12px;
+    color: var(--ink);
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 8px;
+  }
+  h3 {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px;
+    margin-top: 24px;
+    margin-bottom: 6px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  p { margin: 0 0 16px; }
+  ul, ol { margin: 0 0 18px; padding-left: 24px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  code {
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: #5C3A18;
+  }
+  .lede {
+    font-size: 17px;
+    color: var(--ink-soft);
+    border-left: 3px solid var(--accent-soft);
+    padding: 8px 0 8px 16px;
+    margin: 0 0 30px;
+  }
+  .callout {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px;
+    margin: 22px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 16px;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout .label {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .step-list { counter-reset: stp; list-style: none; padding-left: 0; }
+  .step-list > li {
+    counter-increment: stp;
+    position: relative;
+    padding: 16px 20px 16px 58px;
+    margin-bottom: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+  }
+  .step-list > li::before {
+    content: counter(stp);
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #FBF7EE;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .commit-list {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin: 14px 0 22px;
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 36px 0;
+  }
+  footer.doc-foot {
+    margin-top: 48px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-style: italic;
+    text-align: center;
+  }
+  @media (max-width: 600px) {
+    body { font-size: 17px; }
+    main { padding: 36px 18px 64px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 19px; }
+    .step-list > li { padding-left: 52px; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header class="doc-head">
+  <div class="eyebrow">Repo access setup · 5-minute task</div>
+  <h1>Setting up Adrian to push to <code>RAP-Marketing-Agency</code></h1>
+  <div class="meta">Two one-time steps on your side, then Adrian's branch lands and we're moving again.</div>
+</header>
+
+<p class="lede">
+Hi Doug — Adrian's commits are ready to merge, but his <code>git push</code> is being rejected with a <code>403 Permission denied</code> because GitHub doesn't yet know he's allowed to write to your repo. Two things from you, both one-time, then we're good for the rest of the project.
+</p>
+
+<section>
+<h2>1. Make the repo private (recommended)</h2>
+
+<p>The repo currently contains the lead-capture plan (<code>docs/db-plan.md</code>), the handoff notes, your operational rules, and the partner-program internals. None of it is a hard secret — we already grepped for keys and the commit history is clean — but there's no reason for it to be world-readable on a public GitHub URL.</p>
+
+<ol class="step-list">
+  <li>
+    Go to <strong><a href="https://github.com/DougRAP/RAP-Marketing-Agency">github.com/DougRAP/RAP-Marketing-Agency</a></strong>.
+  </li>
+  <li>
+    Click <strong>Settings</strong> (top-right tab inside the repo).
+  </li>
+  <li>
+    Scroll all the way down to the <strong>Danger Zone</strong> box.
+  </li>
+  <li>
+    Click <strong>Change repository visibility</strong> → <strong>Make private</strong>.
+  </li>
+  <li>
+    GitHub will ask you to type the repo name to confirm. Do it.
+  </li>
+</ol>
+
+<div class="callout">
+  <div class="label">Why private now and not later</div>
+  <p>Going private adds defense-in-depth, stops search-engine indexing of the repo, and protects the operational rules in <code>docs/db-plan.md</code> from being read by anyone who happens to find the URL. Forks made while the repo was public stay public, but the upstream goes dark.</p>
+</div>
+</section>
+
+<section>
+<h2>2. Give Adrian write access</h2>
+
+<p>Adrian's GitHub username is <strong><code>abarresrap</code></strong>.</p>
+
+<ol class="step-list">
+  <li>
+    Same repo → <strong>Settings</strong> → left sidebar → <strong>Collaborators</strong>.
+  </li>
+  <li>
+    Click <strong>Add people</strong>.
+  </li>
+  <li>
+    Type <code>abarresrap</code>, select him, choose role <strong>Write</strong> (not Admin — Write is enough to push branches and open PRs).
+  </li>
+  <li>
+    Click <strong>Add <code>abarresrap</code> to this repository</strong>.
+  </li>
+  <li>
+    GitHub will email him an invite. He has to accept it from the email or from <strong><a href="https://github.com/notifications">github.com/notifications</a></strong> before push will work.
+  </li>
+</ol>
+</section>
+
+<section>
+<h2>3. How we'll work going forward (optional but recommended)</h2>
+
+<p>Adrian will keep his work on a branch called <code>adrian-main</code> (or feature branches off it), <strong>not directly on <code>main</code></strong>. The flow will be:</p>
+
+<ol>
+  <li>Adrian pushes to <code>adrian-main</code> on your repo.</li>
+  <li>Adrian opens a Pull Request from <code>adrian-main</code> → <code>main</code>.</li>
+  <li>You review the diff, comment, request changes if needed.</li>
+  <li>You click <strong>Merge</strong> (or <strong>Squash and merge</strong> — your call) when you're happy.</li>
+</ol>
+
+<p>This way <code>main</code> stays clean and you stay the gatekeeper, exactly per the working agreement in <code>docs/db-plan.md</code>. Adrian never pushes to <code>main</code> directly.</p>
+</section>
+
+<section>
+<h2>What's in this first round of work</h2>
+
+<p>The branch <code>adrian-main</code> contains four commits, all related to lead capture on the public site:</p>
+
+<div class="commit-list">
+Add lead-capture function for public-site Netlify Forms<br>
+Switch rap-public-site forms to direct Supabase write<br>
+Scaffold Supabase CLI project + harden .gitignore for secrets<br>
+package-lock from npm install and Claude file
+</div>
+
+<p>The full breakdown of what changed, what's still pending, and the dashboard steps <strong>you</strong> still need to take on the Netlify side (Functions directory, env vars, deploy) lives in <code>docs/claude-sync-2026-05-12.md</code> — open it right after merging.</p>
+</section>
+
+<hr>
+
+<section>
+<h2>Summary</h2>
+
+<ul>
+  <li><strong>Step 1:</strong> Make the repo private (Danger Zone → Change visibility).</li>
+  <li><strong>Step 2:</strong> Add <code>abarresrap</code> as a collaborator with <strong>Write</strong> role.</li>
+  <li>Adrian accepts the email invite.</li>
+  <li>Adrian re-runs <code>git push</code>, branch lands, PR opens, you merge.</li>
+</ul>
+
+<p>Total time on your side: under five minutes. Adrian is blocked on the push until steps 1 and 2 are done.</p>
+</section>
+
+<footer class="doc-foot">
+  Once merged, the rest of the work continues from <code>docs/claude-sync-2026-05-12.md</code> — Site 1 deploy, then Site 2.
+</footer>
+
+</main>
+</body>
+</html>

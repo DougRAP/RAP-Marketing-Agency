@@ -23,9 +23,10 @@
     </p>
 
     <div class="panel">
-      <form name="whitepaper-request" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/whitepaper/thank-you.html">
-        <input type="hidden" name="form-name" value="whitepaper-request" />
-        <p class="honeypot"><label>Do not fill this out: <input name="bot-field" /></label></p>
+      <form id="wp-form" novalidate>
+        <div style="position:absolute;left:-9999px;" aria-hidden="true">
+          <label>Do not fill <input type="text" name="bot-field" tabindex="-1" autocomplete="off" /></label>
+        </div>
 
         <div class="form-grid two-col">
           <div class="field full">
@@ -47,13 +48,47 @@
         </div>
 
         <div class="actions">
-          <button class="btn btn-primary" type="submit">Send me the white paper</button>
+          <button class="btn btn-primary" type="submit" id="wp-submit">Send me the white paper</button>
           <a class="btn btn-secondary" href="/">Back</a>
         </div>
+        <p id="wp-status" role="status" aria-live="polite" class="muted" hidden></p>
       </form>
     </div>
 
     <p class="muted">We will only use your contact information to send the white paper and follow up about Designer Protection Plan. No third-party sharing.</p>
+
+    <script>
+      (function(){
+        var form = document.getElementById('wp-form');
+        var btn = document.getElementById('wp-submit');
+        var status = document.getElementById('wp-status');
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          var fd = new FormData(form);
+          var payload = { form_name: 'whitepaper-request' };
+          fd.forEach(function(v,k){ payload[k] = v; });
+          btn.disabled = true;
+          var originalText = btn.textContent;
+          btn.textContent = 'Sending…';
+          status.hidden = true;
+          fetch('/.netlify/functions/lead-capture', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }).then(function(r){
+            if (!r.ok) throw new Error('network');
+            return r.json();
+          }).then(function(){
+            window.location.href = '/whitepaper/thank-you.html';
+          }).catch(function(){
+            btn.disabled = false;
+            btn.textContent = originalText;
+            status.hidden = false;
+            status.textContent = 'Something went wrong. Please try again, or email designer.programs@raptns.com.';
+          });
+        });
+      })();
+    </script>
 
     <div class="footer">
       Risk Assurance Partners &middot;

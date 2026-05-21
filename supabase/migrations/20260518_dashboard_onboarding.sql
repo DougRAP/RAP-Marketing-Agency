@@ -195,9 +195,16 @@ create policy "promo_claims_self_read"
 -- ------------------------------------------------------------
 -- admin view refresh — extend admin_leads_view with the new
 -- partner fields so the onboarding console can show them.
+--
+-- Postgres CREATE OR REPLACE VIEW restriction: existing column
+-- positions and names must stay identical; new columns can only
+-- be appended at the end. So the first 16 columns below match
+-- 20260512_designer_plan_extensions.sql verbatim, and the new
+-- partner fields are appended at the end.
 -- ------------------------------------------------------------
 create or replace view public.admin_leads_view as
 select
+  -- Columns 1–16: identical to 20260512 (do not reorder)
   l.id,
   l.email,
   l.full_name,
@@ -206,20 +213,21 @@ select
   l.status,
   l.owner,
   l.consent_at,
-  p.id                as partner_id,
-  p.account_number,
-  p.account_type,
-  p.status            as partner_status,
-  p.lifecycle_status,
-  p.assigned_agent,
-  p.next_action_date,
+  p.id          as partner_id,
+  p.status      as partner_status,
   p.referral_code,
-  p.onboarding_step,
   (select source     from public.lead_events e where e.lead_id = l.id order by e.created_at desc limit 1) as last_event_source,
   (select event_type from public.lead_events e where e.lead_id = l.id order by e.created_at desc limit 1) as last_event_type,
   (select created_at from public.lead_events e where e.lead_id = l.id order by e.created_at desc limit 1) as last_event_at,
   l.created_at,
-  l.updated_at
+  l.updated_at,
+  -- Columns 17–22: new fields appended for the onboarding console
+  p.account_number,
+  p.account_type,
+  p.lifecycle_status,
+  p.assigned_agent,
+  p.next_action_date,
+  p.onboarding_step
 from public.leads l
 left join public.partners p on p.lead_id = l.id;
 

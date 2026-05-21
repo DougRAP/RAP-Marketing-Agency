@@ -252,6 +252,16 @@ To keep this manageable for Doug long-term, please follow these rules:
 4. **Don't change ownership, transfer projects, or add team-wide admins** on Netlify, GitHub, or Supabase. If you need access, Doug will grant it scoped to what you need.
 5. **Supabase project will be owned by Doug.** Adrian gets a developer role with admin in the project, but the org owner is Doug. Same pattern Doug uses for Netlify and GitHub.
 6. **Migrations checked into the repo.** Use `supabase db diff` / `supabase migration` so every schema change is visible in PRs. Studio is fine for exploration; production schema changes go through migrations.
+6a. **New tables in `public` need explicit GRANTs in the same migration.** Supabase's Data API checks table privileges *before* RLS (rule effective 2026-05-30 for new projects, 2026-10-30 for the existing one). Place this right after `create table` + `alter table ... enable row level security`:
+
+    ```sql
+    grant select on public.<table> to anon;            -- only if browser-readable
+    grant select on public.<table> to authenticated;   -- only if logged-in users read it
+    grant select, insert, update, delete on public.<table> to service_role;
+    grant usage, select on sequence public.<seq> to service_role;  -- if bigserial
+    ```
+
+    Omit the `anon` / `authenticated` lines for service-role-only tables. Do **not** use `alter default privileges` — keep grants explicit and co-located with the table.
 7. **Secrets live in Netlify env vars, never in the repo.** That includes `SUPABASE_SERVICE_ROLE_KEY`, any future Stripe keys, etc. Document each new env var in this file when you add it so the list stays current.
 8. **Branch + PR for non-trivial changes.** Doug has been merging via fast-forward push to `main` for small content edits, but anything touching forms, functions, schema, or auth should go through a PR Doug can review before it deploys.
 
