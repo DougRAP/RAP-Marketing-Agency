@@ -99,6 +99,38 @@ separate system at `5starservice.net`. Don't surface claim-handling UI here.
   "Tell Omega" affordance to author the daily broadcast that Omega delivers to all
   operators.
 
+## Account verification workflow (important — operator core responsibility)
+
+The site uses magic-link sign-in: a designer enters their email at `/login`, clicks
+the link in the email, and an account + account number is created on the spot. No
+form, no application. **Vetting happens after the fact, by phone, by an operator.**
+
+Every new account starts as **unverified**. An operator is expected to call the
+account holder, confirm they're a real designer, then either:
+- **Verify** the account → it stays alive and the designer can use it
+- **Delete** the account → if they can't be reached, fail the smell test, or are
+  spam → the account is soft-deleted (archived)
+
+This is the agent's #1 daily job for new accounts. Surface it prominently.
+
+### UX additions for verification (across the four pages)
+
+- **Operator home (Page 1)** — add a **"Verification queue"** section near the top
+  (after the KPI strip, before Today's tasks). It shows unverified accounts from
+  the last 14 days, each with name, email, signup time, assigned agent (if any),
+  and two buttons: **`✓ Verify`** and **`✕ Delete`**. Include a small count badge
+  in the KPI strip: a 5th metric "Unverified" with the count.
+- **Single-designer view (Page 2)** — if the designer is unverified, the sticky
+  operator banner at top changes to a terracotta band saying "**Unverified account.
+  Confirm by phone before working this lead.**" with `✓ Verify` and `✕ Delete`
+  buttons inline.
+- **Designers list (Page 3)** — add a "Verified" column showing either a checkmark
+  (date verified) or the word "unverified" in muted accent. Add a filter dropdown
+  "Verification: All / Unverified / Verified" alongside the existing filters.
+- **Sample data**: 3 of the 12 designers in the list should be unverified. The
+  verification queue on operator home should show those same 3, ordered by signup
+  time (newest first).
+
 ## Omega — global slide-out panel (present on every operator page)
 
 Omega is the team's friendly AI assistant placeholder. It is **not** an inline card —
@@ -201,7 +233,8 @@ Left rail (narrow, ~280px): **Designers list**
 
 Main pane: **Operator home** — the personal worklist
 
-1. **KPI strip** (full-width band, four cards)
+1. **KPI strip** (full-width band, FIVE cards)
+   - **Unverified** — terracotta accent — `3` — "Accounts awaiting verification call"
    - **Overdue** — large red badge — `4` — "Tasks past their due date"
    - **Due today** — yellow badge — `7` — "Today's worklist"
    - **Urgent open** — red badge — `2` — "High priority, regardless of date"
