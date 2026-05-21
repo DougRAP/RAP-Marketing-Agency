@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan activo · Onboarding Simplification</title>
+<meta name="robots" content="noindex">
+<!--
+============================================================
+UPDATE CONVENTION (read before editing)
+============================================================
+Esta es la "single source of truth" del workstream de onboarding
+simplification. Vive en git, viaja con el repo.
+
+Para actualizar:
+  1. Marcar un step como "in-progress":
+     Edit el <article class="step" data-status="pending" data-step="N">
+     → cambiar data-status="pending" a data-status="in-progress"
+
+  2. Marcar un step como "done":
+     → cambiar data-status a "done"
+     → pegar el commit hash en <span class="commit-ref">PENDING</span>
+
+  3. Agregar entrada al decision log:
+     Append <li> al <ul id="decisions-log">
+
+  4. Agregar/cerrar open questions:
+     Append/edit <ul id="open-questions">
+
+NO hace falta tocar la barra de progreso, ni "Next action", ni los
+contadores — el JS de abajo los recalcula desde data-status.
+NO hace falta tocar el "Last touched" salvo si quieres anotarlo
+manualmente (el git log ya es la fuente real).
+============================================================
+-->
+<style>
+  :root {
+    --paper: #f7f5f1;
+    --paper-card: #ffffff;
+    --ink: #1a1a1a;
+    --ink-70: #4a4a4a;
+    --ink-50: #6e6e6e;
+    --ink-30: #a8a8a8;
+    --terra: #a64f2f;
+    --terra-soft: rgba(166, 79, 47, 0.08);
+    --border: #d8d0c0;
+    --border-soft: #ece5d6;
+    --code-bg: #efe9da;
+    --good-bg: #e6efdd;
+    --good-fg: #486838;
+    --warn-bg: #f5e8cf;
+    --warn-fg: #8b5a1a;
+    --err-bg: #f3dcd0;
+    --err-fg: #8a3320;
+    --muted-bg: #ece9e0;
+    --muted-fg: #6e6e6e;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  /* ===== Hero ===== */
+  header.hero {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--terra);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+    line-height: 1.2;
+  }
+  .subtitle {
+    color: var(--ink-50);
+    margin: 0 0 24px;
+    font-size: 15px;
+  }
+  .at-glance {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    border-top: 1px solid var(--border-soft);
+    padding-top: 20px;
+  }
+  .glance-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .glance-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-50);
+    font-weight: 600;
+  }
+  .glance-value {
+    font-size: 15px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .glance-value.next-action {
+    color: var(--terra);
+  }
+
+  /* ===== Progress bar ===== */
+  .progress-wrap {
+    margin-top: 20px;
+  }
+  .progress-bar-bg {
+    height: 8px;
+    background: var(--border-soft);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .progress-bar-fg {
+    height: 100%;
+    background: linear-gradient(90deg, var(--terra), #c46a4a);
+    border-radius: 100px;
+    width: 0%;
+    transition: width 400ms ease;
+  }
+  .progress-text {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--ink-50);
+    font-weight: 500;
+  }
+
+  /* ===== Sections ===== */
+  h2 {
+    font-size: 19px;
+    font-weight: 600;
+    margin: 40px 0 14px;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  h2 .count {
+    color: var(--ink-50);
+    font-weight: 400;
+    font-size: 14px;
+    margin-left: 8px;
+  }
+  p, li { color: var(--ink-70); margin: 8px 0; }
+  strong { color: var(--ink); font-weight: 600; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    padding: 1.5px 6px;
+    border-radius: 3px;
+  }
+  a { color: var(--terra); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ===== Decision + Invariants boxes ===== */
+  .decision-box {
+    background: var(--terra-soft);
+    border-left: 3px solid var(--terra);
+    padding: 14px 20px;
+    border-radius: 0 6px 6px 0;
+    margin: 16px 0;
+  }
+  .invariants-box {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .invariants-box h3 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--err-fg);
+  }
+  .invariants-box ul { margin: 0; padding-left: 20px; }
+  .invariants-box li { font-size: 14px; }
+
+  /* ===== Steps ===== */
+  .steps { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+  .step {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 22px;
+    transition: opacity 200ms ease, transform 200ms ease;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--code-bg);
+    color: var(--ink-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: all 200ms ease;
+  }
+  .step-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    margin: 0;
+  }
+  .step-pill {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: var(--muted-bg);
+    color: var(--muted-fg);
+    white-space: nowrap;
+  }
+  .wave-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--code-bg);
+    color: var(--ink-50);
+    white-space: nowrap;
+    margin-right: 6px;
+  }
+  .wave-badge[data-wave="A"] { background: #e8f0e0; color: #486838; }
+  .wave-badge[data-wave="B"] { background: #f5e8cf; color: #8b5a1a; }
+  .wave-badge[data-wave="C"] { background: #efe9da; color: #6e6e6e; }
+  .step-body {
+    padding-left: 46px;
+    font-size: 14px;
+    color: var(--ink-70);
+  }
+  .step-body dl {
+    margin: 6px 0 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 14px;
+  }
+  .step-body dt {
+    font-weight: 600;
+    color: var(--ink-50);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    align-self: center;
+  }
+  .step-body dd {
+    margin: 0;
+    color: var(--ink-70);
+    font-size: 14px;
+  }
+  .commit-ref {
+    font-family: ui-monospace, SFMono-Regular, Monaco, monospace;
+    font-size: 12px;
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: var(--ink-50);
+  }
+  .commit-ref[data-empty="true"] { color: var(--ink-30); font-style: italic; }
+
+  /* Status-driven styling */
+  .step[data-status="pending"] .step-pill {
+    background: var(--muted-bg);
+    color: var(--muted-fg);
+  }
+  .step[data-status="in-progress"] {
+    border-color: var(--terra);
+    box-shadow: 0 0 0 3px var(--terra-soft);
+  }
+  .step[data-status="in-progress"] .step-num {
+    background: var(--terra);
+    color: white;
+  }
+  .step[data-status="in-progress"] .step-pill {
+    background: var(--terra);
+    color: white;
+  }
+  .step[data-status="done"] .step-num {
+    background: var(--good-bg);
+    color: var(--good-fg);
+  }
+  .step[data-status="done"] .step-pill {
+    background: var(--good-bg);
+    color: var(--good-fg);
+  }
+  .step[data-status="done"] .step-title {
+    text-decoration: line-through;
+    text-decoration-color: var(--ink-30);
+    color: var(--ink-50);
+  }
+  .step[data-status="done"] {
+    opacity: 0.72;
+  }
+
+  /* ===== Lists for log/questions ===== */
+  ul.log {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  ul.log li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 14px;
+  }
+  ul.log li:last-child { border-bottom: 0; }
+  ul.log .date {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    color: var(--terra);
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 10px;
+  }
+
+  /* ===== Footer ===== */
+  .footer-note {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--ink-50);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- =================================================== HERO ================================================== -->
+<header class="hero">
+  <div class="eyebrow">Plan activo · workstream individual</div>
+  <h1>Onboarding Simplification</h1>
+  <p class="subtitle">Lectura 2 — decouple the partner-apply form from account creation. Reference: <a href="../misc/meeting-recap-2026-05-21.html">meeting recap 2026-05-21</a>.</p>
+
+  <div class="at-glance">
+    <div class="glance-cell">
+      <span class="glance-label">Status</span>
+      <span class="glance-value" id="overall-status">In progress</span>
+    </div>
+    <div class="glance-cell">
+      <span class="glance-label">Next action</span>
+      <span class="glance-value next-action" id="next-action">—</span>
+    </div>
+    <div class="glance-cell">
+      <span class="glance-label">Started</span>
+      <span class="glance-value">2026-05-21</span>
+    </div>
+    <div class="glance-cell">
+      <span class="glance-label">Target</span>
+      <span class="glance-value">Pre 2026-06-01 go-live</span>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fg" id="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+    <div class="progress-text">
+      <span id="progress-text">0 / 0 complete</span>
+      <span id="progress-pct">0%</span>
+    </div>
+  </div>
+</header>
+
+<!-- =================================================== DECISION ============================================== -->
+<h2>Decision summary</h2>
+<div class="decision-box">
+  <p style="margin: 0;"><strong>Lectura 2 adoptada.</strong> El formulario <code>/partner-apply</code> sobrevive como <em>enrichment opcional post-login</em>, no como gate. Account creation = SIEMPRE magic-link. Stripe Connect = único gate de comisión. El form solo agrega datos a una row que ya existe en <code>partners</code>.</p>
+</div>
+
+<!-- =================================================== INVARIANTS =========================================== -->
+<h2>Invariants (no se rompen)</h2>
+<div class="invariants-box">
+  <h3>⚠ Si cualquiera de estos se rompe, el form se vuelve un gate disfrazado</h3>
+  <ul>
+    <li><strong>Account creation = SIEMPRE magic-link.</strong> El form NUNCA crea cuentas.</li>
+    <li><strong>Form backend = UPDATE, no INSERT.</strong> Falla con 401 si no hay row preexistente.</li>
+    <li><strong>Todos los campos opcionales.</strong> Cero <code>required</code>. Submit con form vacío funciona.</li>
+    <li><strong>El form vive dentro del dashboard,</strong> no en <code>/partner-apply</code> como entry point.</li>
+    <li><strong>"Apply to the program" muere como frase.</strong> CTAs se renombran a "Get started" / "Log in".</li>
+    <li><strong>El form es removible en &lt;30 min</strong> sin romper nada más del sistema.</li>
+  </ul>
+</div>
+
+<!-- =================================================== STEPS ================================================= -->
+<h2>Steps <span class="count" id="steps-count">(6)</span></h2>
+
+<div class="steps">
+
+  <article class="step" data-status="done" data-step="1">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <span class="wave-badge" data-wave="A">Wave A</span>
+      <h3 class="step-title">Auto-create partner row on first magic-link sign-in</h3>
+      <span class="step-pill">Pending</span>
+    </div>
+    <div class="step-body">
+      <p><strong>Why:</strong> Establecer single source of truth — toda cuenta se crea aquí, no por el form.</p>
+      <dl>
+        <dt>Files</dt>
+        <dd><code>designer-plan-site/js/auth.js</code> o nueva <code>netlify/functions/account-bootstrap.js</code></dd>
+        <dt>Done when</dt>
+        <dd>Un nuevo usuario tras magic-link tiene row en <code>partners</code> con <code>auth_user_id</code> y <code>email</code> seteados.</dd>
+        <dt>Effort</dt>
+        <dd>~1h</dd>
+        <dt>Commit</dt>
+        <dd><span class="commit-ref" data-empty="true">pending</span></dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="step" data-status="done" data-step="2">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <span class="wave-badge" data-wave="A">Wave A</span>
+      <h3 class="step-title">Refactor partner-apply.js: INSERT → UPDATE</h3>
+      <span class="step-pill">Pending</span>
+    </div>
+    <div class="step-body">
+      <p><strong>Why:</strong> El form pasa de creator a enricher. Sin row preexistente, falla.</p>
+      <dl>
+        <dt>Files</dt>
+        <dd><code>designer-plan-site/netlify/functions/partner-apply.js</code></dd>
+        <dt>Done when</dt>
+        <dd>Submission del form hace <code>UPDATE partners SET ... WHERE auth_user_id = $1</code>. Retorna 401 si no hay row. Acepta solo requests con JWT válido.</dd>
+        <dt>Effort</dt>
+        <dd>~1h</dd>
+        <dt>Commit</dt>
+        <dd><span class="commit-ref" data-empty="true">pending</span></dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="step" data-status="pending" data-step="3">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <span class="wave-badge" data-wave="B">Wave B</span>
+      <h3 class="step-title">Mover form de /partner-apply al dashboard</h3>
+      <span class="step-pill">Pending</span>
+    </div>
+    <div class="step-body">
+      <p><strong>Why:</strong> El form deja de ser entry point. Se vuelve "card opcional" dentro del dashboard.</p>
+      <dl>
+        <dt>Files</dt>
+        <dd>From: <code>designer-plan-site/partner-apply/index.html</code><br>To: <code>designer-plan-site/dashboard/profile/index.html</code> (o card dentro de <code>/dashboard/index.html</code>)</dd>
+        <dt>Done when</dt>
+        <dd>Form vive dentro del dashboard. Copy reframeado: "Tell us about your studio (optional)". Cero <code>required</code>. Submit vacío funciona.</dd>
+        <dt>Effort</dt>
+        <dd>~1h</dd>
+        <dt>Commit</dt>
+        <dd><span class="commit-ref" data-empty="true">pending</span></dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="step" data-status="done" data-step="4">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <span class="wave-badge" data-wave="A">Wave A</span>
+      <h3 class="step-title">Limpiar CTAs "Apply to the program" en 6 páginas</h3>
+      <span class="step-pill">Pending</span>
+    </div>
+    <div class="step-body">
+      <p><strong>Why:</strong> El framing "Apply" es exactamente lo que Doug rechazó. Reemplazar por "Get started" / "Log in".</p>
+      <dl>
+        <dt>Files</dt>
+        <dd>about, login, partner, partner-apply, partnership, privacy, terms (todas en <code>designer-plan-site/</code>)</dd>
+        <dt>Done when</dt>
+        <dd>Cero ocurrencias de "Apply to the program" en el sitio. Todos los CTAs van a <code>/login</code> o <code>/dashboard</code>.</dd>
+        <dt>Effort</dt>
+        <dd>~30min</dd>
+        <dt>Commit</dt>
+        <dd><span class="commit-ref" data-empty="true">pending</span></dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="step" data-status="pending" data-step="5">
+    <div class="step-header">
+      <div class="step-num">5</div>
+      <span class="wave-badge" data-wave="B">Wave B</span>
+      <h3 class="step-title">Redirect /partner-apply según auth state</h3>
+      <span class="step-pill">Pending</span>
+    </div>
+    <div class="step-body">
+      <p><strong>Why:</strong> Bookmarks o links externos pueden llegar al URL viejo. Redirect inteligente preserva la UX.</p>
+      <dl>
+        <dt>Behavior</dt>
+        <dd>Anónimo → <code>/login</code> · Autenticado → <code>/dashboard/profile</code></dd>
+        <dt>Done when</dt>
+        <dd>Visitando <code>/partner-apply</code> sin sesión rebota a login. Con sesión rebota al profile card.</dd>
+        <dt>Effort</dt>
+        <dd>~15min</dd>
+        <dt>Commit</dt>
+        <dd><span class="commit-ref" data-empty="true">pending</span></dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="step" data-status="pending" data-step="6">
+    <div class="step-header">
+      <div class="step-num">6</div>
+      <span class="wave-badge" data-wave="C">Wave C</span>
+      <h3 class="step-title">Test end-to-end + PR</h3>
+      <span class="step-pill">Pending</span>
+    </div>
+    <div class="step-body">
+      <p><strong>Why:</strong> Validar los 3 caminos antes de pasar a Doug.</p>
+      <dl>
+        <dt>Validate</dt>
+        <dd>(A) compra directa sin login · (B) magic-link sin form · (C) magic-link + form opcional</dd>
+        <dt>Done when</dt>
+        <dd>Los 3 caminos funcionan local. PR abierto con título <code>refactor: decouple partner profile from account creation</code>.</dd>
+        <dt>Effort</dt>
+        <dd>~1h</dd>
+        <dt>Commit</dt>
+        <dd><span class="commit-ref" data-empty="true">pending</span></dd>
+      </dl>
+    </div>
+  </article>
+
+</div>
+
+<!-- =================================================== DECISIONS LOG ========================================== -->
+<h2>Decisions log</h2>
+<ul class="log" id="decisions-log">
+  <li>
+    <span class="date">2026-05-21</span>
+    <strong>Adoptada Lectura 2 sobre Lectura 1.</strong> El form sobrevive como enrichment opcional post-login. Razón: PRD <code>docs/dashboard-onboarding-plan.md:150</code> ya anticipaba "optional, presented at setup, skippable" profiling. Pivot cost si Doug objeta = ~30min.
+  </li>
+  <li>
+    <span class="date">2026-05-21</span>
+    <strong>Decidido no preguntar a Doug ex-ante.</strong> Su veto en el meeting fue contra el gate (mandatory upfront), no contra captura de datos opcional. El costo de pivot es bajo y el costo de idle waiting es alto.
+  </li>
+</ul>
+
+<!-- =================================================== OPEN QUESTIONS ======================================== -->
+<h2>Open questions</h2>
+<ul class="log" id="open-questions">
+  <li>
+    <strong>¿Slim-down del form?</strong> Hoy pide state, ZIP, address, project size, clients/año, 7 categorías, contact method, free-text. Aun siendo opcional, es intimidante. Posible slim a: categorías + project size + clients/año. El resto a futuro cuando haya use case.
+  </li>
+  <li>
+    <strong>¿Cómo se integra con el admin dashboard de Doug?</strong> Doug está construyendo un sales CRM en paralelo. Los datos del form (specializes_in, etc.) serán visibles para sales agents. Hay que coordinar el shape final.
+  </li>
+  <li>
+    <strong>¿Backfill de partner rows existentes?</strong> Si hay leads pre-existentes en <code>leads</code> sin <code>partners</code> row, ¿qué pasa cuando se loggean? Decidir: ¿se merge la row de leads + se crea partner? ¿O leads y partners se mantienen separados?
+  </li>
+</ul>
+
+<!-- =================================================== REFERENCES ============================================= -->
+<h2>References</h2>
+<ul class="log">
+  <li><a href="../misc/meeting-recap-2026-05-21.html">Meeting recap 2026-05-21</a> — recap visual del meeting que disparó esta simplificación</li>
+  <li><a href="../misc/RapAgencyMeeting0521.srt">Meeting transcript 2026-05-21</a> — fuente primaria</li>
+  <li><a href="../misc/DougDesigner052026.srt">Meeting transcript 2026-05-20</a> — Doug ya el día anterior llamó "funky" al modelo viejo</li>
+  <li><a href="dashboard-onboarding-plan.md">PRD <code>dashboard-onboarding-plan.md</code></a> — el PRD oficial; línea 150 anticipa profiling opcional</li>
+  <li><a href="../misc/architecture-proposal-designer-plan.html">Architecture proposal</a> — propuesta arquitectónica original</li>
+</ul>
+
+<div class="footer-note">
+  Plan activo · workstream individual · este documento se actualiza con cada commit relevante.<br>
+  Cambios: solo via Edit del <code>data-status</code> attribute de cada step. El JS recalcula progress + next action.
+</div>
+
+</div>
+
+<!-- =================================================== AUTO-COMPUTE JS ======================================== -->
+<script>
+(function(){
+  'use strict';
+  document.addEventListener('DOMContentLoaded', function(){
+    var steps = document.querySelectorAll('.step');
+    var total = steps.length;
+    var done = document.querySelectorAll('.step[data-status="done"]').length;
+    var inProgress = document.querySelectorAll('.step[data-status="in-progress"]').length;
+    var pending = total - done - inProgress;
+    var pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    // Progress bar
+    var bar = document.getElementById('progress-bar');
+    bar.style.width = pct + '%';
+    bar.setAttribute('aria-valuenow', pct);
+    document.getElementById('progress-text').textContent = done + ' / ' + total + ' complete';
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('steps-count').textContent = '(' + total + ')';
+
+    // Overall status
+    var overall = document.getElementById('overall-status');
+    if (done === total) {
+      overall.textContent = 'Complete ✓';
+      overall.style.color = 'var(--good-fg)';
+    } else if (inProgress > 0) {
+      overall.textContent = 'In progress';
+    } else if (done > 0) {
+      overall.textContent = 'Paused';
+    } else {
+      overall.textContent = 'Not started';
+    }
+
+    // Next action — pick in-progress first, else first pending
+    var next = document.querySelector('.step[data-status="in-progress"]')
+            || document.querySelector('.step[data-status="pending"]');
+    var nextEl = document.getElementById('next-action');
+    if (next) {
+      var n = next.dataset.step;
+      var title = next.querySelector('.step-title').textContent.trim();
+      nextEl.textContent = 'Step ' + n + ' — ' + title;
+    } else {
+      nextEl.textContent = '✓ All steps complete';
+      nextEl.style.color = 'var(--good-fg)';
+    }
+
+    // Pill text per status
+    document.querySelectorAll('.step').forEach(function(s){
+      var pill = s.querySelector('.step-pill');
+      var status = s.dataset.status;
+      if (status === 'done') pill.textContent = 'Done';
+      else if (status === 'in-progress') pill.textContent = 'In progress';
+      else pill.textContent = 'Pending';
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
