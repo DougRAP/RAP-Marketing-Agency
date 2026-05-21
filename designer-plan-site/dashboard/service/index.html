@@ -10,6 +10,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/auth.js"></script>
+<script>
+(function(){
+  function gate(){
+    if (!window.DP_AUTH || !window.DP_AUTH.user) {
+      window.location.replace('/login');
+    }
+  }
+  if (window.DP_AUTH && window.DP_AUTH.ready) {
+    gate();
+  } else {
+    document.addEventListener('dp-auth-ready', gate, { once: true });
+  }
+})();
+</script>
+
 <style>
 /* ============================================================
    DESIGNER PLAN — SERVICE & CLAIMS PAGE

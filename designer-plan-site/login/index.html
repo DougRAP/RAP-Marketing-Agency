@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/_shared/_partials.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/auth.js" defer></script>
 </head>
 <body>
 
@@ -32,10 +34,6 @@
     <span class="eyebrow">Partner sign-in</span>
     <h1>Log in.</h1>
     <p class="lead">Approved partners: enter your email and we&rsquo;ll send a one-tap link.</p>
-
-    <div class="placeholder-note">
-      <strong>Stub UI.</strong> Magic-link auth via Supabase will be wired once the Supabase anon (publishable) key is exposed to the client. The form below is a working placeholder.
-    </div>
 
     <form class="simple-form" id="login-form">
       <div>
@@ -63,11 +61,57 @@
 </footer>
 
 <script>
-document.getElementById('login-form').addEventListener('submit', function(e){
-  e.preventDefault();
+(function(){
+  'use strict';
+  var form = document.getElementById('login-form');
+  var emailInput = document.getElementById('login-email');
   var status = document.getElementById('login-status');
-  status.textContent = 'Magic-link sign-in is not yet wired. Email designer.programs@raptns.com for help.';
-});
+  var submitBtn = form.querySelector('button[type="submit"]');
+
+  function setStatus(msg, isError){
+    status.textContent = msg;
+    status.style.color = isError ? '#b22222' : 'var(--ink-65)';
+  }
+
+  function whenAuthReady(cb){
+    if (window.DP_AUTH && window.DP_AUTH.ready) { cb(); return; }
+    document.addEventListener('dp-auth-ready', cb, { once: true });
+  }
+
+  whenAuthReady(function(){
+    if (window.DP_AUTH.user) {
+      window.location.replace('/dashboard');
+    }
+  });
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var email = (emailInput.value || '').trim();
+    if (!email) { setStatus('Enter your email first.', true); return; }
+    submitBtn.disabled = true;
+    setStatus('Sending magic link…');
+
+    whenAuthReady(function(){
+      if (!window.DP_AUTH || typeof window.DP_AUTH.signIn !== 'function') {
+        submitBtn.disabled = false;
+        setStatus('Sign-in not available. Email designer.programs@raptns.com for help.', true);
+        return;
+      }
+      window.DP_AUTH.signIn(email).then(function(res){
+        submitBtn.disabled = false;
+        if (res.error) {
+          setStatus(res.error.message || 'Could not send link. Try again.', true);
+          return;
+        }
+        setStatus('Check your inbox — we just sent a one-tap link to ' + email + '.');
+        form.reset();
+      }).catch(function(err){
+        submitBtn.disabled = false;
+        setStatus((err && err.message) || 'Could not send link. Try again.', true);
+      });
+    });
+  });
+})();
 </script>
 
 </body>
