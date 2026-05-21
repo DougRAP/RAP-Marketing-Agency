@@ -12,20 +12,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/auth.js"></script>
-<script>
-(function(){
-  function gate(){
-    if (!window.DP_AUTH || !window.DP_AUTH.user) {
-      window.location.replace('/login');
-    }
-  }
-  if (window.DP_AUTH && window.DP_AUTH.ready) {
-    gate();
-  } else {
-    document.addEventListener('dp-auth-ready', gate, { once: true });
-  }
-})();
-</script>
 
 <style>
 /* ============================================================
@@ -888,7 +874,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
           </div>
 
           <div class="hero__help-cta">
-            <a href="/partner-apply" class="btn btn--accent">Create my account <span class="arrow">&rarr;</span></a>
+            <a href="/login" class="btn btn--accent">Create my account <span class="arrow">&rarr;</span></a>
             <a href="/login" class="btn btn--primary">Log in <span class="arrow">&rarr;</span></a>
             <p class="hero__help-tertiary"><a href="tel:+15613743147" class="link-inline">Or call us to set it up &rarr;</a></p>
           </div>
@@ -1137,7 +1123,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
       <p class="final-cta-body">Create your account, log in if RAP already created one, or call us and we&rsquo;ll help set it up.</p>
 
       <div class="final-cta-buttons">
-        <a href="/partner-apply" class="btn btn--accent">Create my account <span class="arrow">&rarr;</span></a>
+        <a href="/login" class="btn btn--accent">Create my account <span class="arrow">&rarr;</span></a>
         <a href="/login" class="btn btn--primary">Log in <span class="arrow">&rarr;</span></a>
         <a href="tel:+15613743147" class="btn">Call RAP <span class="arrow">&rarr;</span></a>
       </div>

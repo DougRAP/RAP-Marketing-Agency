@@ -23,8 +23,50 @@
     requireAuth: function () { return false; }
   };
 
+  // Swap nav "Log in" links to "<email> · Log out" when a session is
+  // present. Scoped to header/footer/nav/aside — leaves in-content CTAs
+  // like "Log in to my dashboard" alone.
+  var ACCOUNT_LINK_SELECTOR = [
+    'header a[href="/login"]',
+    'footer a[href="/login"]',
+    'aside a[href="/login"]',
+    'nav a[href="/login"]'
+  ].join(', ');
+
+  function renderAccountLinks(){
+    var user = window.DP_AUTH.user;
+    document.querySelectorAll(ACCOUNT_LINK_SELECTOR).forEach(function(a){
+      if (user) {
+        if (!a.dataset.dpOriginalText) {
+          a.dataset.dpOriginalText = a.textContent.trim();
+        }
+        a.textContent = user.email + ' · Log out';
+        a.dataset.dpAccountLink = 'signed-in';
+      } else if (a.dataset.dpAccountLink === 'signed-in') {
+        a.textContent = a.dataset.dpOriginalText || 'Log in';
+        a.dataset.dpAccountLink = '';
+      }
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    var a = e.target.closest('a[data-dp-account-link="signed-in"]');
+    if (!a) return;
+    e.preventDefault();
+    if (!window.DP_AUTH.signOut) return;
+    window.DP_AUTH.signOut().then(function(){
+      renderAccountLinks();
+      window.location.replace('/');
+    });
+  });
+
   function markReady(){
     window.DP_AUTH.ready = true;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', renderAccountLinks, { once: true });
+    } else {
+      renderAccountLinks();
+    }
     document.dispatchEvent(new Event('dp-auth-ready'));
   }
 
@@ -83,6 +125,8 @@
 
       sb.auth.onAuthStateChange(function(_event, session){
         window.DP_AUTH.user = session ? session.user : null;
+        if (!window.DP_AUTH.user) window.DP_AUTH.partner = null;
+        renderAccountLinks();
       });
 
       return sb.auth.getSession().then(function(res){
@@ -90,20 +134,38 @@
         if (!session) { markReady(); return; }
         window.DP_AUTH.user = session.user;
 
-        return sb.from('partners')
-          .select('id, commission_rate, status')
-          .eq('auth_user_id', session.user.id)
-          .eq('status', 'approved')
-          .maybeSingle()
-          .then(function(r){
-            if (r.data) {
-              window.DP_AUTH.partner = {
-                id: r.data.id,
-                commission_rate: r.data.commission_rate || 0.35
-              };
-            }
-            markReady();
-          });
+        // Ensure a partner row exists for this user. The function is
+        // idempotent — returns the existing row if already linked,
+        // links a legacy row by email, or creates a fresh one. Failure
+        // here is non-fatal: we still mark the user signed in.
+        return fetch('/.netlify/functions/account-bootstrap', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + session.access_token,
+            'Content-Type': 'application/json'
+          }
+        }).then(function(r){
+          return r.json().catch(function(){ return {}; });
+        }).catch(function(err){
+          console.warn('[auth] account-bootstrap failed:', err);
+          return {};
+        }).then(function(){
+          return sb.from('partners')
+            .select('id, commission_rate, status, account_number')
+            .eq('auth_user_id', session.user.id)
+            .maybeSingle()
+            .then(function(r){
+              if (r.data) {
+                window.DP_AUTH.partner = {
+                  id: r.data.id,
+                  account_number: r.data.account_number,
+                  commission_rate: r.data.commission_rate || 0.35,
+                  status: r.data.status
+                };
+              }
+              markReady();
+            });
+        });
       });
     })
     .catch(function(err){

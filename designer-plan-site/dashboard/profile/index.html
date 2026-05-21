@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your profile — Designer Plan</title>
+<meta name="description" content="Tell us about your studio — optional, helps us serve you better.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared/_partials.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/auth.js"></script>
+<script>
+(function(){
+  function gate(){
+    if (!window.DP_AUTH || !window.DP_AUTH.user) {
+      window.location.replace('/login');
+    }
+  }
+  if (window.DP_AUTH && window.DP_AUTH.ready) {
+    gate();
+  } else {
+    document.addEventListener('dp-auth-ready', gate, { once: true });
+  }
+})();
+</script>
+
+<style>
+  .field-row { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 560px) { .field-row.two { grid-template-columns: 1fr 1fr; } .field-row.cityzip { grid-template-columns: 2fr 1fr 1fr; } }
+  .simple-form select {
+    width: 100%; padding: 12px 14px; border: 1px solid var(--rule-strong);
+    border-radius: 4px; background: var(--paper); font: inherit; color: var(--ink);
+  }
+  .field-hint { font-size: 0.75rem; color: var(--ink-45); margin: 4px 0 0; }
+  fieldset { border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; margin: 0; }
+  fieldset legend { font-size: 0.8rem; font-weight: 600; color: var(--ink-65); padding: 0 6px; }
+  .check-grid { display: grid; gap: 10px; grid-template-columns: 1fr; }
+  @media (min-width: 480px) { .check-grid { grid-template-columns: 1fr 1fr; } }
+  .check-opt, .radio-opt { display: flex; align-items: center; gap: 9px; font-size: 0.92rem; cursor: pointer; }
+  .check-opt input, .radio-opt input { width: 16px; height: 16px; }
+  .optional-note {
+    background: #f4e9dd; border-left: 3px solid #a64f2f;
+    padding: 14px 18px; border-radius: 0 6px 6px 0; margin-bottom: 24px;
+  }
+  .optional-note p { margin: 0; font-size: 0.92rem; color: var(--ink-65); }
+  .optional-note strong { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header class="nav-simple">
+  <div class="container nav-inner">
+    <a href="/" class="logo">Designer Plan</a>
+    <nav><ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/partner">Partner with us</a></li>
+      <li><a href="/plans">Shop plans</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+      <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+      <li><a href="/login">Log in</a></li>
+    </ul></nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container container-narrow">
+    <p style="margin: 0 0 8px;"><a href="/dashboard" style="font-size: 0.875rem; color: var(--ink-65);">&larr; Back to dashboard</a></p>
+    <span class="eyebrow">Your profile</span>
+    <h1>Tell us about your studio.</h1>
+    <p class="lead">All optional. Share what helps us help you &mdash; categories you specialize in, typical project size, that kind of thing. Skip anything you don&rsquo;t want to answer.</p>
+
+    <div class="optional-note">
+      <p><strong>Heads-up:</strong> none of this is required. You can use the dashboard, sell plans, and earn commission without filling any of this in. It just helps us send more relevant materials and tee up better support.</p>
+    </div>
+
+    <form class="simple-form" id="apply-form" novalidate style="max-width:none;">
+      <div style="position:absolute;left:-9999px;" aria-hidden="true">
+        <label>Do not fill <input type="text" name="hp" tabindex="-1" autocomplete="off"></label>
+      </div>
+
+      <div class="field-row two">
+        <div>
+          <label for="full_name">Your name</label>
+          <input type="text" id="full_name" name="full_name" autocomplete="name">
+        </div>
+        <div>
+          <label for="studio_name">Studio / business name</label>
+          <input type="text" id="studio_name" name="studio_name" autocomplete="organization">
+          <p class="field-hint">Use your legal business name &mdash; include the suffix (LLC, Inc., Co., or none).</p>
+        </div>
+      </div>
+
+      <div class="field-row two">
+        <div>
+          <label for="phone">Mobile phone</label>
+          <input type="tel" id="phone" name="phone" autocomplete="tel">
+        </div>
+        <div>
+          <label for="contact_method_email">Preferred contact</label>
+          <div style="display:flex; gap:18px; align-items:center; margin-top:10px;">
+            <label class="radio-opt" style="margin:0;"><input type="radio" name="contact_method" value="email" id="contact_method_email" checked> Email</label>
+            <label class="radio-opt" style="margin:0;"><input type="radio" name="contact_method" value="phone"> Phone</label>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label for="address">Street address</label>
+        <input type="text" id="address" name="address" autocomplete="address-line1">
+      </div>
+
+      <div class="field-row cityzip">
+        <div>
+          <label for="city">City</label>
+          <input type="text" id="city" name="city" autocomplete="address-level2">
+        </div>
+        <div>
+          <label for="state">State</label>
+          <select id="state" name="state" autocomplete="address-level1">
+            <option value="">Select…</option>
+            <option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option>
+            <option>CO</option><option>CT</option><option>DE</option><option>DC</option><option>FL</option>
+            <option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option>
+            <option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option>
+            <option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+            <option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option>
+            <option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option>
+            <option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option>
+            <option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option>
+            <option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option>
+            <option>WY</option>
+          </select>
+        </div>
+        <div>
+          <label for="zip">ZIP</label>
+          <input type="text" id="zip" name="zip" inputmode="numeric" autocomplete="postal-code" maxlength="10">
+        </div>
+      </div>
+
+      <div class="field-row two">
+        <div>
+          <label for="average_project_size">Typical project size</label>
+          <select id="average_project_size" name="average_project_size">
+            <option value="">Select…</option>
+            <option>Under $5,000</option>
+            <option>$5,000 – $20,000</option>
+            <option>$20,000 – $50,000</option>
+            <option>$50,000 – $100,000</option>
+            <option>Over $100,000</option>
+          </select>
+        </div>
+        <div>
+          <label for="clients_per_year">Clients per year</label>
+          <select id="clients_per_year" name="clients_per_year">
+            <option value="">Select…</option>
+            <option>1 – 5</option>
+            <option>6 – 15</option>
+            <option>16 – 30</option>
+            <option>31 – 50</option>
+            <option>More than 50</option>
+          </select>
+        </div>
+      </div>
+
+      <fieldset>
+        <legend>What do you specify? (select all that apply)</legend>
+        <div class="check-grid">
+          <label class="check-opt"><input type="checkbox" name="products" value="Furnishings"> Furnishings</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Lighting"> Lighting</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Upholstery/Goods"> Upholstery / Goods</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Decor & Accessories"> Decor &amp; Accessories</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Rugs"> Rugs</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Outdoor Furnishings"> Outdoor Furnishings</label>
+          <label class="check-opt"><input type="checkbox" name="products" value="Other"> Other</label>
+        </div>
+      </fieldset>
+
+      <div>
+        <label for="extra_profile_notes">Anything else we should know? (optional)</label>
+        <textarea id="extra_profile_notes" name="extra_profile_notes" rows="3"></textarea>
+      </div>
+
+      <button type="submit" class="btn-primary" id="apply-submit">Save profile &rarr;</button>
+      <p id="apply-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
+    </form>
+  </div>
+</main>
+
+<footer class="footer-simple">
+  <div class="container footer-inner">
+    <div>&copy; 2026 Risk Assurance Partners</div>
+    <div>
+      <a href="/about">About</a>
+      <a href="/partnership">Partnership</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var form = document.getElementById('apply-form');
+  var status = document.getElementById('apply-status');
+  var btn = document.getElementById('apply-submit');
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    if (!window.dpSupabase || !window.DP_AUTH || !window.DP_AUTH.user) {
+      status.textContent = 'Not signed in. Refresh the page and try again.';
+      return;
+    }
+
+    var fd = new FormData(form);
+    var payload = {};
+    fd.forEach(function(v,k){
+      if (k === 'products') { (payload.products = payload.products || []).push(v); }
+      else if (v) { payload[k] = v; }
+    });
+
+    // compose a single-line address only if any address parts present
+    var addrParts = [payload.address, payload.city, payload.state, payload.zip].filter(Boolean);
+    if (addrParts.length > 0) payload.full_address = addrParts.join(', ');
+
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    window.dpSupabase.auth.getSession().then(function(res){
+      var session = res && res.data && res.data.session;
+      if (!session) throw new Error('no_session');
+      return fetch('/.netlify/functions/partner-apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token
+        },
+        body: JSON.stringify(payload)
+      });
+    }).then(function(r){
+      if (!r.ok) throw new Error('http_' + r.status);
+      return r.json();
+    }).then(function(){
+      status.textContent = 'Saved. Update anytime.';
+      status.style.color = '#486838';
+      btn.disabled = false; btn.textContent = 'Save profile →';
+    }).catch(function(err){
+      console.error('[profile] save failed:', err);
+      status.textContent = 'Could not save. Email designer.programs@raptns.com if it keeps failing.';
+      status.style.color = '#b22222';
+      btn.disabled = false; btn.textContent = 'Try again →';
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

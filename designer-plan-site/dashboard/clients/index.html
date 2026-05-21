@@ -12,20 +12,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/auth.js"></script>
-<script>
-(function(){
-  function gate(){
-    if (!window.DP_AUTH || !window.DP_AUTH.user) {
-      window.location.replace('/login');
-    }
-  }
-  if (window.DP_AUTH && window.DP_AUTH.ready) {
-    gate();
-  } else {
-    document.addEventListener('dp-auth-ready', gate, { once: true });
-  }
-})();
-</script>
 
 <style>
 /* ============================================================

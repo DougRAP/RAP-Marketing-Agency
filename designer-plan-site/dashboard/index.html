@@ -12,20 +12,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/auth.js"></script>
-<script>
-(function(){
-  function gate(){
-    if (!window.DP_AUTH || !window.DP_AUTH.user) {
-      window.location.replace('/login');
-    }
-  }
-  if (window.DP_AUTH && window.DP_AUTH.ready) {
-    gate();
-  } else {
-    document.addEventListener('dp-auth-ready', gate, { once: true });
-  }
-})();
-</script>
 
 <style>
 /* ============================================================
@@ -881,9 +867,9 @@ section:last-of-type { padding-bottom: var(--sp-section); }
       <div class="welcome-benefit reveal">
         <span class="eyebrow">Not a partner yet?</span>
         <h2 id="apply-title">Your first plan, on us &mdash; up to $5,000 of coverage.</h2>
-        <p>Your first specified deal earns a boosted 40% commission &mdash; the 35% standard rate plus a 5% promo boost, capped at $5,000 of coverage value. Claim it on your dashboard and tell us the client. A two-step application. Six fields. No phone number required.</p>
+        <p>Your first specified deal earns a boosted 40% commission &mdash; the 35% standard rate plus a 5% promo boost, capped at $5,000 of coverage value. Claim it on your dashboard and tell us the client. Sign up with just your email &mdash; takes under a minute.</p>
         <div class="btn-row">
-          <a href="/partner-apply" class="btn btn--primary">Become a partner <span class="arrow">&rarr;</span></a>
+          <a href="/login" class="btn btn--primary">Become a partner <span class="arrow">&rarr;</span></a>
           <a href="/" class="btn">Read the program page</a>
         </div>
       </div>
