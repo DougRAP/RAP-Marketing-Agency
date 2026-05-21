@@ -3,50 +3,42 @@
 // Called by the browser after a successful magic-link sign-in. Ensures
 // the signed-in user has a corresponding row in `public.partners`:
 //
-//   1. If a row already exists for this auth_user_id → no-op, return it.
-//   2. If a row exists by email but is unlinked (auth_user_id is null) →
-//      link it to this auth user (migration path for legacy rows from the
-//      old /partner-apply flow).
-//   3. Otherwise → create a fresh row with status='approved' and
-//      lifecycle_status='account_created'.
+//   1. If a row already exists for this auth_user_id → no-op.
+//   2. Upsert the lead row by email (marketing/event tracking).
+//   3. If a partner row already exists for that lead but isn't linked
+//      to an auth user → link it (migration path for legacy rows from
+//      the old /partner-apply flow).
+//   4. Otherwise → create a fresh partner row linked to the lead, with
+//      status='approved' and lifecycle_status='account_created'.
 //
-// This is the canonical entry point for account creation in the
-// simplified onboarding model. The form at /partner-apply only updates
-// existing rows; it never creates them.
+// Schema note: partners has no `email` column — email lives on `leads`,
+// joined via partners.lead_id (UNIQUE).
 //
 // Auth: requires a valid Supabase JWT in the Authorization header. The
-// service-role key is used server-side to bypass RLS for the insert.
+// service-role key is used server-side to bypass RLS.
 
 const { createClient } = require('@supabase/supabase-js');
 
+function jsonResponse(statusCode, body) {
+  return {
+    statusCode,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body)
+  };
+}
+
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ error: 'method not allowed' })
-    };
-  }
+  if (event.httpMethod !== 'POST') return jsonResponse(405, { error: 'method_not_allowed' });
 
   const authHeader = event.headers.authorization || event.headers.Authorization || '';
   if (!authHeader.startsWith('Bearer ')) {
-    return {
-      statusCode: 401,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ error: 'missing bearer token' })
-    };
+    return jsonResponse(401, { error: 'missing_bearer_token' });
   }
   const jwt = authHeader.substring(7);
 
   const url = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceRoleKey) {
-    return {
-      statusCode: 500,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ error: 'server misconfigured' })
-    };
-  }
+  if (!url || !serviceRoleKey) return jsonResponse(500, { error: 'server_misconfigured' });
 
   const supabase = createClient(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false }
@@ -54,11 +46,7 @@ exports.handler = async (event) => {
 
   const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
   if (userError || !user) {
-    return {
-      statusCode: 401,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ error: 'invalid token', detail: userError && userError.message })
-    };
+    return jsonResponse(401, { error: 'invalid_token', detail: userError && userError.message });
   }
 
   // 1. Already linked by auth_user_id?
@@ -68,105 +56,83 @@ exports.handler = async (event) => {
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
-  if (byAuthIdErr) {
-    return {
-      statusCode: 500,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ error: 'lookup_failed', detail: byAuthIdErr.message })
-    };
-  }
+  if (byAuthIdErr) return jsonResponse(500, { error: 'lookup_failed', detail: byAuthIdErr.message });
 
   if (byAuthId) {
-    return {
-      statusCode: 200,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        created: false,
-        linked: false,
-        partner_id: byAuthId.id,
-        account_number: byAuthId.account_number
-      })
-    };
+    return jsonResponse(200, {
+      created: false,
+      linked: false,
+      partner_id: byAuthId.id,
+      account_number: byAuthId.account_number
+    });
   }
 
-  // 2. Unlinked row by email? (legacy from old /partner-apply form)
-  const { data: byEmail, error: byEmailErr } = await supabase
+  // 2. Upsert the lead row by email so marketing/events still flow.
+  const { data: lead, error: leadErr } = await supabase
+    .from('leads')
+    .upsert(
+      { email: user.email, consent_at: new Date().toISOString() },
+      { onConflict: 'email' }
+    )
+    .select('id')
+    .single();
+
+  if (leadErr) return jsonResponse(500, { error: 'lead_upsert_failed', detail: leadErr.message });
+
+  // 3. Legacy row check: partner already attached to this lead (from old form)?
+  const { data: byLead, error: byLeadErr } = await supabase
     .from('partners')
     .select('id, auth_user_id, account_number')
-    .eq('email', user.email)
+    .eq('lead_id', lead.id)
     .maybeSingle();
 
-  if (byEmailErr) {
-    return {
-      statusCode: 500,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ error: 'lookup_by_email_failed', detail: byEmailErr.message })
-    };
-  }
+  if (byLeadErr) return jsonResponse(500, { error: 'lookup_by_lead_failed', detail: byLeadErr.message });
 
-  if (byEmail && !byEmail.auth_user_id) {
-    const { error: linkErr } = await supabase
-      .from('partners')
-      .update({ auth_user_id: user.id, status: 'approved' })
-      .eq('id', byEmail.id);
-    if (linkErr) {
-      return {
-        statusCode: 500,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ error: 'link_failed', detail: linkErr.message })
-      };
+  if (byLead) {
+    if (byLead.auth_user_id && byLead.auth_user_id !== user.id) {
+      return jsonResponse(409, { error: 'email_taken' });
     }
-    return {
-      statusCode: 200,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
+    if (!byLead.auth_user_id) {
+      const { error: linkErr } = await supabase
+        .from('partners')
+        .update({ auth_user_id: user.id, status: 'approved' })
+        .eq('id', byLead.id);
+      if (linkErr) return jsonResponse(500, { error: 'link_failed', detail: linkErr.message });
+      return jsonResponse(200, {
         created: false,
         linked: true,
-        partner_id: byEmail.id,
-        account_number: byEmail.account_number
-      })
-    };
+        partner_id: byLead.id,
+        account_number: byLead.account_number
+      });
+    }
+    // byLead.auth_user_id === user.id — same as case 1, return existing.
+    return jsonResponse(200, {
+      created: false,
+      linked: false,
+      partner_id: byLead.id,
+      account_number: byLead.account_number
+    });
   }
 
-  if (byEmail && byEmail.auth_user_id && byEmail.auth_user_id !== user.id) {
-    // Same email belongs to a different auth user — should not happen with
-    // Supabase Auth's unique-email constraint, but defend anyway.
-    return {
-      statusCode: 409,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ error: 'email_taken' })
-    };
-  }
-
-  // 3. Fresh insert. `account_number` is generated by the
-  // `partners_assign_account_number` trigger from migration 20260518.
+  // 4. Fresh insert. account_number is auto-generated by the
+  // partners_assign_account_number trigger from migration 20260518.
   const { data: created, error: insertErr } = await supabase
     .from('partners')
     .insert({
       auth_user_id: user.id,
-      email: user.email,
+      lead_id: lead.id,
       status: 'approved',
       lifecycle_status: 'account_created'
     })
     .select('id, account_number')
     .single();
 
-  if (insertErr) {
-    return {
-      statusCode: 500,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ error: 'insert_failed', detail: insertErr.message })
-    };
-  }
+  if (insertErr) return jsonResponse(500, { error: 'insert_failed', detail: insertErr.message });
 
-  return {
-    statusCode: 201,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      created: true,
-      linked: false,
-      partner_id: created.id,
-      account_number: created.account_number
-    })
-  };
+  return jsonResponse(201, {
+    created: true,
+    linked: false,
+    partner_id: created.id,
+    account_number: created.account_number
+  });
 };
