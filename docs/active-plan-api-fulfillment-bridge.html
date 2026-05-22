@@ -804,6 +804,78 @@ el JS al final recalcula desde data-status.
   </div>
 </div>
 
+<!-- =================================================== WAVE F — PROMOTIONS ================================= -->
+<div class="wave">
+  <div class="wave-title">
+    <h2>Wave F · Promotions <span class="count" id="wave-f-count">(0/3)</span></h2>
+    <span class="wave-meta">~1-2 days · last · IN for go-live per Q5 decision</span>
+  </div>
+  <p class="wave-desc">Promo A (first-plan-on-us) and Promo B (refer-a-designer) per the original PRD. Scheduled last so they don't block the core fulfillment flow — but they ship for 2026-06-01. Engine + BFF + UI for each promo.</p>
+
+  <div class="steps">
+
+    <article class="step" data-status="pending" data-step="20">
+      <div class="step-header">
+        <div class="step-num">20</div>
+        <span class="repo-badge" data-repo="spring">spring</span>
+        <h3 class="step-title">Promo A — "first plan on us" claim endpoint + commission boost</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> Designer claims the promo on their first deal, names the client, gets 40% commission (35% standard + 5% boost) capped at $5,000 of coverage value. One claim per account.</p>
+        <dl>
+          <dt>Engine</dt>
+          <dd>New endpoint <code>POST /v1/partner/{account_id}/promo-claim</code> body <code>{ code: 'first-plan-on-us', client_name, client_email }</code>. Validates: no prior claim for this account. Stores claim. Boost applied at the next checkout that matches client_email.</dd>
+          <dt>Supabase</dt>
+          <dd>Engine writes to <code>promo_claims</code> table (already in migration 20260518). BFF wrapper in Wave C-equivalent.</dd>
+          <dt>Effort</dt><dd>~4h</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="21">
+      <div class="step-header">
+        <div class="step-num">21</div>
+        <span class="repo-badge" data-repo="spring">spring</span>
+        <h3 class="step-title">Promo B — "refer a designer" referral link + bonus accounting</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> Designer A sends a referral link to Designer B. When B signs up and makes their first purchase, A earns a one-time 10% bonus commission. Repeatable across different referred designers.</p>
+        <dl>
+          <dt>Engine</dt>
+          <dd>Detect <code>?ref_designer=&lt;referrer_code&gt;</code> on checkout. Resolve to referrer's account_id. On referred designer's first purchase, credit a one-time 10% bonus to referrer; mark as fired in <code>promo_claims</code>.</dd>
+          <dt>UI</dt>
+          <dd>Dashboard exposes the referrer's unique link with copy/share button.</dd>
+          <dt>Effort</dt><dd>~4h</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="22">
+      <div class="step-header">
+        <div class="step-num">22</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">Promotions card in dashboard (claim + referral link)</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Where</dt>
+          <dd>Dashboard subpage (probably <code>/dashboard/overview</code>) gets a "Promotions" card showing both promos: button "Claim first-plan-on-us" (if eligible) + copy-link for "Refer a designer."</dd>
+          <dt>Done when</dt>
+          <dd>Designer can claim Promo A once, can copy/share referral link, sees bonus accruals in the activity table once Promo B fires.</dd>
+          <dt>Effort</dt><dd>~3h</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+  </div>
+</div>
+
 <!-- =================================================== DECISIONS LOG ======================================== -->
 <h2>Decisions log</h2>
 <ul class="log" id="decisions-log">
@@ -819,25 +891,33 @@ el JS al final recalcula desde data-status.
     <span class="date">2026-05-21</span>
     <strong>Single-plan slide-out, no shopping cart.</strong> >99% of historical purchases are single-plan; cart adds friction without value (per architecture proposal §3).
   </li>
+  <li>
+    <span class="date">2026-05-22</span>
+    <strong>Q1 — HMAC: start with one key pair.</strong> Netlify ↔ Spring Boot uses a single shared secret. Multi-key rotation is a future enhancement; not needed for go-live. Affects Wave A.2.
+  </li>
+  <li>
+    <span class="date">2026-05-22</span>
+    <strong>Q2 — Adrian has both required access points.</strong> Push to the <code>Designers</code> Bitbucket repo + SSH to Rackspace Tomcat. Wave B is unblocked.
+  </li>
+  <li>
+    <span class="date">2026-05-22</span>
+    <strong>Q3 — Stripe live-keys flip: deferred.</strong> Decide closer to go-live based on smoke-test readiness. All Wave A–D work uses Stripe test mode. Re-evaluate at Wave E.17.
+  </li>
+  <li>
+    <span class="date">2026-05-22</span>
+    <strong>Q4 — Dashboard cache TTL: deferred.</strong> Decide at Wave C.12 (implementing the BFF). Default proposal stays 30s; revisit then.
+  </li>
+  <li>
+    <span class="date">2026-05-22</span>
+    <strong>Q5 — Promotions IN for 2026-06-01, scheduled last.</strong> Promo A (first-plan-on-us) and Promo B (refer-a-designer) are part of go-live. Moved to new Wave F appended after Wave E so they don't block the core fulfillment flow.
+  </li>
 </ul>
 
 <!-- =================================================== OPEN QUESTIONS ==================================== -->
 <h2>Open questions</h2>
 <ul class="log" id="open-questions">
-  <li>
-    <strong>Q1 — HMAC key storage.</strong> One key pair (Netlify ↔ Spring Boot) or multiple key IDs for rotation? Default: start with one, add rotation later. <em>Decide before Wave A step 2.</em>
-  </li>
-  <li>
-    <strong>Q2 — Engine source repo access.</strong> Confirm Adrian has push access to the <code>Designers</code> Bitbucket repo and the Rackspace SSH for deploys. Should be set already but worth checking.
-  </li>
-  <li>
-    <strong>Q3 — Stripe test mode flip.</strong> Until the production webhook is repointed, we use Stripe test keys for all dev. Coordinate with Doug — when do we flip to live keys? (Probably day-of go-live, after smoke test.)
-  </li>
-  <li>
-    <strong>Q4 — Dashboard cache TTL.</strong> dashboard-data BFF caches Spring Boot responses for ~30s. Acceptable staleness? Or should the dashboard be real-time? <em>Decide before Wave C step 12.</em>
-  </li>
-  <li>
-    <strong>Q5 — Promotions handling.</strong> Promo A ("first plan on us") and Promo B ("refer a designer") were in the earlier PRD. Are they in scope for the 6/1 go-live or deferred? <em>Ask Doug before Wave D.</em>
+  <li style="color: var(--ink-50); font-style: italic;">
+    All initial questions resolved as of 2026-05-22. New questions will appear here as they emerge during execution.
   </li>
 </ul>
 
@@ -929,6 +1009,7 @@ el JS al final recalcula desde data-status.
     countWave('wave-c', 9, 12);
     countWave('wave-d', 13, 15);
     countWave('wave-e', 16, 19);
+    countWave('wave-f', 20, 22);
   });
 })();
 </script>
