@@ -182,18 +182,27 @@ Common chrome on every route: sticky top operator bar (role badge, mode switcher
 
 The earlier brief specified four *pages* (admin-home + admin-designer were separate). They collapse into one route — `/admin` — with the selected designer in the URL (`/admin/d/{account_number}`). Same layout in both states; only the right pane differs.
 
-#### CSS rule — non-negotiable (decided 2026-05-21)
+#### CSS rule (decided 2026-05-21, clarified)
 
-**Use the exact same CSS as the dashboard. No new CSS.**
+**Colors, fonts, and buttons are locked. New layout and component classes are fine.**
 
-The admin console must look and feel like an extension of the dashboard, not a parallel system. Concretely:
+The admin console must read as an extension of the dashboard's visual language. That means three specific things are off-limits, and everything else is open as long as it composes from those primitives.
 
-- **Reuse `designer-plan-site/_shared/_partials.css` verbatim** for nav, footer, container, eyebrow, page wrapper.
-- **For any operator pattern the dashboard already styles** (KPI-like cards, activity-like tables, section headers, status pills, simple-form inputs, fieldsets, etc.) — **copy the inline `<style>` rules verbatim from the dashboard page that already does it**. Do not retype, do not adapt, do not "improve."
-- **For genuinely new layout patterns** the dashboard doesn't have (two-pane workspace, slide-out Omega panel, full-width data table with collapsible rows) — **compose them only from existing tokens** (`--paper`, `--ink`, `--ink-65`, `--ink-45`, `--brown-deep`, `--rule`, `--rule-strong`, `--accent`, `--accent-soft`, Inter Tight, Inter, the same border-radius, the same border-weight, the same padding rhythm). No new color tokens, no new fonts, no new radii, no new shadows, no new motion curves.
-- **If a value is not in the dashboard's CSS, stop.** Ask. Do not invent.
+**Locked — no new variants of these:**
 
-This rule supersedes the earlier browser brief line that said "new operator-specific classes are fine." It is now: no new classes that introduce new visual language. New composition of existing primitives is allowed; new primitives are not.
+- **Colors.** Use only the existing tokens: `--paper`, `--ink`, `--ink-65`, `--ink-45`, `--brown-deep`, `--rule`, `--rule-strong`, `--accent`, `--accent-soft`. No new colors, no new accent shades, no raw hex values invented for status badges or banners.
+- **Fonts.** Inter Tight (500/600 for display) + Inter (400/500 for body). No third typeface. No new weights.
+- **Buttons.** Use the same button styles the dashboard uses (`.btn-primary` and whatever sibling variants exist in the dashboard's inline styles). No new button colors, sizes, hover treatments, or visual languages.
+
+**Allowed:**
+
+- **New layout classes** (operator bar, two-pane grid, slide-out panel, designers-table grid, info card layout).
+- **New component classes** (KPI card, designer row, verification banner, status pill — using existing colors only, operator timeline item, etc.).
+- **New compositions of existing primitives** — different padding rhythms, different row densities, different arrangements — as long as they read as the same design family.
+
+**Reuse where it already exists.** `designer-plan-site/_shared/_partials.css` (nav, footer, container, eyebrow, tokens) is reused verbatim. For any pattern the dashboard already styles inline (cards, tables, section headers, status pills, simple-form inputs, fieldsets), copy those `<style>` rules verbatim from the dashboard page that does it rather than reinventing.
+
+**Anti-drift check:** if a new class uses a color not in the token list, a font not in the stack, or any button treatment that doesn't exist in the dashboard — stop, ask, do not invent.
 
 #### Governing principle (decided 2026-05-21)
 

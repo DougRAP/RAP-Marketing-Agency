@@ -116,15 +116,16 @@ dashboard:
 
 ## HARD RULES (do not break — Doug flagged these repeatedly)
 
-1. **CSS — no new CSS, period.** The admin console (and any new operator surface)
-   MUST use the **exact same CSS as the dashboard**. Reuse `_shared/_partials.css`
-   verbatim. For any pattern the dashboard already styles, **copy the inline `<style>`
-   rules verbatim from the dashboard page that does it** — do not retype, do not
-   adapt. For genuinely new layouts (two-pane, slide-out, data tables), **compose only
-   from existing tokens and primitives** — same colors, fonts, radii, borders, padding
-   rhythm as the dashboard. No new color tokens, fonts, shadows, radii, or motion.
-   **If a value is not in the dashboard's CSS, stop and ask.** See
-   `docs/dashboard-onboarding-plan.md` § "CSS rule — non-negotiable" for the full spec.
+1. **CSS — colors, fonts, and buttons are locked.** New pages MUST use only the
+   existing color tokens (`--paper`, `--ink`, `--ink-65`, `--ink-45`, `--brown-deep`,
+   `--rule`, `--rule-strong`, `--accent`, `--accent-soft`), the existing font stack
+   (Inter Tight 500/600 + Inter 400/500), and the existing button styles. **New layout
+   and component classes are fine** (operator bar, data tables, KPI cards, etc.) as
+   long as they compose from those locked primitives. Reuse `_shared/_partials.css`
+   verbatim; copy inline `<style>` rules verbatim from the dashboard page that already
+   does a similar pattern rather than reinventing. **If a value isn't in the dashboard's
+   CSS, stop and ask.** See `docs/dashboard-onboarding-plan.md` § "CSS rule" for the
+   full spec.
 2. **Existing dashboard pages are locked.** Bug-checked and live. New work produces
    NEW files; never modifies the existing dashboard files.
 3. **Navigation — canonical.** The site nav is **Home · Partner with us · Shop plans · Dashboard · File a claim · Log in** in that order, identical on every public page, desktop and mobile drawer. White-glove was deliberately removed from nav; section anchor `/plans#white-glove` remains.

@@ -39,14 +39,17 @@ Headlines: sentence case. Eyebrows: all-caps, letter-spaced. Buttons: 4px radius
 Light, airy, warm — never muddy.
 ```
 
-**No new CSS classes.** This is a hardening of the original brief (decided 2026-05-21).
-For any pattern the dashboard already styles (KPI cards, activity tables, section
-headers, status pills, form inputs, fieldsets), copy the inline `<style>` rules
-verbatim from the dashboard page that does it. For genuinely new layouts (operator
-bar, two-pane workspace, full-width data tables, slide-out Omega panel), compose
-them only from existing tokens and primitives — same colors, fonts, radii, border
-weights, padding rhythm. No new color tokens, no new fonts, no new shadows, no new
-radii, no new motion curves. If a value is not in the dashboard's CSS, stop and ask.
+**Colors, fonts, and buttons are locked. New layout/component classes are fine.**
+Decided 2026-05-21. Use only the existing color tokens (`--paper`, `--ink`,
+`--ink-65`, `--ink-45`, `--brown-deep`, `--rule`, `--rule-strong`, `--accent`,
+`--accent-soft`), the existing font stack (Inter Tight 500/600 + Inter 400/500),
+and the existing button styles. New operator-specific layout classes (operator
+bar, two-pane workspace, data tables, slide-out Omega panel) are fine — they just
+must compose from those locked primitives. For any pattern the dashboard already
+styles (cards, tables, section headers, status pills, form inputs, fieldsets),
+copy the inline `<style>` rules verbatim from the dashboard page that does it
+rather than reinventing. If a color, font, or button treatment isn't in the
+dashboard's CSS, stop and ask.
 
 ## DO NOT MODIFY EXISTING FILES
 
