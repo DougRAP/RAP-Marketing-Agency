@@ -943,6 +943,14 @@ el JS al final recalcula desde data-status.
     <span class="date">2026-05-22 PM</span>
     <strong>FurnitureRx is a parallel new workstream Doug is leading personally.</strong> Separate Netlify site, separate repo (Adrian confirmed access), <code>furniturerx.com</code> domain owned. Two-variant homepage (A: protection-plan-first, B: membership-first) for a $9.99/mo subscription offering. Pitch target: Wellsville next Wednesday. May eventually consume the SAME fulfillment engine endpoints we're building here. Not in this plan's scope today; tracked as an open question for later coordination.
   </li>
+  <li>
+    <span class="date">2026-05-22 PM</span>
+    <strong>Checkout contract corrected after engine recon.</strong> The Wave A.1 OpenAPI assumed Stripe Checkout (hosted page → <code>checkout_url</code>); reading <code>CheckoutController</code> + <code>CheckoutService</code> in the Designers repo revealed the engine uses Stripe Elements + PaymentIntent (returns <code>client_secret</code>). Also: <code>Plans.PlanID</code> is integer (not enum string "tier-2"), and price depends on <code>customer_cart_total</code> via <code>ProtectionPlanPricing</code> price bands (resolved by <code>CommissionService.resolvePlanRetail()</code>). CheckoutRequest now uses <code>plan_id: int</code> + <code>customer_cart_total_cents</code>, server computes <code>amount_cents</code>. CheckoutResponse returns <code>client_secret</code> + <code>payment_intent_id</code> + <code>amount_cents</code> + <code>commission_cents</code> + <code>designer_attributed</code>. Updated <code>docs/api-fulfillment-bridge.openapi.yaml</code> and <code>misc/study-api-bridge.html</code>. Wave B.5 implementation aligns with this corrected contract.
+  </li>
+  <li>
+    <span class="date">2026-05-22 PM</span>
+    <strong>Slide-out target identified: Ant Design Drawer, 448px from the right.</strong> Adrian shared the Homary product page HTML; the slide-out triggered by "Add to Cart" is an <code>ant-drawer ant-drawer-right</code> at 448px wide, with sticky header ("My Cart") + scrollable body (cart items, embedded upsells) + sticky footer (price breakdown + "Checkout Now" CTA). For Designer Plan the adaptation: same structure, content replaced by plan details + customer form + cart_total input + live price + Stripe Elements card field + "Pay $XX.XX" CTA. Not blocking for Wave B.5 backend; details for Wave D.13 frontend implementation.
+  </li>
 </ul>
 
 <!-- =================================================== OPEN QUESTIONS ==================================== -->

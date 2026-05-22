@@ -39,16 +39,31 @@ paths:
   /v1/checkout:
     post:
       operationId: createCheckout
-      summary: Create a checkout session for a single plan purchase
+      summary: Create a Stripe PaymentIntent for a single-plan purchase
       description: |
         Called by the storefront's slide-out checkout panel (via the
-        `cart-checkout` Netlify Function). Creates a Stripe Checkout session
-        and returns the hosted URL. The actual plan-number issuance happens
-        asynchronously on the Stripe `payment_intent.succeeded` webhook.
+        `cart-checkout` Netlify Function). Creates a Stripe PaymentIntent
+        and returns the `client_secret` so the browser can complete the
+        charge inline with Stripe Elements (no external redirect — the
+        whole flow stays inside the slide-out).
+
+        Plan-number issuance, SOAR write, and commission accounting all
+        happen asynchronously on the Stripe `payment_intent.succeeded`
+        webhook (unchanged from the existing engine).
+
+        Pricing model: the engine is the SINGLE source of price truth.
+        Given `plan_id` + `customer_cart_total_cents`, it resolves the
+        plan price via `CommissionService.resolvePlanRetail()` — the SAME
+        function that powers the public `GET /api/pricing` endpoint, so a
+        preview shown to the user with `/api/pricing` always matches what
+        gets charged here. The browser does NOT send the price; if it
+        cannot find a matching price band, returns 422
+        `price_not_available`.
 
         If `referral_code` is provided and resolves to a partner with a
-        connected Stripe account, the engine attaches the commission
-        attribution to the resulting order so the partner is credited.
+        connected Stripe account, the engine creates the PaymentIntent
+        with a `TransferData` block so the designer's commission is
+        automatically transferred when the charge succeeds.
       tags: [Checkout]
       requestBody:
         required: true
@@ -60,32 +75,36 @@ paths:
               standardPurchase:
                 summary: Plain purchase, no referral
                 value:
-                  plan_id: tier-2
+                  plan_id: 4
+                  customer_cart_total_cents: 500000
                   customer:
                     name: Jane Doe
                     email: jane@example.com
                     phone: "+15551234567"
-                  amount_cents: 24900
               referralPurchase:
                 summary: Purchase attributed to a designer
                 value:
-                  plan_id: tier-1
+                  plan_id: 4
+                  customer_cart_total_cents: 500000
                   customer:
                     name: Bob Smith
                     email: bob@example.com
                     phone: "+15555678901"
                   referral_code: ACME-STUDIO
-                  amount_cents: 14900
       responses:
         '200':
-          description: Checkout session created
+          description: PaymentIntent created — browser uses client_secret to confirm with Stripe Elements
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckoutResponse'
               example:
-                checkout_url: "https://checkout.stripe.com/c/pay/cs_test_a1B2c3D4e5F6"
-                order_id: "550e8400-e29b-41d4-a716-446655440000"
+                payment_intent_id: "pi_3O9pZkBVVsNLMXy4ILcMcDoT"
+                client_secret: "pi_3O9pZkBVVsNLMXy4ILcMcDoT_secret_a1B2c3D4e5F6g7H8"
+                amount_cents: 24900
+                currency: usd
+                commission_cents: 8715
+                designer_attributed: true
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
@@ -451,50 +470,87 @@ components:
 
     CheckoutRequest:
       type: object
-      required: [plan_id, customer, amount_cents]
+      required: [plan_id, customer_cart_total_cents, customer]
       properties:
         plan_id:
-          type: string
+          type: integer
           description: |
-            Identifier for the plan tier. Engine maps this to a real
-            product/price in Stripe and to SOAR plan metadata.
-          enum: [tier-1, tier-2, tier-3]
-          example: tier-2
+            Foreign key to the `Plans.PlanID` column in SOAR. Numeric ID,
+            not a tier string. Frontend gets these from the engine's
+            `/api/pricing` endpoint or a future plans catalog endpoint.
+          example: 4
+        customer_cart_total_cents:
+          type: integer
+          minimum: 1
+          description: |
+            The total value of the furniture the customer is buying
+            coverage for, in cents. Drives the price band that determines
+            the plan cost — same input as the public `/api/pricing`
+            endpoint's `totalPaid` query param (just in cents instead of
+            dollars).
+          example: 500000
         customer:
           $ref: '#/components/schemas/Customer'
         referral_code:
           type: string
           description: |
-            Designer's referral code (vanity-friendly, from
-            `partners.referral_code`). If present and the designer has
-            Stripe Connect set up, the resulting commission is attributed
-            to them.
+            Designer's referral code (from `partners.referral_code`, which
+            maps to `Dealer.affiliatedId` in SOAR). If present and the
+            designer is type=designer with a connected Stripe account, the
+            PaymentIntent is created with a TransferData block so the
+            commission is transferred on charge success.
           example: ACME-STUDIO
           nullable: true
+
+    CheckoutResponse:
+      type: object
+      required: [payment_intent_id, client_secret, amount_cents, currency, designer_attributed]
+      properties:
+        payment_intent_id:
+          type: string
+          description: |
+            Stripe PaymentIntent ID. Use as a client-side reference and
+            for support lookups. Survives through the Stripe webhook into
+            SoarSales and DesignerTransaction records.
+          example: pi_3O9pZkBVVsNLMXy4ILcMcDoT
+        client_secret:
+          type: string
+          description: |
+            Stripe client secret for this PaymentIntent. The browser uses
+            this with `stripe.confirmPayment({clientSecret, elements})` to
+            complete the charge inline (no redirect). NEVER log or persist
+            this value beyond the lifetime of the payment confirmation.
+          example: pi_3O9pZkBVVsNLMXy4ILcMcDoT_secret_a1B2c3D4e5F6g7H8
         amount_cents:
           type: integer
           minimum: 1
           description: |
-            Server-authoritative amount in cents. The engine validates this
-            matches the plan's canonical price; mismatch returns 400.
+            The amount the engine computed for this plan + cart total
+            combination. Show to the user before they confirm. Authoritative
+            — Stripe will charge exactly this much.
           example: 24900
-
-    CheckoutResponse:
-      type: object
-      required: [checkout_url, order_id]
-      properties:
-        checkout_url:
+        currency:
           type: string
-          format: uri
+          enum: [usd]
+          example: usd
+        commission_cents:
+          type: integer
+          minimum: 0
           description: |
-            Stripe-hosted Checkout URL. The storefront redirects the buyer
-            here; Stripe handles card collection and 3DS.
-        order_id:
-          type: string
-          format: uuid
+            Designer commission, if `referral_code` matched a valid
+            Stripe-connected designer. Zero or omitted otherwise.
+            Informational — the actual transfer happens via Stripe's
+            TransferData when the charge succeeds.
+          example: 8715
+          nullable: true
+        designer_attributed:
+          type: boolean
           description: |
-            Internal order ID (Supabase `orders.id`). Useful for the
-            storefront to associate post-checkout UX with the order.
+            True if a `referral_code` was matched to an active designer
+            with Stripe Connect set up and a commission transfer will fire
+            on charge success. False if no referral, or the referral was
+            invalid, or the designer hasn't completed Stripe onboarding.
+          example: true
 
     # ---- /v1/stripe-connect/start ----------------------------------------
 
