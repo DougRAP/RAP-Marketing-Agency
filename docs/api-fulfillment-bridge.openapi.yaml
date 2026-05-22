@@ -86,6 +86,12 @@ paths:
               example:
                 checkout_url: "https://checkout.stripe.com/c/pay/cs_test_a1B2c3D4e5F6"
                 order_id: "550e8400-e29b-41d4-a716-446655440000"
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/EngineError' }
+        '502': { $ref: '#/components/responses/UpstreamUnavailable' }
 
   /v1/stripe-connect/start:
     post:
@@ -121,6 +127,11 @@ paths:
                 onboarding_url: "https://connect.stripe.com/setup/e/acct_1AbCdEfG/..."
                 session_token: "stk_8f3a2c1b9e7d6"
                 expires_at: "2026-05-22T15:30:00Z"
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/EngineError' }
+        '502': { $ref: '#/components/responses/UpstreamUnavailable' }
 
   /v1/stripe-connect/return:
     post:
@@ -155,6 +166,11 @@ paths:
                 stripe_account_id: "acct_1AbCdEfG"
                 charges_enabled: true
                 payouts_enabled: true
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '502': { $ref: '#/components/responses/UpstreamUnavailable' }
 
   /v1/partner/{account_id}/dashboard:
     get:
@@ -214,6 +230,11 @@ paths:
                   commission_tracked_cents: 12345
                   commission_paid_cents: 8000
                   orders_count: 1
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/EngineError' }
 
 # -----------------------------------------------------------------------------
 # SECURITY — applied globally. Every operation requires all three headers.
@@ -258,7 +279,153 @@ components:
         Reserved for future key rotation. Unknown key ID → 401
         `{ "code": "unknown_key_id" }`.
 
+  # ---------------------------------------------------------------------
+  # Reusable error responses. Each operation lists which ones it can return.
+  # All bodies share the `Error` schema below.
+  # ---------------------------------------------------------------------
+
+  responses:
+
+    BadRequest:
+      description: |
+        Request payload failed validation. `code` identifies which field
+        or rule failed. Examples: `invalid_email`, `invalid_plan_id`,
+        `amount_mismatch`, `missing_field`. `message` is safe to surface
+        directly to the end user.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: invalid_plan_id
+            message: "Plan ID 'tier-9' is not recognized."
+            detail: "Valid: tier-1, tier-2, tier-3."
+
+    Unauthorized:
+      description: |
+        HMAC signature missing, malformed, or invalid. Possible codes:
+        `missing_signature_headers`, `unknown_key_id`, `timestamp_skew`,
+        `bad_timestamp`, `invalid_signature`. `message` is intentionally
+        terse; engine logs hold the detail. Never expose `detail` to the
+        end user — could leak which field varied.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: invalid_signature
+            message: "Authentication failed."
+
+    NotFound:
+      description: |
+        Referenced entity (partner, order, session_token) does not exist.
+        `code` examples: `partner_not_found`, `session_token_not_found`,
+        `order_not_found`.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: partner_not_found
+            message: "No partner with that account ID."
+
+    Conflict:
+      description: |
+        State conflict — operation can't proceed because something has
+        already happened. Examples: `session_token_consumed`,
+        `stripe_account_already_linked`, `promo_already_claimed`.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: session_token_consumed
+            message: "This onboarding session was already finalized."
+
+    BusinessRuleViolation:
+      description: |
+        Request was syntactically valid but violates a business rule.
+        Examples: `amount_mismatch` (price changed since browsing),
+        `customer_already_purchased` (idempotency guard).
+        Distinct from 400 because the input is well-formed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: amount_mismatch
+            message: "Plan price has changed. Refresh and try again."
+            detail: "expected_cents=24900 received_cents=14900"
+
+    RateLimited:
+      description: |
+        Per-key-ID rate limit exceeded. Includes `Retry-After` header
+        (seconds). Suggests backoff to the BFF; the BFF should NOT
+        forward this to the user automatically — instead show a generic
+        "system busy" message.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: rate_limited
+            message: "Too many requests."
+
+    EngineError:
+      description: |
+        Unexpected engine-side failure. Generic to the caller — engine
+        logs carry the stack trace. `code` is always `internal_error`.
+        Surface to the user as "Something went wrong on our end. Please
+        try again."
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: internal_error
+            message: "Something went wrong."
+
+    UpstreamUnavailable:
+      description: |
+        Engine reached but a downstream dependency failed: Stripe API,
+        SOAR SQL Server, etc. `code` examples: `stripe_unavailable`,
+        `soar_unavailable`. Caller may safely retry after backoff.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            code: stripe_unavailable
+            message: "Payment service is temporarily unreachable."
+
   schemas:
+
+    # ---- Standard error envelope ------------------------------------------
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: |
+            Stable machine-readable code. snake_case. Documented per
+            operation. Callers should branch on this, not on
+            `message`. Same `code` may appear across multiple HTTP
+            statuses if semantically equivalent.
+          example: invalid_plan_id
+        message:
+          type: string
+          description: |
+            Short human-readable summary. Safe to display to end users
+            UNLESS the operation marks otherwise (notably 401 messages
+            should not expose detail).
+          example: "Plan ID 'tier-9' is not recognized."
+        detail:
+          type: string
+          description: |
+            Optional additional context. May or may not be safe for end
+            users — caller decides based on `code`. Sometimes carries
+            the violated constraint or the expected value.
+          nullable: true
+          example: "Valid: tier-1, tier-2, tier-3."
 
     # ---- Shared primitives ------------------------------------------------
 
