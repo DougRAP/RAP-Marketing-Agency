@@ -8,10 +8,11 @@ info:
     and consumed by the new storefront at `thedesignerplan.com` via Netlify
     Functions (BFF layer).
 
-    **Auth:** server-to-server HMAC-SHA256 signatures on every request. The
-    user JWT issued by Supabase Auth never crosses this boundary; the BFF
-    validates the JWT, then makes its own signed call here. See
-    `docs/hmac-auth.md` for the signing contract (added in Wave A.2).
+    **Auth:** server-to-server HMAC-SHA256 signatures on every request via
+    three headers (`X-RAP-Signature`, `X-RAP-Timestamp`, `X-RAP-Key-Id`).
+    Full contract + reference implementations in `docs/hmac-auth.md`.
+    The user JWT issued by Supabase Auth never crosses this boundary; the
+    BFF validates the JWT, then makes its own signed call here.
 
     **Trust model:**
     - This API is canonical for: payment creation, plan-number issuance,
@@ -215,11 +216,47 @@ paths:
                   orders_count: 1
 
 # -----------------------------------------------------------------------------
-# COMPONENTS — schemas only in Wave A.1. securitySchemes added in A.2,
-# common error responses added in A.3.
+# SECURITY — applied globally. Every operation requires all three headers.
+# -----------------------------------------------------------------------------
+
+security:
+  - HmacSignature: []
+    HmacTimestamp: []
+    HmacKeyId: []
+
+# -----------------------------------------------------------------------------
+# COMPONENTS — schemas + securitySchemes. Error responses added in A.3.
 # -----------------------------------------------------------------------------
 
 components:
+
+  securitySchemes:
+    HmacSignature:
+      type: apiKey
+      in: header
+      name: X-RAP-Signature
+      description: |
+        Hex-encoded HMAC-SHA256 over the signing string
+        `METHOD\nPATH_AND_QUERY\nTIMESTAMP\nSHA256(BODY)`. The signing key
+        is identified by `X-RAP-Key-Id`. Full contract in
+        `docs/hmac-auth.md`. Missing or invalid → 401
+        `{ "code": "invalid_signature" }`.
+    HmacTimestamp:
+      type: apiKey
+      in: header
+      name: X-RAP-Timestamp
+      description: |
+        ISO 8601 UTC timestamp (`YYYY-MM-DDTHH:MM:SSZ`). Must be within
+        ±300 seconds of engine clock or the request is rejected with 401
+        `{ "code": "timestamp_skew" }`.
+    HmacKeyId:
+      type: apiKey
+      in: header
+      name: X-RAP-Key-Id
+      description: |
+        Identifier for the shared secret used to sign. Today: `netlify-prod`.
+        Reserved for future key rotation. Unknown key ID → 401
+        `{ "code": "unknown_key_id" }`.
 
   schemas:
 
