@@ -1,0 +1,448 @@
+openapi: 3.0.3
+
+info:
+  title: RAP Fulfillment Bridge API
+  version: 1.0.0
+  description: |
+    HTTP API exposed by the Spring Boot fulfillment engine at `designerplan.io`
+    and consumed by the new storefront at `thedesignerplan.com` via Netlify
+    Functions (BFF layer).
+
+    **Auth:** server-to-server HMAC-SHA256 signatures on every request. The
+    user JWT issued by Supabase Auth never crosses this boundary; the BFF
+    validates the JWT, then makes its own signed call here. See
+    `docs/hmac-auth.md` for the signing contract (added in Wave A.2).
+
+    **Trust model:**
+    - This API is canonical for: payment creation, plan-number issuance,
+      Stripe Connect onboarding, SOAR writes, commission ledger.
+    - Supabase is canonical for: identity (partners.auth_user_id), marketing
+      data (leads), dashboard surface state. The engine writes back
+      `plan_number` to Supabase after each successful payment.
+
+    **Versioning:** path-based `/v1/...`. Breaking changes ship as `/v2/...`
+    in parallel; old version maintained for at least 90 days.
+
+servers:
+  - url: https://designerplan.io/api
+    description: Production engine on Rackspace Tomcat 10
+  - url: http://localhost:8080/api
+    description: Local Spring Boot dev
+
+# -----------------------------------------------------------------------------
+# PATHS
+# -----------------------------------------------------------------------------
+
+paths:
+
+  /v1/checkout:
+    post:
+      operationId: createCheckout
+      summary: Create a checkout session for a single plan purchase
+      description: |
+        Called by the storefront's slide-out checkout panel (via the
+        `cart-checkout` Netlify Function). Creates a Stripe Checkout session
+        and returns the hosted URL. The actual plan-number issuance happens
+        asynchronously on the Stripe `payment_intent.succeeded` webhook.
+
+        If `referral_code` is provided and resolves to a partner with a
+        connected Stripe account, the engine attaches the commission
+        attribution to the resulting order so the partner is credited.
+      tags: [Checkout]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+            examples:
+              standardPurchase:
+                summary: Plain purchase, no referral
+                value:
+                  plan_id: tier-2
+                  customer:
+                    name: Jane Doe
+                    email: jane@example.com
+                    phone: "+15551234567"
+                  amount_cents: 24900
+              referralPurchase:
+                summary: Purchase attributed to a designer
+                value:
+                  plan_id: tier-1
+                  customer:
+                    name: Bob Smith
+                    email: bob@example.com
+                    phone: "+15555678901"
+                  referral_code: ACME-STUDIO
+                  amount_cents: 14900
+      responses:
+        '200':
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+              example:
+                checkout_url: "https://checkout.stripe.com/c/pay/cs_test_a1B2c3D4e5F6"
+                order_id: "550e8400-e29b-41d4-a716-446655440000"
+
+  /v1/stripe-connect/start:
+    post:
+      operationId: startStripeConnect
+      summary: Begin Stripe Connect Express onboarding for a partner
+      description: |
+        Generates a one-time onboarding URL the partner is redirected to so
+        they can attach their bank account and enable commission payouts.
+
+        The engine creates (or reuses) a Stripe Express account, generates an
+        `AccountLink`, and stores an `expectedAccountId` in the partner's
+        session record. The `session_token` returned here must be supplied to
+        `/v1/stripe-connect/return` after the partner finishes onboarding, as
+        anti-CSRF (a return URL alone is not sufficient — an attacker could
+        craft one).
+      tags: [StripeConnect]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StripeConnectStartRequest'
+            example:
+              partner_id: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Onboarding URL ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StripeConnectStartResponse'
+              example:
+                onboarding_url: "https://connect.stripe.com/setup/e/acct_1AbCdEfG/..."
+                session_token: "stk_8f3a2c1b9e7d6"
+                expires_at: "2026-05-22T15:30:00Z"
+
+  /v1/stripe-connect/return:
+    post:
+      operationId: completeStripeConnect
+      summary: Confirm Stripe Connect onboarding completion
+      description: |
+        Called by the BFF after the partner is redirected back from Stripe.
+        The engine validates `session_token` matches what was stored at
+        `/start`, queries Stripe for the account's current status, and
+        updates the partner record. Returns the final connection state so
+        the storefront can show appropriate copy ("connected" vs.
+        "incomplete — finish in Stripe").
+      tags: [StripeConnect]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StripeConnectReturnRequest'
+            example:
+              partner_id: "550e8400-e29b-41d4-a716-446655440000"
+              session_token: "stk_8f3a2c1b9e7d6"
+      responses:
+        '200':
+          description: Connection state evaluated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StripeConnectReturnResponse'
+              example:
+                status: connected
+                stripe_account_id: "acct_1AbCdEfG"
+                charges_enabled: true
+                payouts_enabled: true
+
+  /v1/partner/{account_id}/dashboard:
+    get:
+      operationId: getPartnerDashboard
+      summary: Fetch the dashboard data feed for a partner
+      description: |
+        Powers the designer dashboard subpages (overview, clients, etc.).
+        Returns the partner's basic identity, Stripe connection status, the
+        list of orders attributed to them (with masked client email for
+        privacy), and aggregated commission totals.
+
+        The BFF wrapper applies an in-memory TTL cache before calling this
+        (TTL decided at Wave C.12).
+      tags: [Partner]
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          description: The partner's UUID from Supabase (`partners.id`).
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+        - name: limit
+          in: query
+          required: false
+          description: Max number of orders to return (default 50, max 200).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: Dashboard feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerDashboard'
+              example:
+                partner:
+                  id: "550e8400-e29b-41d4-a716-446655440000"
+                  account_number: "DP-10042"
+                  stripe_status: connected
+                  commission_rate: 0.35
+                sales:
+                  - order_id: "abc-1234"
+                    plan_number: "PLAN-2026-12345"
+                    client_email_masked: "j***@example.com"
+                    tier: tier-2
+                    amount_cents: 24900
+                    commission_cents: 8715
+                    status: paid
+                    claim_status: no_claim
+                    purchased_at: "2026-05-15T14:23:00Z"
+                totals:
+                  commission_tracked_cents: 12345
+                  commission_paid_cents: 8000
+                  orders_count: 1
+
+# -----------------------------------------------------------------------------
+# COMPONENTS — schemas only in Wave A.1. securitySchemes added in A.2,
+# common error responses added in A.3.
+# -----------------------------------------------------------------------------
+
+components:
+
+  schemas:
+
+    # ---- Shared primitives ------------------------------------------------
+
+    Customer:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: Jane Doe
+        email:
+          type: string
+          format: email
+          example: jane@example.com
+        phone:
+          type: string
+          description: E.164 format preferred.
+          example: "+15551234567"
+
+    # ---- /v1/checkout -----------------------------------------------------
+
+    CheckoutRequest:
+      type: object
+      required: [plan_id, customer, amount_cents]
+      properties:
+        plan_id:
+          type: string
+          description: |
+            Identifier for the plan tier. Engine maps this to a real
+            product/price in Stripe and to SOAR plan metadata.
+          enum: [tier-1, tier-2, tier-3]
+          example: tier-2
+        customer:
+          $ref: '#/components/schemas/Customer'
+        referral_code:
+          type: string
+          description: |
+            Designer's referral code (vanity-friendly, from
+            `partners.referral_code`). If present and the designer has
+            Stripe Connect set up, the resulting commission is attributed
+            to them.
+          example: ACME-STUDIO
+          nullable: true
+        amount_cents:
+          type: integer
+          minimum: 1
+          description: |
+            Server-authoritative amount in cents. The engine validates this
+            matches the plan's canonical price; mismatch returns 400.
+          example: 24900
+
+    CheckoutResponse:
+      type: object
+      required: [checkout_url, order_id]
+      properties:
+        checkout_url:
+          type: string
+          format: uri
+          description: |
+            Stripe-hosted Checkout URL. The storefront redirects the buyer
+            here; Stripe handles card collection and 3DS.
+        order_id:
+          type: string
+          format: uuid
+          description: |
+            Internal order ID (Supabase `orders.id`). Useful for the
+            storefront to associate post-checkout UX with the order.
+
+    # ---- /v1/stripe-connect/start ----------------------------------------
+
+    StripeConnectStartRequest:
+      type: object
+      required: [partner_id]
+      properties:
+        partner_id:
+          type: string
+          format: uuid
+          description: Supabase `partners.id`.
+
+    StripeConnectStartResponse:
+      type: object
+      required: [onboarding_url, session_token, expires_at]
+      properties:
+        onboarding_url:
+          type: string
+          format: uri
+          description: Stripe-hosted onboarding URL. One-shot, short-lived.
+        session_token:
+          type: string
+          description: |
+            Anti-CSRF token; must be passed back to
+            `/v1/stripe-connect/return`. Bound to `expectedAccountId` in the
+            engine's session store.
+        expires_at:
+          type: string
+          format: date-time
+
+    # ---- /v1/stripe-connect/return ---------------------------------------
+
+    StripeConnectReturnRequest:
+      type: object
+      required: [partner_id, session_token]
+      properties:
+        partner_id:
+          type: string
+          format: uuid
+        session_token:
+          type: string
+
+    StripeConnectReturnResponse:
+      type: object
+      required: [status, stripe_account_id]
+      properties:
+        status:
+          type: string
+          enum: [connected, in_progress, incomplete]
+          description: |
+            - `connected`: charges + payouts enabled, ready to earn.
+            - `in_progress`: account created, partner returned but Stripe
+              still needs more info.
+            - `incomplete`: partner abandoned mid-flow.
+        stripe_account_id:
+          type: string
+          example: acct_1AbCdEfG
+        charges_enabled:
+          type: boolean
+        payouts_enabled:
+          type: boolean
+
+    # ---- /v1/partner/{account_id}/dashboard ------------------------------
+
+    PartnerDashboard:
+      type: object
+      required: [partner, sales, totals]
+      properties:
+        partner:
+          $ref: '#/components/schemas/PartnerSummary'
+        sales:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleRow'
+        totals:
+          $ref: '#/components/schemas/PartnerTotals'
+
+    PartnerSummary:
+      type: object
+      required: [id, account_number, stripe_status, commission_rate]
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_number:
+          type: string
+          example: DP-10042
+        stripe_status:
+          type: string
+          enum: [not_started, in_progress, incomplete, connected]
+        commission_rate:
+          type: number
+          format: float
+          description: Decimal fraction. 0.35 = 35%.
+          example: 0.35
+
+    SaleRow:
+      type: object
+      required: [order_id, tier, amount_cents, commission_cents, status, purchased_at]
+      properties:
+        order_id:
+          type: string
+        plan_number:
+          type: string
+          nullable: true
+          description: Issued post-payment. Null while pending.
+          example: PLAN-2026-12345
+        client_email_masked:
+          type: string
+          description: First letter + asterisks + domain. For dashboard display only.
+          example: "j***@example.com"
+        tier:
+          type: string
+          enum: [tier-1, tier-2, tier-3]
+        amount_cents:
+          type: integer
+        commission_cents:
+          type: integer
+          description: Designer's share. Includes Promo A/B boosts when applicable.
+        status:
+          type: string
+          enum: [pending, paid, refunded, disputed]
+        claim_status:
+          type: string
+          enum: [no_claim, open, closed]
+          description: Whether the client filed a claim against this plan.
+        purchased_at:
+          type: string
+          format: date-time
+
+    PartnerTotals:
+      type: object
+      required: [commission_tracked_cents, commission_paid_cents, orders_count]
+      properties:
+        commission_tracked_cents:
+          type: integer
+          description: |
+            Total commission earned across all attributed orders, regardless
+            of whether the partner has Stripe Connect set up. This is the
+            motivator — visible even when payouts aren't enabled yet.
+        commission_paid_cents:
+          type: integer
+          description: |
+            Subset of tracked that has actually been transferred to the
+            partner's Stripe account.
+        orders_count:
+          type: integer
+
+tags:
+  - name: Checkout
+    description: Plan purchase flow.
+  - name: StripeConnect
+    description: Designer payout onboarding via Stripe Express accounts.
+  - name: Partner
+    description: Read-only dashboard feed for the designer.
