@@ -131,6 +131,41 @@ This is the agent's #1 daily job for new accounts. Surface it prominently.
   verification queue on operator home should show those same 3, ordered by signup
   time (newest first).
 
+## Sellability — second operator state (orthogonal to verification)
+
+A designer is **sellable as partner** when their record has all three of: a valid
+email, phone, and address. The full `/dashboard/profile` is optional — partial
+profile is fine for selling. When one of email/phone/address is missing, the
+designer is **not sellable as partner** and operators should call to collect the
+missing info. Important escape valve: even when a designer is not sellable as a
+partner, their client can still purchase a plan directly by navigating to
+**Shop Plans**. Surface this in copy so the operator can tell the designer.
+
+### UX additions for sellability (across the four pages)
+
+- **Operator home (Page 1)** — add a **6th KPI card** in the strip titled
+  "Missing info" with sample count `2`, subtitle "Designers missing phone or
+  address — call to collect." Neutral or muted-amber styling. Do NOT add a
+  whole separate queue section — sellability is a softer state than
+  verification; the count is the cue.
+- **Single-designer view (Page 2)** — directly below the sticky operator banner,
+  show a small inline status line:
+  - When sellable AND verified: `Status: Verified · Sellable as partner` (muted, calm).
+  - When sellable but unverified: covered by the unverified banner above; no extra line.
+  - When not sellable (regardless of verification): a muted-amber line
+    `Missing: phone, address · Designer's clients can still purchase via Shop Plans →`
+    with a link to `/plans`. Make it informational, not alarmist.
+  - **When BOTH unverified AND not sellable**: collapse to ONE combined terracotta banner:
+    `Unverified account · Missing phone and address. Call to verify and collect.`
+    Buttons: `✓ Verify` `✕ Delete`. Do not stack two banners.
+- **Designers list (Page 3)** — add a "Sellable" column (after "Verified") with
+  `✓` for sellable or `Missing: phone` / `Missing: address` / `Missing: phone, address`
+  in muted text. Add to the filter row a "Sellability: All / Sellable / Not sellable"
+  dropdown.
+- **Sample data**: of the 12 designers, 2 should be "not sellable" (missing phone
+  or address). These can overlap with the 3 unverified, so one designer should be
+  BOTH unverified and not sellable to exercise the combined banner.
+
 ## Omega — global slide-out panel (present on every operator page)
 
 Omega is the team's friendly AI assistant placeholder. It is **not** an inline card —
@@ -233,8 +268,9 @@ Left rail (narrow, ~280px): **Designers list**
 
 Main pane: **Operator home** — the personal worklist
 
-1. **KPI strip** (full-width band, FIVE cards)
+1. **KPI strip** (full-width band, SIX cards)
    - **Unverified** — terracotta accent — `3` — "Accounts awaiting verification call"
+   - **Missing info** — muted amber — `2` — "Designers missing phone or address — call to collect"
    - **Overdue** — large red badge — `4` — "Tasks past their due date"
    - **Due today** — yellow badge — `7` — "Today's worklist"
    - **Urgent open** — red badge — `2` — "High priority, regardless of date"

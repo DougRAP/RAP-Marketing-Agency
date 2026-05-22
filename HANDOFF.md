@@ -44,7 +44,7 @@ The site is live and the database writes work end-to-end. As of 2026-05-21:
 - ✅ Promo A wording reconciled to designer-side 40% framing
 - ✅ Playwright e2e suite covers 4 auth "Caminos" — see `tests/e2e/`
 - ✅ env-check.js diagnostic removed
-- ⚪️ Admin console — claude-browser brief is written, awaiting design return
+- ⚪️ Admin console — **re-scoping in planning (started 2026-05-21).** The earlier 4-page browser brief is being superseded route-by-route in `docs/dashboard-onboarding-plan.md` § "Admin console — routes & role experience". The IA is now four routes (`/admin`, `/admin/designers`, `/admin/clients`, `/admin/agents`). `/admin` is locked; the other three are next. Tool choice (claude-browser vs claude-code) is deferred until scoping is complete.
 
 ## THE AUTH MODEL (read carefully — this changed)
 
@@ -67,6 +67,21 @@ or admin) calls the account holder to confirm legitimacy, then:
 
 This is the admin tool's #1 daily workflow. The admin browser brief
 (`docs/browser-brief-admin.md`) was updated to include the verification queue.
+
+### Role model (added 2026-05-21)
+
+Four roles, one per user (one-to-one): **designer · agent · admin · sales**.
+
+- **designer** is the default for any magic-link signup — no row in `operator_roles`. Self-served.
+- **agent / admin / sales** are operator roles, created by a manager-admin via `/admin/agents`.
+- The **first manager-admin is seeded by Doug via SQL** into `operator_roles`. There is no UI bootstrap for the very first admin — by design.
+- A designer is **"sellable as partner"** with just email + phone + address; the full `/dashboard/profile` is optional. Even when not sellable as partner, the designer's client can purchase a plan directly via **Shop Plans**.
+
+Schema: a new `operator_roles` table (`auth.uid()` → role). Absence of a row = designer. See `docs/dashboard-onboarding-plan.md` § "Roles & access" for the full spec. Migration: `supabase/migrations/20260522_admin_console.sql` (write but don't apply; Adrian applies).
+
+### The signup form question (resolved)
+
+The form you may remember from `/partner-apply` was MOVED, not deleted. It now lives at `designer-plan-site/dashboard/profile/index.html` and is reachable only after magic-link login. `/partner-apply` is redirect-only. Profile fields (name, studio, phone, address, products, project size, etc.) are all optional — the designer becomes "sellable as partner" once email + phone + address are populated.
 
 ### Implication: pages with stale copy
 

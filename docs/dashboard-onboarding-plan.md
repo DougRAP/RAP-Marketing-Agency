@@ -107,6 +107,30 @@ The work has four parts:
 - **Tier 1 — Code Lookup.** No password. Positioned as "confirm your email and details," not "create an account." The contact verifies ownership via a one-time passcode sent to the email OR phone on file (the user chooses the channel). Returns a read-only view: referral code, count of attributed purchases, commission accrued (marked pending), Stripe status, and a "claim your full account" call to action.
 - **Tier 2 — Full Account.** Login by magic link / OTP by default. A password is set only when the partner commits to Stripe to earn commission — the password is the "this is now a money account" signal. Tier 2 is a superset of Tier 1; upgrading from Tier 1 is an in-place state change on the same record, not a migration.
 
+### Roles & access (operator vs designer)
+
+Two axes of access in this system: **who you are** (account type, above) and **what you can do** (role). Roles apply to every logged-in user. Decided 2026-05-21.
+
+**Four roles. One role per user (one-to-one).** Multi-role was considered and rejected as messier than the value it provides.
+
+| Role | Created by | Purpose |
+|---|---|---|
+| `designer` | Self — magic-link signup at `/login`. Default for any new sign-in. | Uses `/dashboard`. Never sees the admin console. |
+| `agent` | Manager-admin via `/admin/agents`. | Operator. Handles a book of designers; adds notes, creates/completes tasks, verifies new accounts. Sees all designers and all notes/tasks (visibility is shared, assignment is a responsibility flag). |
+| `admin` | Manager-admin via `/admin/agents`. The first manager-admin is seeded by the system admin (Doug) via SQL — no UI bootstrap. | Superset of agent. Plus: manages team (`/admin/agents`), bulk-assigns designers to agents (`/admin/designers`), authors the daily Omega broadcast. |
+| `sales` | Manager-admin via `/admin/agents`. | Read-only manager view. Same UI as admin; every edit control hidden or disabled. |
+
+**Schema (separate table, for Adrian):** an `operator_roles` table mapping `auth.uid()` → role. One row per operator. Designers do NOT get a row — absence of a row means "default role: designer." Keeps `partners` clean of internal-user state, and a person can simultaneously be a designer (a `partners` row) and an operator (an `operator_roles` row) without a column collision.
+
+**Designer eligibility — orthogonal to role.** Two states the operator UI surfaces independently from verification:
+
+- **Sellable as partner** — has at minimum a valid email, phone, and address. The full profile at `/dashboard/profile` can stay blank; partial profile is fine for selling.
+- **Not sellable as partner** — missing one of email / phone / address. The designer can't earn attributed commission yet, but their client can still purchase a plan directly by navigating to **Shop Plans**. Operators should surface this as the next-action ("call to collect missing info").
+
+When a designer is BOTH unverified AND missing contact info, the operator banner combines into one call-to-action ("Unverified — call to verify and collect phone/address"), not two separate banners.
+
+**Bootstrap path:** the first admin is seeded by Doug via SQL insert into `operator_roles`. From there, all team-member creation happens through `/admin/agents`. No UI is built for the system-admin → first-manager-admin handoff.
+
 ### Onboarding flow (the dashboard checklist)
 
 The dashboard's top module is an onboarding checklist with this sequence. Stripe is deliberately last and optional.
@@ -135,9 +159,75 @@ The dashboard's top module is an onboarding checklist with this sequence. Stripe
 
 ### Admin console
 
-- Lives as a **gated section of the marketing-center site** (`/private/...`), reusing the existing Basic Auth gate. One internal home, to keep the team focused.
+- Lives **inside `designer-plan-site` under `/admin/...`** (changed from the earlier "marketing-center" plan). Gated by `operator_roles`, not Basic Auth. One internal home, to keep the team focused.
 - Capabilities: lead/signup list with filters (status, source, assigned agent); create a lightweight account from minimal fields (Faire-style short form — name, email, studio, role, source); assign owner and next-action date; click-to-call and log a call; generate code + send welcome in one action; view and nudge Stripe status; view full event history; per-designer notes (timestamped, attributed) and an agent-only preferences field never shown to the designer.
 - **Status vocabulary** (from the playbook): New Lead → Account Created → Code Sent → Buy Now Link Sent → Stripe Invited → Stripe Complete → First Sale → Active Partner → Nurture.
+
+### Admin console — routes & role experience
+
+*Scoped one route at a time. Last updated 2026-05-21.*
+
+#### Information architecture (four routes)
+
+The admin console is four URLs under `/admin`. Each route has its own audience. Visibility is shared (everyone with a role sees the same data); action-ability is gated.
+
+| Route | Audience | Purpose |
+|---|---|---|
+| `/admin` | agent · admin · sales | Operator workspace — daily surface. Master/detail. |
+| `/admin/designers` | admin (sales TBD — scoped next) | Manage designer accounts — assign agents, bulk operations, archive. |
+| `/admin/clients` | agent · admin · sales (admin CRUD, others view) | Manage client records — filter by designer. |
+| `/admin/agents` | admin only | Manage the operator team. |
+
+Common chrome on every route: sticky top operator bar (role badge, mode switcher, global search, `+ Task` / `+ Note`, `⊙ Ask O`) and the Omega slide-out panel from the right edge.
+
+The earlier brief specified four *pages* (admin-home + admin-designer were separate). They collapse into one route — `/admin` — with the selected designer in the URL (`/admin/d/{account_number}`). Same layout in both states; only the right pane differs.
+
+#### `/admin` — operator workspace (locked 2026-05-21)
+
+Master/detail screen. Left rail = designers queue. Right pane = operator landing (no selection) OR designer detail (selection). Selection lives in the URL.
+
+**Three roles, three experiences.** Visibility-and-action matrix:
+
+| Element | agent | admin | sales |
+|---|---|---|---|
+| Role badge | `AGENT` | `ADMIN` | `SALES` |
+| Mode switcher | Workspace only (other routes 403) | Workspace · Designers · Team | **Workspace only** — sales has no admin routes |
+| Global search | ✓ | ✓ | ✓ |
+| `+ Task` / `+ Note` in operator bar | ✓ (act on any designer) | ✓ | Hidden |
+| `⊙ Ask O` trigger | ✓ | ✓ | ✓ |
+| Left rail (designers list w/ search + filters) | ✓ — default filter "My designers" | ✓ — default filter "All" | ✓ — default filter "All" |
+| Filter chips | All · My designers · No contact 14+ days · Unverified · Missing info | Same | Same |
+| **KPI strip (6 cards)** | ✓ — counts across ALL designers | ✓ | **Hidden** |
+| **Verification queue** with Verify / Delete | ✓ | ✓ | **Hidden** |
+| **Today's tasks** with `✓ Done` | ✓ — my tasks today | ✓ — my tasks today | **Hidden** |
+| **Recent team activity feed** | ✓ | ✓ | **Hidden** |
+| Landing pane content | Full operator landing | Full operator landing | Sparse prompt: *"Search a designer above or pick from the list to view their record."* |
+| Designer detail when selected — read-only data | ✓ | ✓ | ✓ |
+| Sticky operator banner (verified / sellable, combined when both apply) | ✓ | ✓ | ✓ |
+| `✓ Verify` / `✕ Delete` in banner (unverified only) | ✓ | ✓ | Hidden |
+| `+ Note` / `+ Task` on section headers + client rows | ✓ | ✓ | Hidden |
+| Inline client CRUD on activity table | View only | `+ Add` / Edit / Delete | View only |
+| Operator Timeline at bottom (notes, tasks, call log, status changes) | ✓ | ✓ | ✓ — view only |
+| `✓ Mark done` on open tasks in timeline | ✓ | ✓ | Hidden |
+| Omega — chat input + Today's Alerts list | ✓ | ✓ | ✓ |
+| Omega — "Tell Omega something to broadcast today" composer | Hidden | ✓ | Hidden |
+
+**Behavioral rules:**
+
+- **Visibility is shared, action-ability is gated.** Agents + admins see the same data. Sales sees a scoped subset (designer records only — no pipeline analytics, team activity, or operator queues).
+- **"My designers" is a filter, not a permission boundary.** An agent can switch to "All" at any time.
+- **KPI counts are global.** All 6 cards reflect the whole pipeline, not the agent's personal queue.
+- **Today's tasks is personal** for agent + admin (assigned to me). Sales doesn't see this section at all.
+- **Sales never sees a disabled control.** Edit affordances are *hidden*, not greyed out — clean read-only surface.
+- **Sales' purpose on `/admin` is lookup-only.** Designer calls in with a question → sales searches → opens the designer's record → reads → answers. No analytics, no team coordination, no operator queues compete for attention.
+- **The Omega panel is identical on every route.** Composer is admin-only on every surface; chat + alerts available to everyone.
+
+**Edge-case behaviors:**
+
+- **Brand-new agent with empty book.** "My designers" filter is empty by default → show empty-state CTA: *"No designers assigned yet — your admin will assign you a book. Browse all designers →"*.
+- **Archived designer accessed via URL.** Right pane shows: *"This account was archived on {date} by {operator}"* placeholder. **Admin sees a Restore button.** Agent + sales see no restore option.
+
+**Scoping status for the other three routes:** not yet locked. Continue route-by-route.
 
 ### Scheduler
 
