@@ -343,9 +343,21 @@ When agents pick this work up, reach for these skills in order of phase. They li
 
 **Phase 4 — Verify & ship:**
 
-- `gstack:design-review` — verify the built admin against the dashboard's visual register. Catches drift the no-new-CSS rule should have prevented.
+- `gstack:design-review` — verify the built admin against the dashboard's visual register. Catches drift the locked-primitives rule should have prevented.
 - `gstack:qa-only` — headless QA pass before merge.
 - `mattpocock:handoff` — update `HANDOFF.md` cleanly when the workstream wraps.
+
+#### Post-admin audit (do AFTER admin pages ship — not during)
+
+The CSS-rule discussion surfaced cleanup items that are deliberately out of scope for the admin build itself, because they require modifying the locked dashboard files. Track these as a separate workstream after the admin lands.
+
+1. **Dedup inline CSS across pages.** Per-page inline `<style>` blocks in `designer-plan-site/dashboard/*/index.html` contain a lot of repeated rules — KPI-style cards, activity tables, section headers, status pills, form rows, fieldsets. The same rule is likely defined 3–4 times across the dashboard + admin pages, each copy slightly different over time. The cleanup: extract genuinely shared component CSS into `_shared/_partials.css` (or a new `_shared/_components.css`) so it's defined once. Will reduce drift risk and per-page page weight. **Cannot be done during admin build** because HANDOFF Hard Rule #2 locks the existing dashboard files; the admin build copies their inline styles verbatim. Once admin pages are stable and shipped, lift this rule for a scoped refactor pass.
+2. **Identify new admin-introduced patterns worth promoting.** The admin build introduces new layout classes (operator bar, two-pane workspace, slide-out panel, data table with collapsible rows). Some of these may be useful to the public dashboard too (e.g., a richer activity table). After admin ships, audit which new admin classes should be promoted into `_partials.css` for reuse versus kept admin-only.
+3. **Audit `lead_events` log size and retention.** The admin console will write many rows per day (every mutation, every call log, every status change). Once the volume is real (post-launch), decide a retention policy and archive strategy — Omega's "did I miss anything" queries probably only need the last 30–90 days hot.
+4. **Reconcile `tasks` / `notes` / `daily_messages` indices.** Once the admin is in production and there's real usage, profile query performance and adjust the indices added in the admin-console migration.
+5. **Mobile pass.** Admin is desktop-first by design. After it ships, decide whether to invest in a mobile-optimized variant (vs. just accepting the graceful degradation) based on whether operators actually open it on phones during calls.
+
+These belong in a follow-up doc when picked up — probably `docs/post-admin-audit.md` — not in this PRD.
 
 ### Scheduler
 

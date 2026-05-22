@@ -183,6 +183,7 @@ For the admin workstream specifically, see `docs/dashboard-onboarding-plan.md`
 - **Promotions wiring** — Promo A 40% claim, Promo B 10% referral. Functions and UI not built yet.
 - **Cart checkout** — `cart-checkout.js` is still a stub. Needs Stripe Checkout session creation or handoff to the existing cart backend.
 - **Followups doc** — `docs/qa-followups.md` referenced in the quick-wins brief but never created. Worth starting when fresh issues are found.
+- **Post-admin audit (after admin ships)** — five items captured in `docs/dashboard-onboarding-plan.md` § "Post-admin audit" to be picked up as a separate workstream once the admin console is live: dedup repeated inline CSS rules across pages into `_partials.css`; identify admin-introduced classes worth promoting; `lead_events` retention policy; profile `tasks`/`notes` indices under real load; mobile pass decision. Each requires modifying the locked dashboard files or running against real production data, so they cannot land during the admin build itself.
 
 ## How to spin up a new agent
 
