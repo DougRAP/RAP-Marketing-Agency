@@ -182,52 +182,121 @@ Common chrome on every route: sticky top operator bar (role badge, mode switcher
 
 The earlier brief specified four *pages* (admin-home + admin-designer were separate). They collapse into one route — `/admin` — with the selected designer in the URL (`/admin/d/{account_number}`). Same layout in both states; only the right pane differs.
 
+#### Governing principle (decided 2026-05-21)
+
+**Everyone sees everything. Only mutations are gated.**
+
+All three operator roles can navigate to all four routes, see the same UI surface, see the same data. The mode switcher shows all four entries to every role. What differs by role is which **mutation affordances** render: buttons that change state (`+ Add`, Edit, Delete, Verify, Archive, Restore, Reassign, Change status, Send welcome, `✓ Done`, Tell Omega composer, etc.). Per the earlier rule, mutation affordances are **hidden**, not greyed out, for roles that can't use them — sales should never feel like they "could click but can't."
+
+Routes themselves do not 403 by role. The page loads for everyone; the page's mutation buttons reflect the viewer's permissions.
+
+The matrix below applies this principle to `/admin`. Equivalent matrices for the other three routes follow.
+
 #### `/admin` — operator workspace (locked 2026-05-21)
 
 Master/detail screen. Left rail = designers queue. Right pane = operator landing (no selection) OR designer detail (selection). Selection lives in the URL.
 
-**Three roles, three experiences.** Visibility-and-action matrix:
+**Three roles, three experiences.** Everyone sees the same surface; mutation affordances are hidden for roles that can't mutate.
 
 | Element | agent | admin | sales |
 |---|---|---|---|
 | Role badge | `AGENT` | `ADMIN` | `SALES` |
-| Mode switcher | Workspace only (other routes 403) | Workspace · Designers · Team | **Workspace only** — sales has no admin routes |
+| Mode switcher | Workspace · Designers · Clients · Team | Same | Same |
 | Global search | ✓ | ✓ | ✓ |
-| `+ Task` / `+ Note` in operator bar | ✓ (act on any designer) | ✓ | Hidden |
+| `+ Task` / `+ Note` in operator bar | ✓ | ✓ | Hidden |
 | `⊙ Ask O` trigger | ✓ | ✓ | ✓ |
-| Left rail (designers list w/ search + filters) | ✓ — default filter "My designers" | ✓ — default filter "All" | ✓ — default filter "All" |
+| Left rail (designers list w/ search + filters) | ✓ — default "My designers" | ✓ — default "All" | ✓ — default "All" |
 | Filter chips | All · My designers · No contact 14+ days · Unverified · Missing info | Same | Same |
-| **KPI strip (6 cards)** | ✓ — counts across ALL designers | ✓ | **Hidden** |
-| **Verification queue** with Verify / Delete | ✓ | ✓ | **Hidden** |
-| **Today's tasks** with `✓ Done` | ✓ — my tasks today | ✓ — my tasks today | **Hidden** |
-| **Recent team activity feed** | ✓ | ✓ | **Hidden** |
-| Landing pane content | Full operator landing | Full operator landing | Sparse prompt: *"Search a designer above or pick from the list to view their record."* |
-| Designer detail when selected — read-only data | ✓ | ✓ | ✓ |
+| KPI strip (6 cards) | ✓ | ✓ | ✓ |
+| Verification queue — list visible | ✓ | ✓ | ✓ |
+| Verification queue — `✓ Verify` / `✕ Delete` buttons | ✓ | ✓ | Hidden |
+| Today's tasks list visible | ✓ — my tasks today | ✓ — my tasks today | ✓ — empty for sales (sales doesn't get tasks assigned) |
+| Today's tasks — `✓ Done` button | ✓ | ✓ | Hidden |
+| Recent team activity feed | ✓ | ✓ | ✓ |
+| Landing pane content | Full operator landing | Full operator landing | Full operator landing (no separate sparse view) |
+| Designer detail when selected — data | ✓ | ✓ | ✓ |
 | Sticky operator banner (verified / sellable, combined when both apply) | ✓ | ✓ | ✓ |
 | `✓ Verify` / `✕ Delete` in banner (unverified only) | ✓ | ✓ | Hidden |
 | `+ Note` / `+ Task` on section headers + client rows | ✓ | ✓ | Hidden |
 | Inline client CRUD on activity table | View only | `+ Add` / Edit / Delete | View only |
-| Operator Timeline at bottom (notes, tasks, call log, status changes) | ✓ | ✓ | ✓ — view only |
+| Operator Timeline at bottom (notes, tasks, call log, status changes) | ✓ | ✓ | ✓ |
 | `✓ Mark done` on open tasks in timeline | ✓ | ✓ | Hidden |
 | Omega — chat input + Today's Alerts list | ✓ | ✓ | ✓ |
 | Omega — "Tell Omega something to broadcast today" composer | Hidden | ✓ | Hidden |
 
 **Behavioral rules:**
 
-- **Visibility is shared, action-ability is gated.** Agents + admins see the same data. Sales sees a scoped subset (designer records only — no pipeline analytics, team activity, or operator queues).
-- **"My designers" is a filter, not a permission boundary.** An agent can switch to "All" at any time.
-- **KPI counts are global.** All 6 cards reflect the whole pipeline, not the agent's personal queue.
-- **Today's tasks is personal** for agent + admin (assigned to me). Sales doesn't see this section at all.
-- **Sales never sees a disabled control.** Edit affordances are *hidden*, not greyed out — clean read-only surface.
-- **Sales' purpose on `/admin` is lookup-only.** Designer calls in with a question → sales searches → opens the designer's record → reads → answers. No analytics, no team coordination, no operator queues compete for attention.
-- **The Omega panel is identical on every route.** Composer is admin-only on every surface; chat + alerts available to everyone.
+- **Everyone sees everything; only mutations are gated.** Governing principle above. Sales sees the same operator surface as agent/admin — KPIs, verification queue, today's tasks, activity feed, designer detail. The mutation buttons are simply absent for them.
+- **"My designers" is a filter, not a permission boundary.** An agent can switch to "All" at any time and act on any designer's record.
+- **KPI counts are global.** All 6 cards reflect the whole pipeline for every role.
+- **Today's tasks is personal** (assigned to the viewer). Sales sees the section but it's empty by definition — sales doesn't have tasks. The empty state explains this.
+- **Mutation affordances are hidden, not greyed out**, for roles that can't use them. Sales sees a calm read-only surface, not a frustrated locked-down one.
+- **The Omega panel is identical on every route.** Composer is admin-only; chat + alerts available to everyone.
 
 **Edge-case behaviors:**
 
-- **Brand-new agent with empty book.** "My designers" filter is empty by default → show empty-state CTA: *"No designers assigned yet — your admin will assign you a book. Browse all designers →"*.
-- **Archived designer accessed via URL.** Right pane shows: *"This account was archived on {date} by {operator}"* placeholder. **Admin sees a Restore button.** Agent + sales see no restore option.
+- **Brand-new agent with empty book.** "My designers" filter empty by default → show empty-state CTA: *"No designers assigned yet — your admin will assign you a book. Browse all designers →"*.
+- **Archived designer accessed via URL.** Right pane shows: *"This account was archived on {date} by {operator}"* placeholder. Admin sees a Restore button; agent + sales see no restore option.
 
-**Scoping status for the other three routes:** not yet locked. Continue route-by-route.
+**Scoping status:** `/admin` locked; `/admin/designers` locked below; `/admin/clients` and `/admin/agents` next.
+
+#### `/admin/designers` — designer accounts management (locked 2026-05-21)
+
+Full-width data table. No left rail (different layout from the workspace — this is bookkeeping, not workflow). The "manage the population of designers" surface.
+
+**Default view:** active designers. Archived are hidden behind the "Show" filter.
+
+**Row layout — collapsible:** each row is collapsed by default with the at-a-glance columns visible; an expand affordance reveals a single info card with all available designer details. Same card UI for all three roles. Keeps the table from getting wide.
+
+**Collapsed columns** (everyone sees): `☐` · Name · Studio · Status · Agent · Last contact · Next-action · `▾` expand.
+
+**Expanded info card** (everyone sees, single card per row): Name · Email · Phone · Address · Studio · Source · Status · Assigned agent · Signup date · Last sale date · Last contact · Next-action · Verified (date) · Sellable (with missing fields if any) · Open tasks count.
+
+**Filters across the top** (everyone uses): Search (name) · Assigned agent · Lifecycle status · Verification (All / Unverified / Verified) · Sellability (All / Sellable / Not sellable) · Last contact (any / 7d / 14d / 30d / 90d / older / never) · Show (Active / Archived / All).
+
+**Status vocabulary** (playbook): New Lead → Account Created → Code Sent → Buy Now Link Sent → Stripe Invited → Stripe Complete → First Sale → Active Partner → Nurture.
+
+**Three roles, three experiences — universal visibility, gated mutations:**
+
+| Element | agent | admin | sales |
+|---|---|---|---|
+| Route access (navigation) | ✓ | ✓ | ✓ |
+| Role badge | `AGENT` | `ADMIN` | `SALES` |
+| Mode switcher | Workspace · Designers · Clients · Team | Same | Same |
+| Full table data | ✓ | ✓ | ✓ |
+| All filters | ✓ | ✓ | ✓ |
+| Row expand to view info card | ✓ | ✓ | ✓ |
+| `+ Add designer` button (full-info form) | ✓ | ✓ | Hidden |
+| `☐` Bulk-select checkboxes | Hidden | ✓ | Hidden |
+| Bulk-assign agent · Bulk change status · Bulk archive | — | ✓ | — |
+| Per-row View (opens workspace detail at `/admin/d/{account}`) | ✓ | ✓ | ✓ |
+| Per-row Reassign agent · Change status · Send welcome email | ✓ | ✓ | Hidden |
+| Per-row Archive | Hidden | ✓ | Hidden |
+| Per-row Restore (archived rows only) | Hidden | ✓ | Hidden |
+
+**`+ Add designer` form fields:**
+
+- Name * — required
+- Email * — required, magic-link destination
+- Phone * — required for sellability
+- Address — street, city, state, ZIP — required for sellability
+- Studio / business name
+- Source — dropdown: phone-inbound · phone-outbound · email · web · referral · social · other
+- Optional first note — free-text; creates an initial `notes` row attributed to the operator
+
+Rationale: agents do outbound and inbound phone/email signups. Capturing email + phone + address upfront on the call means the designer is sellable as a partner immediately, no follow-up call needed.
+
+**Editability of designer info** (from any operator surface — workspace detail or admin/designers row expand):
+- Agent + admin can edit any of the captured fields.
+- Sales is view-only — no edit affordance shown.
+
+**Audit trail:** every mutation on this route — add-designer, bulk-assign, bulk-change-status, bulk-archive, per-row reassign / change-status / send-welcome / archive / restore, and any edit-info changes — writes a row to `lead_events` with the action type, actor, target designer(s), and before/after values where applicable. Omega reads this log for "did I miss anything" / "what changed today" queries.
+
+**Edge-case behaviors:**
+
+- **Bulk action on a mixed selection.** If an admin selects designers with mixed statuses and runs Bulk change status, the action applies the new status to all selected; no per-row guards (the admin knows what they're doing). Bulk archive likewise applies uniformly.
+- **Archive on a designer with active orders.** Allowed (it's a soft-archive: sets `archived_at`, the designer's `/dashboard` becomes inaccessible, but `orders` and attributed commission remain intact). Restore re-enables the account.
+- **Send welcome email on an already-onboarded designer.** Allowed — it re-sends the magic-link email. The audit log captures this.
 
 ### Scheduler
 

@@ -44,7 +44,7 @@ The site is live and the database writes work end-to-end. As of 2026-05-21:
 - ✅ Promo A wording reconciled to designer-side 40% framing
 - ✅ Playwright e2e suite covers 4 auth "Caminos" — see `tests/e2e/`
 - ✅ env-check.js diagnostic removed
-- ⚪️ Admin console — **re-scoping in planning (started 2026-05-21).** The earlier 4-page browser brief is being superseded route-by-route in `docs/dashboard-onboarding-plan.md` § "Admin console — routes & role experience". The IA is now four routes (`/admin`, `/admin/designers`, `/admin/clients`, `/admin/agents`). `/admin` is locked; the other three are next. Tool choice (claude-browser vs claude-code) is deferred until scoping is complete.
+- ⚪️ Admin console — **re-scoping in planning (started 2026-05-21).** The earlier 4-page browser brief is being superseded route-by-route in `docs/dashboard-onboarding-plan.md` § "Admin console — routes & role experience". The IA is now four routes (`/admin`, `/admin/designers`, `/admin/clients`, `/admin/agents`). Governing principle: **everyone sees everything; only mutations are gated.** `/admin` and `/admin/designers` are locked; `/admin/clients` and `/admin/agents` next. Tool choice (claude-browser vs claude-code) is deferred until scoping is complete.
 
 ## THE AUTH MODEL (read carefully — this changed)
 
