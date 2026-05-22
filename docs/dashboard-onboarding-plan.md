@@ -182,6 +182,19 @@ Common chrome on every route: sticky top operator bar (role badge, mode switcher
 
 The earlier brief specified four *pages* (admin-home + admin-designer were separate). They collapse into one route — `/admin` — with the selected designer in the URL (`/admin/d/{account_number}`). Same layout in both states; only the right pane differs.
 
+#### CSS rule — non-negotiable (decided 2026-05-21)
+
+**Use the exact same CSS as the dashboard. No new CSS.**
+
+The admin console must look and feel like an extension of the dashboard, not a parallel system. Concretely:
+
+- **Reuse `designer-plan-site/_shared/_partials.css` verbatim** for nav, footer, container, eyebrow, page wrapper.
+- **For any operator pattern the dashboard already styles** (KPI-like cards, activity-like tables, section headers, status pills, simple-form inputs, fieldsets, etc.) — **copy the inline `<style>` rules verbatim from the dashboard page that already does it**. Do not retype, do not adapt, do not "improve."
+- **For genuinely new layout patterns** the dashboard doesn't have (two-pane workspace, slide-out Omega panel, full-width data table with collapsible rows) — **compose them only from existing tokens** (`--paper`, `--ink`, `--ink-65`, `--ink-45`, `--brown-deep`, `--rule`, `--rule-strong`, `--accent`, `--accent-soft`, Inter Tight, Inter, the same border-radius, the same border-weight, the same padding rhythm). No new color tokens, no new fonts, no new radii, no new shadows, no new motion curves.
+- **If a value is not in the dashboard's CSS, stop.** Ask. Do not invent.
+
+This rule supersedes the earlier browser brief line that said "new operator-specific classes are fine." It is now: no new classes that introduce new visual language. New composition of existing primitives is allowed; new primitives are not.
+
 #### Governing principle (decided 2026-05-21)
 
 **Everyone sees everything. Only mutations are gated.**
@@ -297,6 +310,33 @@ Rationale: agents do outbound and inbound phone/email signups. Capturing email +
 - **Bulk action on a mixed selection.** If an admin selects designers with mixed statuses and runs Bulk change status, the action applies the new status to all selected; no per-row guards (the admin knows what they're doing). Bulk archive likewise applies uniformly.
 - **Archive on a designer with active orders.** Allowed (it's a soft-archive: sets `archived_at`, the designer's `/dashboard` becomes inaccessible, but `orders` and attributed commission remain intact). Restore re-enables the account.
 - **Send welcome email on an already-onboarded designer.** Allowed — it re-sends the magic-link email. The audit log captures this.
+
+#### Skills for this workstream
+
+When agents pick this work up, reach for these skills in order of phase. They live at `C:\Users\DWright\.claude\skills`.
+
+**Phase 1 — Continue scoping (`/admin/clients`, `/admin/agents`):**
+
+- `mattpocock:to-prd` — when all four routes are scoped, refresh the PRD into a clean, structured spec ready for build.
+- `mattpocock:grill-me` — stress-test the locked plan before building. Catches missed edge cases.
+
+**Phase 2 — Visual design exploration:**
+
+- `gstack:design-consultation` — brief the design agent on the dashboard tokens + the "no new CSS" rule before any variants get generated.
+- `gstack:design-shotgun` — explore 3–4 visual treatments of the elements the dashboard has no precedent for (operator bar, slide-out Omega panel, two-pane workspace, full-width data table with collapsible rows). Doug picks a direction. Variants must respect the no-new-CSS rule — compositions of existing primitives only.
+- `gstack:design-html` — finalize the approved variant into production-ready HTML/CSS that drops into `designer-plan-site/admin/`.
+
+**Phase 3 — Build / integrate:**
+
+- `mattpocock:tdd` — for the attribution + promotions engines (pure logic per the testing section; high test-value).
+- A `claude-code` agent in the parallel worktree pattern (see HANDOFF "Workflow" section) — wires the finalized HTML into routes, adds role-gating, writes the migration, hooks up verify/delete/etc. handlers.
+- `mattpocock:improve-codebase-architecture` — if mid-build refactoring becomes useful.
+
+**Phase 4 — Verify & ship:**
+
+- `gstack:design-review` — verify the built admin against the dashboard's visual register. Catches drift the no-new-CSS rule should have prevented.
+- `gstack:qa-only` — headless QA pass before merge.
+- `mattpocock:handoff` — update `HANDOFF.md` cleanly when the workstream wraps.
 
 ### Scheduler
 

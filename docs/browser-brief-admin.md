@@ -39,8 +39,14 @@ Headlines: sentence case. Eyebrows: all-caps, letter-spaced. Buttons: 4px radius
 Light, airy, warm — never muddy.
 ```
 
-New operator-specific classes are fine (operator bar, two-pane layout, data tables) but
-must follow the same naming and spacing rhythm.
+**No new CSS classes.** This is a hardening of the original brief (decided 2026-05-21).
+For any pattern the dashboard already styles (KPI cards, activity tables, section
+headers, status pills, form inputs, fieldsets), copy the inline `<style>` rules
+verbatim from the dashboard page that does it. For genuinely new layouts (operator
+bar, two-pane workspace, full-width data tables, slide-out Omega panel), compose
+them only from existing tokens and primitives — same colors, fonts, radii, border
+weights, padding rhythm. No new color tokens, no new fonts, no new shadows, no new
+radii, no new motion curves. If a value is not in the dashboard's CSS, stop and ask.
 
 ## DO NOT MODIFY EXISTING FILES
 

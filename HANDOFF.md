@@ -116,10 +116,15 @@ dashboard:
 
 ## HARD RULES (do not break — Doug flagged these repeatedly)
 
-1. **CSS — no drift.** New pages MUST use the existing design tokens verbatim
-   (`--paper`, `--ink`, `--accent`, Inter Tight, Inter). Do NOT create new stylesheets,
-   do NOT invent color/font tokens, do NOT drift to pretrained defaults. The dashboard
-   files in `designer-plan-site/dashboard/` are the visual reference.
+1. **CSS — no new CSS, period.** The admin console (and any new operator surface)
+   MUST use the **exact same CSS as the dashboard**. Reuse `_shared/_partials.css`
+   verbatim. For any pattern the dashboard already styles, **copy the inline `<style>`
+   rules verbatim from the dashboard page that does it** — do not retype, do not
+   adapt. For genuinely new layouts (two-pane, slide-out, data tables), **compose only
+   from existing tokens and primitives** — same colors, fonts, radii, borders, padding
+   rhythm as the dashboard. No new color tokens, fonts, shadows, radii, or motion.
+   **If a value is not in the dashboard's CSS, stop and ask.** See
+   `docs/dashboard-onboarding-plan.md` § "CSS rule — non-negotiable" for the full spec.
 2. **Existing dashboard pages are locked.** Bug-checked and live. New work produces
    NEW files; never modifies the existing dashboard files.
 3. **Navigation — canonical.** The site nav is **Home · Partner with us · Shop plans · Dashboard · File a claim · Log in** in that order, identical on every public page, desktop and mobile drawer. White-glove was deliberately removed from nav; section anchor `/plans#white-glove` remains.
@@ -135,11 +140,23 @@ dashboard:
 
 ## Skills to use (in `C:\Users\DWright\.claude\skills`)
 
-- `handoff` (mattpocock) — update this file
-- `to-prd` / `to-issues` (mattpocock) — planning
-- `gstack` and sub-skills `qa-only`, `design-review`, `review` — QA / browser testing
-- `grill-me` — stress-test a plan
-- mattpocock `tdd`, `improve-codebase-architecture` — build phase
+**General:**
+- `mattpocock:handoff` — update this file when a workstream wraps
+- `mattpocock:to-prd` / `to-issues` — planning
+- `mattpocock:grill-me` — stress-test a plan before build
+- `mattpocock:tdd`, `improve-codebase-architecture` — build phase
+
+**Visual design (admin console, future operator surfaces):**
+- `gstack:design-consultation` — brief the design agent on tokens + the no-new-CSS rule
+- `gstack:design-shotgun` — explore 3–4 variants of patterns the dashboard has no precedent for (operator bar, slide-out, data tables). Variants must compose existing primitives only
+- `gstack:design-html` — finalize approved variant into Pretext-native HTML/CSS
+
+**QA / verify:**
+- `gstack:design-review` — verify built work against the dashboard's visual register
+- `gstack:qa-only`, `gstack:review` — headless QA before merge
+
+For the admin workstream specifically, see `docs/dashboard-onboarding-plan.md`
+§ "Skills for this workstream" for the recommended phase-by-phase sequence.
 
 ## Roles
 
