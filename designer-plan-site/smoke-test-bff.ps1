@@ -20,6 +20,8 @@ $bffUrl = "http://localhost:8888/.netlify/functions/cart-checkout"
 $referralCode = ""
 
 $body = @{
+    plan_id               = 4
+    sales_order_number    = "SO-SMOKE-001"
     amount_cents          = 24900
     coverage_retail_cents = 500000
     customer              = @{

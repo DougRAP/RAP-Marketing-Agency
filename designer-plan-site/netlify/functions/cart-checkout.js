@@ -7,6 +7,8 @@
 //
 // Wire contract (browser → BFF) — JSON body (amount-based model, 2026-05-23):
 //   {
+//     plan_id: number,                       // required, int (which of the 3 plans → fulfillment)
+//     sales_order_number: string,            // required (customer's furniture order # → warranty)
 //     amount_cents: number,                  // required, int >= 50 (page-computed price)
 //     coverage_retail_cents?: number,        // optional, total retail being covered
 //     customer: {
@@ -65,6 +67,8 @@ exports.handler = async (event) => {
   // Build engine payload — strict subset of what the browser sent, in the
   // shape Spring Boot's CheckoutRequestDto expects (amount mode).
   const enginePayload = {
+    plan_id: body.plan_id,
+    sales_order_number: String(body.sales_order_number).trim(),
     amount_cents: body.amount_cents,
     ...(Number.isInteger(body.coverage_retail_cents)
       ? { coverage_retail_cents: body.coverage_retail_cents }
@@ -115,6 +119,12 @@ exports.handler = async (event) => {
 // ---------------------------------------------------------------------------
 
 function validate(body) {
+  if (!Number.isInteger(body.plan_id) || body.plan_id < 1) {
+    return 'plan_id is required (positive integer).';
+  }
+  if (!body.sales_order_number || !String(body.sales_order_number).trim()) {
+    return 'sales_order_number is required.';
+  }
   if (!Number.isInteger(body.amount_cents) || body.amount_cents < 50) {
     return 'amount_cents is required (integer >= 50).';
   }

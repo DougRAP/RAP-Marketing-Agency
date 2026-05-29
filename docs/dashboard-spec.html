@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spec (borrador) · Designer Dashboard + preguntas de fulfillment</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--paper:#f7f5f1;--card:#fff;--ink:#1a1a1a;--ink70:#4a4a4a;--ink50:#6e6e6e;--ink30:#a8a8a8;
+    --terra:#a64f2f;--terra-soft:rgba(166,79,47,.08);--border:#d8d0c0;--border-soft:#ece5d6;--code:#efe9da;
+    --good-bg:#e6efdd;--good-fg:#486838;--warn-bg:#f5e8cf;--warn-fg:#8b5a1a;--q-bg:#eef2f8;--q-fg:#2a5278;}
+  *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.55}
+  .wrap{max-width:920px;margin:0 auto;padding:44px 28px 80px}
+  header.hero{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:26px 30px;margin-bottom:26px}
+  .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--terra);font-weight:600;margin-bottom:8px}
+  h1{font-size:25px;font-weight:600;margin:0 0 8px;letter-spacing:-.01em}
+  .sub{color:var(--ink50);margin:0;font-size:14px}
+  h2{font-size:18px;font-weight:600;margin:34px 0 12px;border-top:1px solid var(--border);padding-top:22px}
+  h3{font-size:15px;font-weight:600;margin:18px 0 8px}
+  p,li{color:var(--ink70);margin:8px 0}strong{color:var(--ink)}
+  code{font-family:ui-monospace,Consolas,monospace;font-size:.9em;background:var(--code);padding:1.5px 6px;border-radius:3px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--code);font-weight:600}
+  .box{border-radius:6px;padding:14px 18px;margin:14px 0}
+  .good{background:var(--good-bg);border-left:3px solid var(--good-fg)}
+  .warn{background:var(--warn-bg);border-left:3px solid var(--warn-fg)}
+  .q{background:var(--q-bg);border-left:3px solid var(--q-fg)}
+  .q h3{color:var(--q-fg);margin-top:0}
+  .tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    padding:2px 8px;border-radius:100px;margin-right:6px}
+  .tag.exists{background:var(--good-bg);color:var(--good-fg)}
+  .tag.build{background:var(--terra-soft);color:var(--terra)}
+  .tag.q{background:var(--q-bg);color:var(--q-fg)}
+  ol.q-list{counter-reset:q}ol.q-list>li{margin:14px 0}
+  .footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--border-soft);color:var(--ink50);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Borrador para revisión · Designer Plan</div>
+  <h1>Designer Dashboard — spec + preguntas de fulfillment</h1>
+  <p class="sub">Borrador para alinear antes de codear el dashboard, y para destapar el tema de cómo se entrega el plan (fulfillment) en el modelo nuevo. Estado del checkout core: validado end-to-end (pago + comisión) contra Stripe test. Falta: dashboard real, deploy, y definir el fulfillment.</p>
+</header>
+
+<!-- ====================== DASHBOARD ====================== -->
+<h2>1 · Dashboard — lo que YA existe</h2>
+<div class="box good">
+<p style="margin-top:0"><strong>Buena noticia: gran parte ya está hecha en los dos lados.</strong></p>
+</div>
+
+<h3><span class="tag exists">existe</span>Backend (engine <code>designerplan.io</code>)</h3>
+<p>El <code>DashboardController</code> ya calcula y sirve data real por-designer desde SOAR (esto alimenta el dashboard actual de designerplan.io):</p>
+<ul>
+  <li>Lista de ventas del designer con: fecha, apellido del cliente, <code>plan_number</code>, tipo de plan, retail pagado, comisión, estado de comisión (Paid/Pending/Failed/Cancelled), meses de cobertura, meses restantes.</li>
+  <li>Agregados: total comisión ganada, pendiente, cantidad de ventas.</li>
+  <li>Detalle de una venta (<code>/api/sale-details/{id}</code>): datos completos del cliente, dealer, financieros.</li>
+  <li>Acciones: cancelar comisión, reenviar documento del plan, link al Stripe Express dashboard.</li>
+</ul>
+<p>Identifica al designer por <code>dealerId</code> (vía login con sesión/Spring Security en el sitio viejo).</p>
+
+<h3><span class="tag exists">existe</span>Frontend (<code>designer-plan-site</code>)</h3>
+<p>Las 5 páginas del dashboard ya están construidas (con <strong>data de muestra</strong>, sin backend conectado):</p>
+<ul>
+  <li><code>/dashboard/overview</code> — home: snapshot de comisión, checklist de setup, quick actions, 3 estados (público/incompleto/activo)</li>
+  <li><code>/dashboard/clients</code> — tabla de clientes/planes con filtros</li>
+  <li><code>/dashboard/sales-tools</code> — librería de herramientas de venta</li>
+  <li><code>/dashboard/service</code> — routing de claims (solo enlaces a 5Star/RAP)</li>
+  <li><code>/dashboard/profile</code> — formulario de perfil (ya hace POST a una function)</li>
+</ul>
+<p>Auth: <strong>magic link (Supabase) ya cableada</strong> — login por email, sin password. Modo preview con <code>?partner=1</code>.</p>
+
+<h2>2 · Dashboard — lo que falta construir</h2>
+<p>El gap es <strong>conectar el front a la data real</strong>, siguiendo el mismo patrón del checkout (BFF + HMAC + engine):</p>
+<table>
+<tr><th>Pieza</th><th>Qué</th></tr>
+<tr><td><span class="tag build">build</span>Engine</td><td>Nuevo endpoint JSON <code>GET /api/v1/partner/{id}/dashboard</code> (HMAC) que devuelve la misma data que el <code>DashboardController</code> ya calcula — pero como JSON, sin sesión.</td></tr>
+<tr><td><span class="tag build">build</span>BFF</td><td><code>netlify/functions/dashboard-data.js</code> — valida el JWT de Supabase del usuario, resuelve su designer, firma HMAC, llama al engine, devuelve el JSON.</td></tr>
+<tr><td><span class="tag build">build</span>Frontend</td><td>Reemplazar la data de muestra de las páginas con <code>fetch</code> al BFF. Empty-states cuando no hay ventas. Mantener <code>?partner=1</code> para demo.</td></tr>
+<tr><td><span class="tag build">build</span>Connect Stripe</td><td>Banner "Connect Stripe" + estado (usa el endpoint <code>seller-account</code> que ya construimos).</td></tr>
+</table>
+
+<h2>3 · El puente Supabase ↔ SOAR — resuelto (lookup por email)</h2>
+<div class="box good">
+<p style="margin-top:0"><strong>Enfoque:</strong> el usuario se loguea en Supabase (email). El BFF valida el JWT y pasa el <strong>email verificado</strong> al engine (firmado HMAC). El engine busca el Dealer por email — <code>DealerRepository</code> ya tiene <code>findBydealerEmail()</code> y <code>findBykeyEmail()</code> — y devuelve la data del dashboard. En el primer login exitoso, <strong>cacheamos el <code>soar_dealer_id</code> en la fila <code>partners</code></strong> para no repetir el lookup.</p>
+<p style="margin-bottom:0">⚠ Riesgo: si el email de signup ≠ el email del Dealer en SOAR, el lookup falla. Mitigación: probar contra <code>dealerEmail</code> y <code>keyEmail</code>, y empty-state claro si no matchea. (Adrian verifica contra SOAR.)</p>
+</div>
+
+<!-- ====================== PREGUNTAS ====================== -->
+<h2>4 · Dashboard — decisiones (resueltas con Doug)</h2>
+<table>
+<tr><th>Tema</th><th>Decisión</th></tr>
+<tr><td><strong>Login</strong></td><td>Principal: <strong>email + password</strong>. Magic link queda como opción secundaria. Misma cuenta de Supabase, dos métodos (<code>signInWithPassword</code> / <code>signInWithOtp</code>). Agrega flujos "set password" (signup/primer login) y "forgot password".</td></tr>
+<tr><td><strong>Puente a SOAR</strong></td><td>Lookup del Dealer por email (ver sección 3). Cache de <code>soar_dealer_id</code> en <code>partners</code> al primer login.</td></tr>
+<tr><td><strong>Prioridad</strong></td><td>El dashboard <strong>va live</strong>. Enfoque: tomar el dashboard demo actual y mapear sus datos lo más posible a lo que SOAR puede traer (<code>DashboardCommissionDTO</code>). Donde SOAR tiene el dato → real; donde no → empty-state.</td></tr>
+<tr><td><strong>Daniel</strong></td><td>No toma parte del dashboard. Dashboard = Adrian.</td></tr>
+</table>
+
+<!-- ====================== FULFILLMENT ====================== -->
+<h2>5 · Tema aparte y grande: ¿cómo se entrega el plan? (fulfillment)</h2>
+<div class="box warn">
+<p style="margin-top:0"><strong>Hallazgo al revisar el código:</strong> hoy el plan <em>no</em> se registra automáticamente al pagar. El flujo actual es: pago exitoso → el cliente es <strong>redirigido a un formulario <code>/registerPlan</code></strong> donde se ingresan datos (sales order, dirección, fotos) y <em>ahí</em> se genera el <code>warrantyNumber</code> (plan_number) vía un stored procedure de SOAR. Ese flujo está pegado a la sesión HTTP del sitio viejo.</p>
+<p style="margin-bottom:0">En el modelo nuevo (slide-out + Stripe Elements, sin ese formulario y sin sesión), <strong>el plan no se registraría solo</strong>. El webhook de pago hoy solo actualiza el estado de la transacción — no crea el plan ni genera el plan_number.</p>
+</div>
+
+<h3>Modelo acordado (Adrian + Doug)</h3>
+<p>El slide-out de Doug recoge, al momento del checkout: <strong>datos del cliente + sales order number + recibo (upload) + cuál de los 3 planes</strong> (el card elegido). Es decir, todo lo que el registro necesita viene del frontend. Separación limpia:</p>
+<table>
+<tr><th>Dato</th><th>Origen</th><th>Para qué</th></tr>
+<tr><td><code>amount_cents</code></td><td>página (flat-% del retail)</td><td>precio que se cobra</td></tr>
+<tr><td><code>plan_id</code> (1 de 3)</td><td>página (el card)</td><td>qué plan registrar</td></tr>
+<tr><td>cliente + <code>sales_order_number</code> + recibo</td><td>página (slide-out)</td><td>registro en SoarSales</td></tr>
+</table>
+
+<h3>Flujo de fulfillment que construiremos</h3>
+<ol>
+  <li><strong>Checkout</strong>: el engine crea el PaymentIntent y <strong>persiste los datos de registro</strong> (plan_id, cliente, sales_order) en la metadata del PI. El recibo-archivo va a un endpoint de storage aparte, casado luego al plan_number.</li>
+  <li><strong>Pago</strong>: Stripe confirma.</li>
+  <li><strong>Webhook <code>payment_intent.succeeded</code></strong>: lee la metadata, llama al servicio de registro (genera <code>warrantyNumber</code> vía el stored procedure de SOAR, crea la fila SoarSales, registra la comisión) — idempotente. Acto seguido escribe la venta a Supabase (con el plan_number ya existente).</li>
+</ol>
+<p>Esto requiere <strong>desacoplar la lógica de registro</strong> del formulario <code>/registerPlan</code> con sesión y volverla un servicio stateless invocable desde el webhook. Es nuestro lado (engine), no depende de la página de Doug — lo planificamos aparte porque toca código de dinero + dedup.</p>
+
+<div class="q">
+<h3>Confirmaciones para Doug — fulfillment</h3>
+<ol class="q-list">
+  <li>El slide-out manda al checkout: <code>plan_id</code> (cuál de los 3), <code>amount_cents</code>, datos del cliente, <code>sales_order_number</code>, y maneja el upload del recibo. ¿Correcto?</li>
+  <li>Los 3 planes en los cards = los 3 planes de designerplan.io. ¿Me confirmas los <code>PlanID</code> reales de SOAR para mapearlos en los cards?</li>
+  <li>El recibo: ¿lo subes tú desde la página a un endpoint nuestro, o prefieres que definamos juntos cómo se guarda (disco + referencia en DB, casado al plan_number)?</li>
+</ol>
+</div>
+
+<!-- ====================== STATUS ====================== -->
+<h2>6 · Estado actual + cómo va tu parte</h2>
+<p>De nuestro lado, el <strong>corazón del checkout está validado end-to-end</strong> (pago directo + pago con comisión a designer, contra Stripe test): browser → BFF → HMAC → engine → Stripe → <code>succeeded</code>. Los endpoints de pago y de Stripe Connect status están listos.</p>
+<p><strong>Doug — ¿cómo va tu parte de la página de checkout?</strong> Cuando la tengas, la conectamos al BFF que ya está probado (contrato: manda <code>amount_cents</code> + <code>coverage_retail_cents</code> + datos del cliente + <code>referral_code</code> opcional). Si quieres, te paso el contrato exacto para que la página apunte directo.</p>
+
+<div class="footer">Borrador · Designer Plan · pendiente de revisión de Adrian antes de enviar a Doug.</div>
+
+</div>
+</body>
+</html>
