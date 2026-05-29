@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TODO atómico · API / Fulfillment Bridge</title>
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --paper: #f7f5f1;
+    --paper-card: #ffffff;
+    --ink: #1a1a1a;
+    --ink-70: #4a4a4a;
+    --ink-50: #6e6e6e;
+    --ink-30: #a8a8a8;
+    --terra: #a64f2f;
+    --terra-soft: rgba(166, 79, 47, 0.08);
+    --border: #d8d0c0;
+    --border-soft: #ece5d6;
+    --code-bg: #efe9da;
+    --good-bg: #e6efdd;
+    --good-fg: #486838;
+    --warn-bg: #f5e8cf;
+    --warn-fg: #8b5a1a;
+    --err-bg: #f3dcd0;
+    --err-fg: #8a3320;
+    --muted-bg: #ece9e0;
+    --muted-fg: #6e6e6e;
+    --parallel-bg: #dfeaf3;
+    --parallel-fg: #2a5278;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 40px 28px 80px; }
+
+  header.hero {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--terra);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 26px; font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    line-height: 1.2;
+  }
+  .subtitle { color: var(--ink-50); margin: 0; font-size: 14px; }
+
+  .legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .legend-item {
+    font-size: 12px;
+    color: var(--ink-70);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-chip {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border-radius: 3px;
+  }
+  .legend-chip.critical { background: var(--terra); }
+  .legend-chip.parallel { background: var(--parallel-fg); }
+  .legend-chip.deprioritized { background: var(--ink-30); }
+
+  h2 {
+    font-size: 18px; font-weight: 600;
+    margin: 36px 0 10px;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  h2 .count {
+    color: var(--ink-50);
+    font-weight: 400;
+    font-size: 13px;
+    margin-left: 8px;
+  }
+
+  .group-desc {
+    font-size: 13px;
+    color: var(--ink-50);
+    margin: 0 0 14px;
+  }
+
+  .tasks { display: flex; flex-direction: column; gap: 10px; }
+
+  .task {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    position: relative;
+  }
+  .task.critical { border-left: 4px solid var(--terra); }
+  .task.parallel { border-left: 4px solid var(--parallel-fg); }
+  .task.deprioritized {
+    border-left: 4px solid var(--ink-30);
+    opacity: 0.7;
+    border-style: dashed;
+  }
+
+  .task-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .task-num {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--code-bg);
+    color: var(--ink-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+    font-family: ui-monospace, monospace;
+  }
+  .task.critical .task-num { background: var(--terra); color: white; }
+  .task.parallel .task-num { background: var(--parallel-fg); color: white; }
+  .task.deprioritized .task-num { background: var(--ink-30); color: white; }
+
+  .task-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    margin: 0;
+  }
+  .task.deprioritized .task-title { color: var(--ink-50); }
+
+  .badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .badge.critical { background: var(--terra-soft); color: var(--terra); }
+  .badge.parallel { background: var(--parallel-bg); color: var(--parallel-fg); }
+  .badge.depr { background: var(--muted-bg); color: var(--muted-fg); }
+  .badge.repo {
+    background: var(--code-bg);
+    color: var(--ink-50);
+  }
+  .badge.repo[data-r="netlify"] { background: #e8f0e0; color: #486838; }
+  .badge.repo[data-r="spring"] { background: #e8e3f0; color: #5a4878; }
+  .badge.repo[data-r="config"] { background: #f5e8cf; color: #8b5a1a; }
+  .badge.done { background: #c8e0bd; color: #2d5a3d; }
+
+  .task.done { border-left-color: #2d5a3d; }
+  .task.done .task-num { background: #c8e0bd; color: #2d5a3d; }
+  .task.done .task-title { text-decoration: line-through; text-decoration-color: var(--ink-30); color: var(--ink-50); }
+
+  .task-body {
+    padding-left: 40px;
+    font-size: 13.5px;
+    color: var(--ink-70);
+  }
+
+  .actions {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 10px;
+  }
+  .actions li {
+    padding: 4px 0 4px 24px;
+    position: relative;
+    color: var(--ink-70);
+  }
+  .actions li::before {
+    content: "▢";
+    position: absolute;
+    left: 4px;
+    color: var(--ink-30);
+    font-size: 13px;
+  }
+  .actions li code {
+    font-size: 0.88em;
+  }
+
+  .meta {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-soft);
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 3px 12px;
+    font-size: 12px;
+  }
+  .meta dt {
+    font-weight: 700;
+    color: var(--ink-50);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    align-self: center;
+  }
+  .meta dd {
+    margin: 0;
+    color: var(--ink-70);
+    font-size: 12.5px;
+  }
+  .meta code {
+    font-family: ui-monospace, SFMono-Regular, Monaco, Consolas, monospace;
+    font-size: 0.92em;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .flow-summary {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 22px;
+    margin-bottom: 24px;
+  }
+  .flow-summary h3 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--terra);
+    font-weight: 700;
+  }
+  .flow-summary ol {
+    margin: 0;
+    padding-left: 22px;
+    color: var(--ink-70);
+    font-size: 13.5px;
+  }
+  .flow-summary li { margin: 4px 0; }
+  .flow-summary strong { color: var(--ink); }
+
+  .footer-note {
+    margin-top: 48px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--ink-50);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">TODO atómico · ejecución paso a paso</div>
+  <h1>API / Fulfillment Bridge — execution checklist</h1>
+  <p class="subtitle">Lo que sigue del plan, descompuesto en acciones ejecutables. Orden secuencial recomendado; los items <strong style="color: var(--parallel-fg);">marcados como parallel-safe</strong> no dependen del critical path y pueden delegarse o hacerse en otro turno.</p>
+
+  <div class="legend">
+    <span class="legend-item"><span class="legend-chip critical"></span> Critical path (sequential, blocks next)</span>
+    <span class="legend-item"><span class="legend-chip parallel"></span> Parallel-safe (no deps, delegable)</span>
+    <span class="legend-item"><span class="legend-chip deprioritized"></span> Post go-live / deferido</span>
+  </div>
+
+  <p class="subtitle" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft); color: var(--warn-fg);"><strong>Estado 5/23:</strong> ✓ B.6 (seller-account), ✓ HMAC helper, ✓ cart-checkout BFF — validado end-to-end local (browser→BFF→HMAC→engine→Stripe). <strong>Pivote:</strong> checkout pasó a amount-based (precio lo manda la página). B.8 (writeback) deferido por timing del plan_number. Front-end del checkout (slide-out) ahora lo hace Doug. Falta: deploy real + pago Stripe Elements + dashboard + Stripe Connect BFFs.</p>
+</header>
+
+<!-- =================================================== FLOW SUMMARY ============================ -->
+<div class="flow-summary">
+  <h3>Recommended execution order</h3>
+  <ol>
+    <li><strong>Steps 1–4</strong> (Spring Boot endpoints): finish B.6 + B.8 → push branch to Bitbucket.</li>
+    <li><strong>Steps 5–10</strong> (Netlify BFFs): the integration glue — only person who can do this. Sequential, critical path.</li>
+    <li><strong>Steps 11–16</strong> (Frontend): <em>parallel-safe</em>, can be delegated while BFFs are being built. Will be needed end of week.</li>
+    <li><strong>Steps 17–20</strong> (Deploy + smoke test): last mile, after BFFs + frontend are integrated.</li>
+    <li><strong>Steps 21–25</strong> (Promotions + nice-to-haves): for after go-live if 2026-06-01 is tight.</li>
+  </ol>
+</div>
+
+<!-- =================================================== GROUP 1: FINISH SPRING BOOT ============= -->
+<h2>1 · Finish Spring Boot endpoints <span class="count">(sequential · me)</span></h2>
+<p class="group-desc">Wrap up the engine side so the BFFs have something to call.</p>
+
+<div class="tasks">
+
+  <article class="task done">
+    <div class="task-header">
+      <div class="task-num">1</div>
+      <h3 class="task-title">B.6 · GET /api/v1/seller-account</h3>
+      <div class="badges">
+        <span class="badge done">Done · 5/23</span>
+        <span class="badge repo" data-r="spring">spring</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Create <code>SellerAccountApiV1Controller</code> in <code>controllers/</code></li>
+        <li>Create <code>SellerAccountResponseDto</code> with <code>{ account_id, payout_enabled, charges_enabled, stripe_status }</code></li>
+        <li>Look up dealer by <code>designer_id</code> query param (re-use existing <code>DealerRepository</code>)</li>
+        <li>Fetch Stripe Connect account status via <code>Account.retrieve()</code></li>
+        <li>Map to DTO; handle "no Stripe account" (return <code>account_id: null</code>, both flags false)</li>
+        <li>Add unit tests: happy path, dealer not found (404), dealer without Stripe (200 with nulls), Stripe API failure (502)</li>
+        <li>Add integration test with HMAC filter in chain</li>
+        <li>Run full suite, verify green</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>SellerAccountApiV1Controller.java</code>, <code>SellerAccountResponseDto.java</code>, <code>SellerAccountApiV1ControllerTest.java</code></dd>
+        <dt>Depends on</dt><dd>B.5 ✓ (done)</dd>
+        <dt>Blocks</dt><dd>C.10 (stripe-onboard BFF needs to check readiness)</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task deprioritized">
+    <div class="task-header">
+      <div class="task-num">2</div>
+      <h3 class="task-title">B.8 · Supabase writeback on payment success <span style="font-size:11px;font-weight:500;color:var(--warn-fg);">— deferido</span></h3>
+      <div class="badges">
+        <span class="badge depr">Deferido</span>
+        <span class="badge repo" data-r="spring">spring</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <p><strong>Bloqueado por hallazgo (Block 1):</strong> el <code>plan_number</code> (<code>SoarSales.warrantyNumber</code>) NO existe en el momento del webhook <code>payment_intent.succeeded</code> — se genera en <code>PlanRegistrationController:537</code> (flujo de registro/fulfillment). Escribir desde el webhook guardaría <code>null</code>.</p>
+      <ul class="actions">
+        <li>Decidir timing: (a) hook en el fulfillment SOAR donde nace el plan_number, (b) write-then-update, o (c) diferir hasta integrar la entrega del plan</li>
+        <li>Confirmar con Doug: la "plan deliver" (fulfillment) es ahora scope de Adrian</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Definir flujo de plan_number / fulfillment</dd>
+        <dt>Blocks</dt><dd>Dashboard mostrando plan_number (post go-live)</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">3</div>
+      <h3 class="task-title">Push branch + deploy WAR to staging Tomcat</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="config">deploy</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Final commit + push <code>feature branch</code> to Bitbucket</li>
+        <li>Build WAR via <code>mvn clean package</code></li>
+        <li>SSH to Rackspace, drop WAR in <code>$CATALINA_BASE/webapps/</code></li>
+        <li>Update <code>setenv.sh</code> with HMAC secret + Supabase env vars (if not embedded in WAR)</li>
+        <li>Restart Tomcat, tail logs for startup errors</li>
+        <li>Smoke test: <code>curl</code> with signed HMAC against <code>/api/v1/checkout</code> from local — expect 200</li>
+        <li>Smoke test: same call without signature — expect 401</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Task 1, 2</dd>
+        <dt>Blocks</dt><dd>BFFs cannot integration-test without a real engine to call</dd>
+      </dl>
+    </div>
+  </article>
+
+</div>
+
+<!-- =================================================== GROUP 2: BFFs (THE INTEGRATION HEART) === -->
+<h2>2 · Netlify Functions BFFs <span class="count">(sequential · me · critical path)</span></h2>
+<p class="group-desc">The integration layer — only you can build this. This IS the heart of the work.</p>
+
+<div class="tasks">
+
+  <article class="task done">
+    <div class="task-header">
+      <div class="task-num">4</div>
+      <h3 class="task-title">Shared HMAC signing helper</h3>
+      <div class="badges">
+        <span class="badge done">Done · 5/23</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Create <code>designer-plan-site/netlify/functions/_hmac.js</code></li>
+        <li>Port the Java HMAC algorithm to Node: SHA-256 of body, signing string composition, HmacSHA256, lowercase hex</li>
+        <li>Export <code>signRequest(method, pathAndQuery, bodyString, timestamp)</code> → returns 3 headers object</li>
+        <li>Read <code>HMAC_KEY_ID</code> + <code>HMAC_SECRET</code> from <code>process.env</code></li>
+        <li>Add unit test (use Jest or plain node test) — verify output matches a known Java-signed example</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>netlify/functions/_hmac.js</code></dd>
+        <dt>Depends on</dt><dd>HMAC contract (Wave A.2 ✓)</dd>
+        <dt>Blocks</dt><dd>All BFF tasks (5–7)</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task done">
+    <div class="task-header">
+      <div class="task-num">5</div>
+      <h3 class="task-title">C.9 · cart-checkout BFF</h3>
+      <div class="badges">
+        <span class="badge done">Done · 5/23</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <p><strong>Reworked al modelo amount-based (pivote 5/23):</strong> el contrato cambió de <code>{ plan_id, customer_cart_total_cents }</code> a <code>{ amount_cents, coverage_retail_cents? }</code>. Validado end-to-end local (browser → BFF → HMAC → engine → Stripe client_secret, 200).</p>
+      <ul class="actions">
+        <li>Reemplazado el stub; honeypot; firma vía <code>_hmac.js</code>; POST a <code>/api/v1/checkout</code></li>
+        <li>Traducción de errores user-safe; <code>lead_event</code> <code>cart_started</code> en Supabase</li>
+        <li><code>validate()</code> requiere <code>amount_cents >= 50</code>; smoke test PS verde</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>netlify/functions/cart-checkout.js</code>, <code>_hmac.js</code>, <code>smoke-test-bff.ps1</code></dd>
+        <dt>Pendiente</dt><dd>Deploy real (env vars Netlify) + confirmar pago Stripe Elements</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">6</div>
+      <h3 class="task-title">C.10 · stripe-onboard BFF</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Create <code>designer-plan-site/netlify/functions/stripe-onboard.js</code></li>
+        <li>Verify user JWT from cookie/header (use existing auth pattern in repo)</li>
+        <li>Look up <code>partner_id</code> from Supabase by user email</li>
+        <li>Sign request via <code>_hmac.js</code></li>
+        <li>POST to engine <code>/api/v1/stripe-connect/start</code> with <code>{ partner_id }</code></li>
+        <li>Return Stripe-hosted onboarding URL to browser</li>
+        <li>Handle "already connected" case (200 with status flag, no URL)</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>netlify/functions/stripe-onboard.js</code></dd>
+        <dt>Depends on</dt><dd>Task 4, engine endpoint for <code>/stripe-connect/start</code> (exists)</dd>
+        <dt>Blocks</dt><dd>Frontend "Connect Stripe" button (D.14)</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">7</div>
+      <h3 class="task-title">C.11 · stripe-return BFF + landing page</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Create <code>designer-plan-site/netlify/functions/stripe-return.js</code></li>
+        <li>Create page <code>designer-plan-site/stripe/return/index.html</code></li>
+        <li>Validate session token from URL query string</li>
+        <li>Sign + POST to engine <code>/api/v1/stripe-connect/return</code> to confirm onboarding finished</li>
+        <li>On success: redirect to <code>/dashboard?stripe=connected</code></li>
+        <li>On failure: redirect to <code>/dashboard?stripe=error&reason=X</code></li>
+        <li>Update Netlify <code>_redirects</code> if needed</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>netlify/functions/stripe-return.js</code>, <code>stripe/return/index.html</code></dd>
+        <dt>Depends on</dt><dd>Task 6</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">8</div>
+      <h3 class="task-title">BFF env vars + Netlify config</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="config">config</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Set in Netlify dashboard for <code>designer-plan-site</code>: <code>HMAC_KEY_ID</code>, <code>HMAC_SECRET</code>, <code>ENGINE_BASE_URL</code> (https://designerplan.io)</li>
+        <li>Verify existing: <code>SUPABASE_URL</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code> still set</li>
+        <li>Confirm Functions directory points to <code>designer-plan-site/netlify/functions</code></li>
+        <li>Deploy to Netlify (push to <code>main</code>)</li>
+        <li>Test deployed function from browser DevTools with sample fetch</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Tasks 4–7</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">9</div>
+      <h3 class="task-title">End-to-end manual test (BFF only, no UI yet)</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Curl/Postman: POST to deployed cart-checkout BFF with sample plan + customer</li>
+        <li>Verify Spring Boot logs show signed request, key_id of caller</li>
+        <li>Verify response has valid Stripe <code>client_secret</code></li>
+        <li>Use Stripe test card 4242 4242 4242 4242 with the returned client_secret (use Stripe.js in a throwaway HTML page)</li>
+        <li>Verify <code>payment_intent.succeeded</code> webhook fires</li>
+        <li>Verify Supabase <code>orders</code> table has the new row with <code>plan_number</code></li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Tasks 5, 8</dd>
+        <dt>Blocks</dt><dd>Frontend integration (steps 11–13)</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">10</div>
+      <h3 class="task-title">BFF error contract documentation</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Add JSDoc/comments in <code>cart-checkout.js</code> listing all possible response shapes</li>
+        <li>Document for whoever does frontend: which HTTP codes mean what, what to display to user</li>
+        <li>Add to <code>docs/</code> a small <code>bff-error-contract.md</code> with examples</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Task 5</dd>
+        <dt>Blocks</dt><dd>Frontend devs need this to handle errors well</dd>
+      </dl>
+    </div>
+  </article>
+
+</div>
+
+<!-- =================================================== GROUP 3: FRONTEND (PARALLELIZABLE) ====== -->
+<h2>3 · Frontend integration <span class="count">(parallel-safe · delegable)</span></h2>
+<p class="group-desc">Once Task 10 documents the contract, these can be picked up in parallel by anyone with frontend skills. They unblock the user-facing experience but do NOT block the engine/BFF work.</p>
+
+<div class="tasks">
+
+  <article class="task parallel">
+    <div class="task-header">
+      <div class="task-num">11</div>
+      <h3 class="task-title">D.13a · Slide-out drawer HTML/CSS shell</h3>
+      <div class="badges">
+        <span class="badge parallel">Parallel-safe</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Add hidden drawer markup to <code>designer-plan-site/plans/index.html</code></li>
+        <li>CSS: 448px width, slide-in from right, dark overlay backdrop, sticky header + footer, scrollable body</li>
+        <li>Mobile: 100% width &lt;768px, full-screen on small devices</li>
+        <li>Open/close animation: <code>transform: translateX()</code> + opacity fade on backdrop</li>
+        <li>Close on: X button, backdrop click, Esc key</li>
+        <li>Accessibility: <code>role="dialog"</code>, <code>aria-modal="true"</code>, focus trap, focus visible on all inputs</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>plans/index.html</code> (add markup), <code>plans/checkout-drawer.css</code> (new)</dd>
+        <dt>Depends on</dt><dd>Nothing (pure UI)</dd>
+        <dt>Blocks</dt><dd>Task 12, 13</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task parallel">
+    <div class="task-header">
+      <div class="task-num">12</div>
+      <h3 class="task-title">D.13b · Drawer form fields + live price calc</h3>
+      <div class="badges">
+        <span class="badge parallel">Parallel-safe</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Create <code>designer-plan-site/js/checkout-drawer.js</code></li>
+        <li>Attach click handlers to "Buy Now" buttons on plan tiles → opens drawer + pre-fills plan</li>
+        <li>Form fields: items_covered (textarea), retail_value (number)</li>
+        <li>Client-side validation: items_covered minlength 3, retail_value &gt; 1</li>
+        <li>On blur of retail_value: POST to cart-checkout BFF with current values → display returned price</li>
+        <li>Debounce the price-calc call (500ms)</li>
+        <li>Loading state: spinner overlay during price calc</li>
+        <li>Error state: message + retry button</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>js/checkout-drawer.js</code> (new)</dd>
+        <dt>Depends on</dt><dd>Task 11 (drawer shell), Task 10 (BFF contract docs)</dd>
+        <dt>Blocks</dt><dd>Task 13</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task parallel">
+    <div class="task-header">
+      <div class="task-num">13</div>
+      <h3 class="task-title">D.13c · Stripe Elements card field + payment submit</h3>
+      <div class="badges">
+        <span class="badge parallel">Parallel-safe</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Add Stripe.js script tag to <code>plans/index.html</code></li>
+        <li>Mount Stripe Elements card field in drawer footer after price confirmed</li>
+        <li>On "Pay $X.XX" click: <code>stripe.confirmCardPayment(client_secret, { payment_method })</code></li>
+        <li>Success state: show confirmation + plan_number (from response), close drawer after 3s</li>
+        <li>Failure state: surface Stripe error in card field area, allow retry</li>
+        <li>Use test publishable key from <code>process.env.STRIPE_PK_TEST</code> (Netlify build var)</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>js/checkout-drawer.js</code></dd>
+        <dt>Depends on</dt><dd>Task 12</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task parallel">
+    <div class="task-header">
+      <div class="task-num">14</div>
+      <h3 class="task-title">D.14 · "Connect Stripe" banner in dashboard</h3>
+      <div class="badges">
+        <span class="badge parallel">Parallel-safe</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Add banner markup to dashboard overview page</li>
+        <li>On page load: check Stripe connection status (call seller-account BFF wrapper or read from user profile in Supabase)</li>
+        <li>State "not connected": show banner with "Connect Stripe" button</li>
+        <li>Button click → POST to stripe-onboard BFF → redirect to returned URL</li>
+        <li>State "connected": show green "✓ Connected — payouts active"</li>
+        <li>State "in progress" (returned from Stripe but not yet enabled): show "Pending — Stripe is verifying"</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd>Dashboard overview page + small JS module</dd>
+        <dt>Depends on</dt><dd>Task 6 (stripe-onboard BFF)</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task parallel">
+    <div class="task-header">
+      <div class="task-num">15</div>
+      <h3 class="task-title">Polish: copy, styles, error messages</h3>
+      <div class="badges">
+        <span class="badge parallel">Parallel-safe</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Review all user-facing copy in drawer + banner — fix any placeholder text</li>
+        <li>Match the existing site's typography and spacing</li>
+        <li>Empty states + error states have clear, helpful copy</li>
+        <li>Loading states are visible (not just disabled buttons)</li>
+        <li>Mobile QA pass: open drawer on phone, scroll, interact</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd>HTML + CSS across drawer + dashboard</dd>
+        <dt>Depends on</dt><dd>Tasks 11–14 (structural work)</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task parallel">
+    <div class="task-header">
+      <div class="task-num">16</div>
+      <h3 class="task-title">Playwright E2E tests for the new flow</h3>
+      <div class="badges">
+        <span class="badge parallel">Parallel-safe</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Add test under <code>tests/e2e/checkout-drawer.spec.js</code></li>
+        <li>Happy path: visit plans page → click "Buy Now" → drawer opens → fill form → see price → fill card 4242 → submit → see confirmation</li>
+        <li>Error: invalid card (use Stripe test card <code>4000 0000 0000 0002</code>) → see Stripe error</li>
+        <li>Error: empty form submit → see validation messages</li>
+        <li>Mobile viewport test: drawer at 375x667</li>
+        <li>Run against deployed staging Netlify URL</li>
+      </ul>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>tests/e2e/checkout-drawer.spec.js</code></dd>
+        <dt>Depends on</dt><dd>Tasks 11–14 deployed to staging</dd>
+      </dl>
+    </div>
+  </article>
+
+</div>
+
+<!-- =================================================== GROUP 4: DEPLOY + VALIDATE ============== -->
+<h2>4 · Deploy &amp; validate <span class="count">(sequential · me + stakeholder)</span></h2>
+<p class="group-desc">Last mile to go-live. After this, the bridge is live.</p>
+
+<div class="tasks">
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">17</div>
+      <h3 class="task-title">E.16 · Promote staging WAR to production Tomcat</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="config">deploy</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Confirm staging deploys are stable for &gt;24h</li>
+        <li>Swap staging WAR → production webapps dir on Rackspace</li>
+        <li>Verify <code>designerplan.io</code> legacy UI still serves (no break)</li>
+        <li>Verify <code>/api/v1/**</code> responds to signed requests in production</li>
+        <li>Tail logs for 1h after deploy</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Task 3 ✓, Tasks 1–9 complete</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">18</div>
+      <h3 class="task-title">E.17 · Stripe dashboard config — webhooks + Connect URLs</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="config">config</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Stripe Dashboard → Webhooks: update endpoint to <code>https://designerplan.io/api/webhook/stripe</code> (verify URL works)</li>
+        <li>Stripe Dashboard → Connect settings: update return URL to <code>https://thedesignerplan.com/stripe/return</code></li>
+        <li>Stripe Dashboard → Connect settings: update refresh URL to <code>https://thedesignerplan.com/stripe/refresh</code></li>
+        <li>Test webhook delivery with Stripe CLI in test mode</li>
+        <li>Decide: stay in test mode OR flip to live? (depends on smoke-test readiness — defer if not 100% confident)</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Task 17</dd>
+        <dt>Risk</dt><dd>Misconfig breaks sales silently — test thoroughly</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">19</div>
+      <h3 class="task-title">E.18 · Production smoke test</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Anonymous visit to <code>thedesignerplan.com</code></li>
+        <li>Click "Buy Now" on a plan tile</li>
+        <li>Drawer opens, fill form, see live price</li>
+        <li>Pay with Stripe test card 4242</li>
+        <li>Verify confirmation appears with plan_number</li>
+        <li>Check Supabase <code>orders</code> table for the new row</li>
+        <li>Check Spring Boot logs show successful HMAC + checkout</li>
+        <li>Try again logged in as a partner with Stripe connected — verify commission split</li>
+        <li>Cleanup: refund test charge, delete test plan from SOAR + Supabase</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Tasks 17, 18, all frontend deployed</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">20</div>
+      <h3 class="task-title">E.19 · Security audit + go-live checklist + sign-off</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>HMAC secret rotation procedure documented (in case of leak)</li>
+        <li>Supabase RLS verified for all new tables</li>
+        <li>Rate-limit on BFFs (consider <code>netlify-plugin-ratelimit</code> or in-function counter)</li>
+        <li>CORS strict on BFFs (only thedesignerplan.com origin)</li>
+        <li>No <code>console.log</code> of tokens, secrets, card details</li>
+        <li>Payout webhook idempotency confirmed (test by replaying)</li>
+        <li>Stakeholder smoke test → "go" approval</li>
+        <li>DNS cutover for <code>designerplan.io</code> (if applicable per plan)</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Task 19</dd>
+      </dl>
+    </div>
+  </article>
+
+</div>
+
+<!-- =================================================== GROUP 5: PROMOTIONS ===================== -->
+<h2>5 · Promotions <span class="count">(sequential · me · last)</span></h2>
+<p class="group-desc">Promo A (first-plan-on-us) and Promo B (refer-a-designer). Scheduled last so they don't block core checkout. Engine + BFF + UI for each.</p>
+
+<div class="tasks">
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">21</div>
+      <h3 class="task-title">F.20 · Promo A engine — first-plan-on-us claim endpoint</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="spring">spring</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Create <code>POST /api/v1/partner/{account_id}/promo-claim</code> endpoint</li>
+        <li>Body validation: <code>{ code: 'first-plan-on-us', client_name, client_email }</code></li>
+        <li>Check <code>promo_claims</code> table (Supabase) for prior claim for this account — reject if exists</li>
+        <li>Store claim in <code>promo_claims</code> via Supabase REST</li>
+        <li>Modify commission calc: on checkout where <code>customer.email</code> matches a pending claim → apply 5% boost (35→40%) capped at $5,000 coverage value</li>
+        <li>Unit tests: happy path, double-claim reject, boost applied at matching checkout, cap honored</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Task 17 (engine in prod)</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task critical">
+    <div class="task-header">
+      <div class="task-num">22</div>
+      <h3 class="task-title">F.21 · Promo B engine — refer-a-designer link + bonus</h3>
+      <div class="badges">
+        <span class="badge critical">Critical</span>
+        <span class="badge repo" data-r="spring">spring</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Detect <code>?ref_designer=&lt;referrer_code&gt;</code> on checkout (parse from BFF, forward as field)</li>
+        <li>Resolve referrer_code to <code>account_id</code> via Dealer lookup</li>
+        <li>On referred designer's first purchase: credit one-time 10% bonus to referrer</li>
+        <li>Mark in <code>promo_claims</code> as fired (so it doesn't repeat for same pair)</li>
+        <li>Idempotent on webhook retries</li>
+        <li>Unit tests: bonus applied once, no double-fire, no fire if referrer not found</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Task 17</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="task parallel">
+    <div class="task-header">
+      <div class="task-num">23</div>
+      <h3 class="task-title">F.22 · Promotions card UI in dashboard</h3>
+      <div class="badges">
+        <span class="badge parallel">Parallel-safe</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Add "Promotions" card to dashboard overview</li>
+        <li>Show "Claim first-plan-on-us" button if eligible (check via BFF wrapper)</li>
+        <li>Show referral link with copy-to-clipboard button</li>
+        <li>Show activity table: claims made, bonuses accrued</li>
+        <li>Empty state copy: "Share your referral link to earn bonuses"</li>
+      </ul>
+      <dl class="meta">
+        <dt>Depends on</dt><dd>Tasks 21, 22 + small BFF wrappers (combine with Task 8)</dd>
+      </dl>
+    </div>
+  </article>
+
+</div>
+
+<!-- =================================================== GROUP 6: DEPRIORITIZED ================== -->
+<h2>6 · Post go-live <span class="count">(deprioritized · after 2026-06-01)</span></h2>
+<p class="group-desc">Originally in scope but deprioritized 5/22 PM. Sample data acceptable for launch on these pages. Pick up after the bridge is live.</p>
+
+<div class="tasks">
+
+  <article class="task deprioritized">
+    <div class="task-header">
+      <div class="task-num">24</div>
+      <h3 class="task-title">B.7 + C.12 · Dashboard data feed (engine + BFF)</h3>
+      <div class="badges">
+        <span class="badge depr">Post launch</span>
+        <span class="badge repo" data-r="spring">spring</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Engine: <code>GET /api/v1/partner/{account_id}/dashboard</code> returning sales, totals, status</li>
+        <li>BFF: <code>dashboard-data.js</code> with 30s in-memory cache</li>
+        <li>Wire to existing dashboard pages</li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="task deprioritized">
+    <div class="task-header">
+      <div class="task-num">25</div>
+      <h3 class="task-title">D.15 · Dashboard subpages consume real data</h3>
+      <div class="badges">
+        <span class="badge depr">Post launch</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <ul class="actions">
+        <li>Replace sample data in <code>/dashboard/overview</code> and <code>/dashboard/clients</code></li>
+        <li>Fetch from dashboard-data BFF</li>
+        <li>Empty state: "Your first sale will appear here..."</li>
+        <li>Keep <code>?partner=1</code> query for sample-data preview mode</li>
+      </ul>
+    </div>
+  </article>
+
+</div>
+
+<div class="footer-note">
+  TODO atómico generado a partir de <code>active-plan-api-fulfillment-bridge.html</code>. <strong>Critical path (tareas 1–10, 17–20)</strong> requiere conocimiento del engine + integración — secuencial. <strong>Parallel-safe (tareas 11–16, 23)</strong> son frontend puro — delegables a otro dev mientras corre el critical path.
+</div>
+
+</div>
+</body>
+</html>

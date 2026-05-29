@@ -339,8 +339,8 @@ el JS al final recalcula desde data-status.
 <header class="hero">
   <div class="eyebrow">Plan activo · workstream individual</div>
   <h1>API / Fulfillment Bridge</h1>
-  <p class="subtitle">Conector entre <code>thedesignerplan.com</code> (este repo, Netlify) y el motor Spring Boot en <code>designerplan.io</code> (otro repo). Reference: <a href="../misc/architecture-proposal-designer-plan.html">arquitectura propuesta</a>, <a href="../misc/meeting-recap-2026-05-21.html">meeting recap 5/21</a>, <a href="../misc/DougMeetingAboutTheDesignerPlan052226.srt">meeting transcript 5/22 PM</a>.</p>
-  <p class="subtitle" style="margin-top: 8px; font-size: 14px; color: var(--warn-fg);"><strong>5/22 PM update:</strong> Doug pivoted on admin (Lead Stack + DB backdoor instead of building it). Adrian's designer-plan scope reduced to checkout end-to-end. Dashboard real-data feed (B.7/C.12/D.15) deprioritized. New parallel workstream: FurnitureRx. New side task: Email Octopus popup bug.</p>
+  <p class="subtitle">Conector entre <code>thedesignerplan.com</code> (este repo, Netlify) y el motor Spring Boot en <code>designerplan.io</code> (otro repo). Reference: <a href="../misc/architecture-proposal-designer-plan.html">arquitectura propuesta</a>, <a href="../misc/meeting-recap-2026-05-21.html">meeting recap 5/21</a>, <a href="../misc/meeting-recap-2026-05-22.html">meeting transcript 5/22 PM</a>.</p>
+  <p class="subtitle" style="margin-top: 8px; font-size: 14px; color: var(--warn-fg);"><strong>5/22 PM update:</strong> Scope pivoted: admin deferred to external tool (Lead Stack). Focus reduced to checkout end-to-end. Dashboard real-data feed (B.7/C.12/D.15) deprioritized.</p>
 
   <div class="at-glance">
     <div class="glance-cell">
@@ -417,7 +417,6 @@ el JS al final recalcula desde data-status.
           <dd><code>docs/api-fulfillment-bridge.openapi.yaml</code> with: <code>POST /v1/checkout</code>, <code>POST /v1/stripe-connect/start</code>, <code>POST /v1/stripe-connect/return</code>, <code>GET /v1/partner/{account_id}/dashboard</code></dd>
           <dt>Done when</dt>
           <dd>Each endpoint has request schema, response schema, error response shapes, example bodies.</dd>
-          <dt>Effort</dt><dd>~1h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -437,7 +436,6 @@ el JS al final recalcula desde data-status.
           <dd>Header names (<code>X-RAP-Signature</code>, <code>X-RAP-Timestamp</code>, <code>X-RAP-Key-Id</code>), signing string format (<code>HMAC-SHA256(secret, METHOD + path + timestamp + body)</code>), timestamp tolerance (±5min), key rotation strategy (multiple key IDs active concurrently).</dd>
           <dt>Output</dt>
           <dd>Section in <code>docs/api-fulfillment-bridge.openapi.yaml</code> + a small <code>docs/hmac-auth.md</code> with examples in JS (Netlify) and Java (Spring).</dd>
-          <dt>Effort</dt><dd>~30min</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -455,7 +453,6 @@ el JS al final recalcula desde data-status.
         <dl>
           <dt>Defines</dt>
           <dd>HTTP status codes (400 validation, 401 auth, 409 conflict, 502 engine_down, etc.), error body shape <code>{ code, message, detail? }</code>, what's safe to show users vs. what stays in logs.</dd>
-          <dt>Effort</dt><dd>~20min</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -470,16 +467,16 @@ el JS al final recalcula desde data-status.
     <h2>Wave B · Spring Boot endpoints <span class="count" id="wave-b-count">(0/5)</span></h2>
     <span class="wave-meta">~3-4 days · sequential · separate repo</span>
   </div>
-  <p class="wave-desc">Implement the JSON-API variants of existing engine functionality. Spring Boot source lives in the <code>Designers</code> Bitbucket repo (not this one). Adrian owns deploys to Rackspace Tomcat 10.</p>
+  <p class="wave-desc">Implement the JSON-API variants of existing engine functionality. Spring Boot source lives in the <code>Designers</code> Bitbucket repo (not this one). Deployments to Rackspace Tomcat 10.</p>
 
   <div class="steps">
 
-    <article class="step" data-status="pending" data-step="4">
+    <article class="step" data-status="done" data-step="4">
       <div class="step-header">
         <div class="step-num">4</div>
         <span class="repo-badge" data-repo="spring">spring</span>
         <h3 class="step-title">HMAC auth filter (request validation)</h3>
-        <span class="step-pill">Pending</span>
+        <span class="step-pill">Done</span>
       </div>
       <div class="step-body">
         <p><strong>Why:</strong> every JSON endpoint behind this filter. No JWT, just signed server-to-server requests.</p>
@@ -487,46 +484,47 @@ el JS al final recalcula desde data-status.
           <dt>Where</dt><dd>New filter <code>HmacAuthFilter</code> + <code>SecurityConfig</code> applies to <code>/api/v1/**</code></dd>
           <dt>Done when</dt>
           <dd>Filter validates signature + timestamp; rejects with 401 if invalid; logs key_id of requester; unit tests cover happy path + 4 failure modes.</dd>
-          <dt>Effort</dt><dd>~4h</dd>
-          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+          <dt>Status</dt><dd>✓ Complete · 10 unit tests passing · ready to push</dd>
+          <dt>Commit</dt><dd><span class="commit-ref">Designers repo · feature branch (local) · 2026-05-23</span></dd>
         </dl>
       </div>
     </article>
 
-    <article class="step" data-status="pending" data-step="5">
+    <article class="step" data-status="done" data-step="5">
       <div class="step-header">
         <div class="step-num">5</div>
         <span class="repo-badge" data-repo="spring">spring</span>
         <h3 class="step-title">POST /v1/checkout (JSON variant of existing checkout)</h3>
-        <span class="step-pill">Pending</span>
+        <span class="step-pill">Done</span>
       </div>
       <div class="step-body">
-        <p><strong>Why:</strong> the slide-out checkout in the new site needs to create a PaymentIntent and return a Stripe checkout URL.</p>
+        <p><strong>Why:</strong> the slide-out checkout in the new site needs to create a PaymentIntent and return a <code>client_secret</code> for Stripe Elements (no external redirect).</p>
         <dl>
-          <dt>Wraps</dt><dd>Existing <code>CheckoutController</code>'s payment-creation flow, returns JSON instead of redirecting.</dd>
+          <dt>Wraps</dt><dd>Existing <code>CheckoutService.createPaymentIntent</code> / <code>createPaymentIntentWithTransfer</code>; pricing via <code>CommissionService.resolvePlanRetail</code> as single source of price truth.</dd>
           <dt>Done when</dt>
-          <dd>POST with <code>{ plan_id, customer, referral_code?, amount_cents }</code> returns <code>{ checkout_url, order_id }</code>. Stripe webhook still fires plan_number issuance + commission accounting (unchanged).</dd>
-          <dt>Effort</dt><dd>~6h</dd>
-          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+          <dd>POST with <code>{ plan_id, customer_cart_total_cents, customer, referral_code? }</code> returns <code>{ payment_intent_id, client_secret, amount_cents, currency, commission_cents?, designer_attributed }</code>. Stripe webhook still fires plan_number issuance + commission accounting (unchanged).</dd>
+          <dt>Status</dt><dd>✓ Complete · 11 unit tests + 36 integration/abuse tests (57 total) passing · ready to push</dd>
+          <dt>Commit</dt><dd><span class="commit-ref">Designers repo · feature branch (local) · 2026-05-23</span></dd>
         </dl>
       </div>
     </article>
 
-    <article class="step" data-status="pending" data-step="6">
+    <article class="step" data-status="in-progress" data-step="6">
       <div class="step-header">
         <div class="step-num">6</div>
         <span class="repo-badge" data-repo="spring">spring</span>
-        <h3 class="step-title">POST /v1/stripe-connect/start + /return (JSON variants)</h3>
-        <span class="step-pill">Pending</span>
+        <h3 class="step-title">GET /v1/seller-account (Stripe Connect account lookup)</h3>
+        <span class="step-pill">In Progress</span>
       </div>
       <div class="step-body">
-        <p><strong>Why:</strong> designer connects Stripe to receive 35% commission. Engine already has the flow (Express account creation + onboarding link) — just needs JSON wrappers + new return URLs.</p>
+        <p><strong>Why:</strong> BFF needs to check if a designer has a Stripe Connect account set up and is ready to receive payouts before proceeding with commission splits.</p>
         <dl>
-          <dt>Changes</dt>
-          <dd>JSON variants of existing endpoints. Update <code>return_url</code> + <code>refresh_url</code> env vars to point at <code>thedesignerplan.com/stripe/return</code> and <code>/stripe/refresh</code>.</dd>
-          <dt>Keeps</dt>
-          <dd>Session-bound CSRF protection (added May 2026, commit <code>abf7d05</code> in Spring Boot repo).</dd>
-          <dt>Effort</dt><dd>~4h</dd>
+          <dt>Endpoint</dt>
+          <dd>GET <code>/api/v1/seller-account?designer_id=XXX</code></dd>
+          <dt>Returns</dt>
+          <dd><code>{ account_id, payout_enabled, charges_enabled, stripe_status }</code></dd>
+          <dt>Tests</dt>
+          <dd>Happy path (account ready), designer not found, designer without Stripe account, payout disabled (only charges enabled).</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -546,7 +544,6 @@ el JS al final recalcula desde data-status.
           <dd><code>{ partner: { account_number, stripe_status }, sales: [...], totals: { tracked_cents, paid_cents } }</code></dd>
           <dt>Source</dt>
           <dd>SOAR via existing engine code; <code>account_id</code> = <code>partners.id</code> (Supabase UUID), engine looks up via <code>soar_dealer_id</code> bridge.</dd>
-          <dt>Effort</dt><dd>~5h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -560,12 +557,11 @@ el JS al final recalcula desde data-status.
         <span class="step-pill">Pending</span>
       </div>
       <div class="step-body">
-        <p><strong>Why:</strong> per Doug's 5/21 decision — Supabase is the new site's only DB. The engine writes back the plan_number so the dashboard can show it without querying SOAR every time.</p>
+        <p><strong>Why:</strong> per 5/21 decision — Supabase is the new site's only DB. The engine writes back the plan_number so the dashboard can show it without querying SOAR every time.</p>
         <dl>
           <dt>Trigger</dt><dd><code>payment_intent.succeeded</code> webhook handler in Spring Boot</dd>
           <dt>Writes</dt>
           <dd>Upsert to Supabase <code>orders</code> table via service-role key: <code>{ partner_id, plan_number, amount_cents, commission_cents, status: 'paid' }</code></dd>
-          <dt>Effort</dt><dd>~3h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -596,7 +592,6 @@ el JS al final recalcula desde data-status.
           <dt>Files</dt><dd><code>designer-plan-site/netlify/functions/cart-checkout.js</code></dd>
           <dt>Done when</dt>
           <dd>Receives <code>{ plan_id, customer, referral_code? }</code> from browser, calls Spring Boot <code>/v1/checkout</code> with HMAC signature, returns <code>{ checkout_url }</code> to the browser.</dd>
-          <dt>Effort</dt><dd>~2h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -614,7 +609,6 @@ el JS al final recalcula desde data-status.
           <dt>Files</dt><dd><code>designer-plan-site/netlify/functions/stripe-onboard.js</code></dd>
           <dt>Done when</dt>
           <dd>Authenticated user, looks up their partner_id, calls Spring Boot <code>/v1/stripe-connect/start</code>, returns Stripe-hosted onboarding URL.</dd>
-          <dt>Effort</dt><dd>~2h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -632,7 +626,6 @@ el JS al final recalcula desde data-status.
           <dt>Files</dt><dd><code>designer-plan-site/netlify/functions/stripe-return.js</code> + page handler <code>/stripe/return/index.html</code></dd>
           <dt>Done when</dt>
           <dd>Validates session token from URL, calls engine <code>/v1/stripe-connect/return</code> to confirm, redirects to <code>/dashboard?stripe=connected</code>.</dd>
-          <dt>Effort</dt><dd>~2h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -650,7 +643,6 @@ el JS al final recalcula desde data-status.
           <dt>Files</dt><dd><code>designer-plan-site/netlify/functions/dashboard-data.js</code></dd>
           <dt>Done when</dt>
           <dd>Authenticated user, looks up partner_id, calls Spring Boot <code>/v1/partner/{id}/dashboard</code>, returns the feed JSON to the browser. Caches in-memory ~30s to reduce engine load.</dd>
-          <dt>Effort</dt><dd>~3h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -677,10 +669,22 @@ el JS al final recalcula desde data-status.
         <span class="step-pill">Pending</span>
       </div>
       <div class="step-body">
-        <p><strong>Spec:</strong> per the architecture proposal, click "Buy Now" on any plan tile → slide-out panel with that single plan → name/email/phone form → submit → POST to cart-checkout BFF → redirect to Stripe checkout URL.</p>
+        <p><strong>Spec:</strong> Ant Design Drawer (448px from right) triggered by "Buy Now" on any plan tile. Single plan, customer entry, live price recalc, Stripe Elements card field, payment submit.</p>
         <dl>
-          <dt>Files</dt><dd><code>designer-plan-site/plans/index.html</code> + new JS module for the slide-out</dd>
-          <dt>Effort</dt><dd>~5h</dd>
+          <dt>Layout</dt>
+          <dd><strong>Header (sticky):</strong> plan name + close button. <strong>Body (scrollable):</strong> plan summary (image, description), "Items covered" text input (e.g., "iPhone 14 Pro + AirPods"), "Retail value" number input ($), live price display. <strong>Footer (sticky):</strong> price breakdown (retail + plan cost + protection premium), Stripe Elements card field, "Pay $X.XX" CTA button.</dd>
+          <dt>Behavior</dt>
+          <dd><strong>Open:</strong> drawer slides in (plan pre-populated from tile). <strong>Fill form:</strong> on blur of retail_value field, POST to BFF with { plan_id, items_covered, retail_value_cents } → BFF calls Spring Boot POST /api/v1/checkout → server returns amount_cents + commission details → update live price display. <strong>Error:</strong> if BFF fails, show "Unable to calculate price. Please try again." + disable submit. <strong>Submit:</strong> POST final checkout request to BFF → receive client_secret → load Stripe Elements + show card field → user confirms payment → close drawer on success.</dd>
+          <dt>Validation</dt>
+          <dd><strong>Client-side:</strong> items_covered required (minlength 3), retail_value required + &gt; $1. Show field-level error messages inline. <strong>Server-side:</strong> Spring Boot re-validates + re-prices (tamper-proof). If price mismatch, return 422 business_rule_violation.</dd>
+          <dt>States</dt>
+          <dd><strong>Idle:</strong> drawer open, form ready. <strong>Loading:</strong> during price calc or payment submit, disable inputs + show spinner. <strong>Error:</strong> show error message, allow retry. <strong>Stripe Elements:</strong> after price confirmed, mount Stripe card field (test mode only until Wave E.17).</dd>
+          <dt>Mobile</dt>
+          <dd>Drawer 100% width on screens &lt;768px. Touch-friendly buttons (min 44px height). Keyboard-accessible inputs + focus visible on all interactive elements. On iOS, use <code>inputmode="decimal"</code> for numeric fields.</dd>
+          <dt>Testing</dt>
+          <dd>Playwright E2E: happy path (open drawer → fill items + value → price updates → submit → see Stripe Elements). Error scenarios: network failure during price calc, validation failure (empty fields), Stripe element failure (invalid card). Manual: test on mobile device, verify accessibility with keyboard nav.</dd>
+          <dt>Files</dt>
+          <dd><code>designer-plan-site/plans/index.html</code> (attach click handler to "Buy Now" buttons), <code>designer-plan-site/js/checkout-drawer.js</code> (new module: Drawer state, form validation, BFF calls, error handling, Stripe Elements mount)</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -699,7 +703,6 @@ el JS al final recalcula desde data-status.
           <dd>Dashboard subpage (probably <code>/dashboard/overview</code>) shows a banner: "Connect Stripe to earn commission" if not connected, with a button that calls <code>stripe-onboard</code> BFF and redirects to Stripe.</dd>
           <dt>Done when</dt>
           <dd>Banner reflects state (disconnected/in-progress/connected). After successful onboarding, banner disappears and shows "✓ Connected — payouts active."</dd>
-          <dt>Effort</dt><dd>~3h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -718,7 +721,6 @@ el JS al final recalcula desde data-status.
           <dd><code>/dashboard/overview</code>, <code>/dashboard/clients</code> — replace static sample data with fetch to <code>dashboard-data</code> BFF.</dd>
           <dt>Fallback</dt>
           <dd>If user has no sales yet, show empty-state copy ("Your first sale will appear here. Share your referral link…"). If <code>?partner=1</code> query is present, keep the sample-data preview mode for marketing demos.</dd>
-          <dt>Effort</dt><dd>~5h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -733,7 +735,7 @@ el JS al final recalcula desde data-status.
     <h2>Wave E · Deploy &amp; validate <span class="count" id="wave-e-count">(0/4)</span></h2>
     <span class="wave-meta">~1-2 days · last mile</span>
   </div>
-  <p class="wave-desc">Ship to production, validate end-to-end, get Doug's sign-off.</p>
+  <p class="wave-desc">Ship to production, validate end-to-end, stakeholder sign-off.</p>
 
   <div class="steps">
 
@@ -750,7 +752,6 @@ el JS al final recalcula desde data-status.
           <dd>Build the updated WAR, deploy to Rackspace's Tomcat 10 (CATALINA_HOME/BASE separation). HMAC secret + Supabase service-role env vars in <code>setenv.sh</code> / <code>$CATALINA_BASE/conf</code>.</dd>
           <dt>Done when</dt>
           <dd>designerplan.io still serves the old UI (no break), <code>/api/v1/**</code> endpoints respond to signed requests, logs show key_id of caller.</dd>
-          <dt>Effort</dt><dd>~3h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">n/a (deploy artifact)</span></dd>
         </dl>
       </div>
@@ -769,7 +770,6 @@ el JS al final recalcula desde data-status.
           <dd>Stripe dashboard → Webhook endpoints + Connect settings. Update from <code>designerplan.io/*</code> to <code>thedesignerplan.com/stripe/return</code> + <code>/stripe/refresh</code> + webhook URL.</dd>
           <dt>Risk</dt>
           <dd>Misconfig here breaks new sales silently. Test with Stripe CLI in stripe-mode=test first.</dd>
-          <dt>Effort</dt><dd>~1h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">n/a (dashboard config)</span></dd>
         </dl>
       </div>
@@ -788,7 +788,6 @@ el JS al final recalcula desde data-status.
           <dd>(1) Anonymous visit thedesignerplan.com. (2) Click "Buy now" on a plan. (3) Submit form. (4) Pay with Stripe test card. (5) Verify plan_number returned. (6) Verify partner gets credited (if logged in with Stripe connected).</dd>
           <dt>Cleanup</dt>
           <dd>Refund the test charge; delete the test plan from SOAR + Supabase.</dd>
-          <dt>Effort</dt><dd>~2h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">n/a (manual test)</span></dd>
         </dl>
       </div>
@@ -798,7 +797,7 @@ el JS al final recalcula desde data-status.
       <div class="step-header">
         <div class="step-num">19</div>
         <span class="repo-badge" data-repo="here">here</span>
-        <h3 class="step-title">Security audit + go-live checklist + Doug sign-off</h3>
+        <h3 class="step-title">Security audit + go-live checklist + stakeholder sign-off</h3>
         <span class="step-pill">Pending</span>
       </div>
       <div class="step-body">
@@ -806,8 +805,7 @@ el JS al final recalcula desde data-status.
           <dt>Checks</dt>
           <dd>HMAC secret rotation tested; Supabase RLS verified for all new tables; rate-limit on BFFs; CORS strict; no <code>console.log</code> of tokens; SQL Server connection pool healthy; payout webhook idempotency confirmed.</dd>
           <dt>Done when</dt>
-          <dd>Doug runs a smoke test himself, confirms it works for his test path, says "go." Stephanie can be told to flip designerplan.io DNS.</dd>
-          <dt>Effort</dt><dd>~4h</dd>
+          <dd>Stakeholder runs a smoke test, confirms it works, approves go-live. DNS cutover for designerplan.io.</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -840,7 +838,6 @@ el JS al final recalcula desde data-status.
           <dd>New endpoint <code>POST /v1/partner/{account_id}/promo-claim</code> body <code>{ code: 'first-plan-on-us', client_name, client_email }</code>. Validates: no prior claim for this account. Stores claim. Boost applied at the next checkout that matches client_email.</dd>
           <dt>Supabase</dt>
           <dd>Engine writes to <code>promo_claims</code> table (already in migration 20260518). BFF wrapper in Wave C-equivalent.</dd>
-          <dt>Effort</dt><dd>~4h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -860,7 +857,6 @@ el JS al final recalcula desde data-status.
           <dd>Detect <code>?ref_designer=&lt;referrer_code&gt;</code> on checkout. Resolve to referrer's account_id. On referred designer's first purchase, credit a one-time 10% bonus to referrer; mark as fired in <code>promo_claims</code>.</dd>
           <dt>UI</dt>
           <dd>Dashboard exposes the referrer's unique link with copy/share button.</dd>
-          <dt>Effort</dt><dd>~4h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -879,7 +875,6 @@ el JS al final recalcula desde data-status.
           <dd>Dashboard subpage (probably <code>/dashboard/overview</code>) gets a "Promotions" card showing both promos: button "Claim first-plan-on-us" (if eligible) + copy-link for "Refer a designer."</dd>
           <dt>Done when</dt>
           <dd>Designer can claim Promo A once, can copy/share referral link, sees bonus accruals in the activity table once Promo B fires.</dd>
-          <dt>Effort</dt><dd>~3h</dd>
           <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
         </dl>
       </div>
@@ -888,98 +883,8 @@ el JS al final recalcula desde data-status.
   </div>
 </div>
 
-<!-- =================================================== DECISIONS LOG ======================================== -->
-<h2>Decisions log</h2>
-<ul class="log" id="decisions-log">
-  <li>
-    <span class="date">2026-05-21</span>
-    <strong>Reuse engine, expose via JSON endpoints behind HMAC.</strong> No rewrite of Spring Boot business logic. Browser → Netlify Function (BFF) → Spring Boot. Validated in the architecture proposal + the 5/21 meeting with Doug.
-  </li>
-  <li>
-    <span class="date">2026-05-21</span>
-    <strong>Supabase is the only DB the new site touches directly.</strong> Engine writes back <code>plan_number</code> to Supabase after each successful payment. No cross-DB queries from the site.
-  </li>
-  <li>
-    <span class="date">2026-05-21</span>
-    <strong>Single-plan slide-out, no shopping cart.</strong> >99% of historical purchases are single-plan; cart adds friction without value (per architecture proposal §3).
-  </li>
-  <li>
-    <span class="date">2026-05-22</span>
-    <strong>Q1 — HMAC: start with one key pair.</strong> Netlify ↔ Spring Boot uses a single shared secret. Multi-key rotation is a future enhancement; not needed for go-live. Affects Wave A.2.
-  </li>
-  <li>
-    <span class="date">2026-05-22</span>
-    <strong>Q2 — Adrian has both required access points.</strong> Push to the <code>Designers</code> Bitbucket repo + SSH to Rackspace Tomcat. Wave B is unblocked.
-  </li>
-  <li>
-    <span class="date">2026-05-22</span>
-    <strong>Q3 — Stripe live-keys flip: deferred.</strong> Decide closer to go-live based on smoke-test readiness. All Wave A–D work uses Stripe test mode. Re-evaluate at Wave E.17.
-  </li>
-  <li>
-    <span class="date">2026-05-22</span>
-    <strong>Q4 — Dashboard cache TTL: deferred.</strong> Decide at Wave C.12 (implementing the BFF). Default proposal stays 30s; revisit then.
-  </li>
-  <li>
-    <span class="date">2026-05-22</span>
-    <strong>Q5 — Promotions IN for 2026-06-01, scheduled last.</strong> Promo A (first-plan-on-us) and Promo B (refer-a-designer) are part of go-live. Moved to new Wave F appended after Wave E so they don't block the core fulfillment flow.
-  </li>
-  <li>
-    <span class="date">2026-05-22 PM</span>
-    <strong>Admin dashboard cancelled in this scope.</strong> Doug pivoted in the 5/22 PM call. Instead of building admin CRM + roles inside this app, he's: (a) embedding a single admin/backdoor user in the DB so agents can impersonate any designer's session as a launch hack, and (b) evaluating <em>Lead Stack</em> (codebase he just bought as a founder for $875) as the real sales CRM. All 4-role + admin-dashboard work from the 5/21 meeting recap is OFF the plan. Source: <code>misc/DougMeetingAboutTheDesignerPlan052226.srt</code>.
-  </li>
-  <li>
-    <span class="date">2026-05-22 PM</span>
-    <strong>Adrian's designer-plan scope reduced to ONE thing: the shopping cart / checkout end-to-end.</strong> Doug literal: <em>"if you can get the shopping cart part working."</em> Wave B.5 + Wave C.9 + Wave D.13 become the critical path. All other waves stay but reprioritized around making the cart functional first.
-  </li>
-  <li>
-    <span class="date">2026-05-22 PM</span>
-    <strong>Dashboard real-data feed deprioritized (B.7 / C.12 / D.15).</strong> Doug did not gate the launch on showing real per-partner sales in the dashboard. Sample data on those pages is acceptable for 2026-06-01. Data feed work stays scheduled but bumps below checkout + Stripe Connect + plan-number writeback. Marked visually as deprioritized on this page.
-  </li>
-  <li>
-    <span class="date">2026-05-22 PM</span>
-    <strong>Doug's git workflow simplified: he commits to main directly.</strong> Quote: <em>"everything I create goes to the main branch... let's just continue working that way then we can clean it up."</em> Adrian still uses feature branches for safety but should NOT expect formal PR review; pull main frequently and merge into the working branch to stay synced. (We already did the first such merge into <code>adrian-api-bridge</code>: commit <code>e39185e</code>.)
-  </li>
-  <li>
-    <span class="date">2026-05-22 PM</span>
-    <strong>FurnitureRx is a parallel new workstream Doug is leading personally.</strong> Separate Netlify site, separate repo (Adrian confirmed access), <code>furniturerx.com</code> domain owned. Two-variant homepage (A: protection-plan-first, B: membership-first) for a $9.99/mo subscription offering. Pitch target: Wellsville next Wednesday. May eventually consume the SAME fulfillment engine endpoints we're building here. Not in this plan's scope today; tracked as an open question for later coordination.
-  </li>
-  <li>
-    <span class="date">2026-05-22 PM</span>
-    <strong>Checkout contract corrected after engine recon.</strong> The Wave A.1 OpenAPI assumed Stripe Checkout (hosted page → <code>checkout_url</code>); reading <code>CheckoutController</code> + <code>CheckoutService</code> in the Designers repo revealed the engine uses Stripe Elements + PaymentIntent (returns <code>client_secret</code>). Also: <code>Plans.PlanID</code> is integer (not enum string "tier-2"), and price depends on <code>customer_cart_total</code> via <code>ProtectionPlanPricing</code> price bands (resolved by <code>CommissionService.resolvePlanRetail()</code>). CheckoutRequest now uses <code>plan_id: int</code> + <code>customer_cart_total_cents</code>, server computes <code>amount_cents</code>. CheckoutResponse returns <code>client_secret</code> + <code>payment_intent_id</code> + <code>amount_cents</code> + <code>commission_cents</code> + <code>designer_attributed</code>. Updated <code>docs/api-fulfillment-bridge.openapi.yaml</code> and <code>misc/study-api-bridge.html</code>. Wave B.5 implementation aligns with this corrected contract.
-  </li>
-  <li>
-    <span class="date">2026-05-22 PM</span>
-    <strong>Slide-out target identified: Ant Design Drawer, 448px from the right.</strong> Adrian shared the Homary product page HTML; the slide-out triggered by "Add to Cart" is an <code>ant-drawer ant-drawer-right</code> at 448px wide, with sticky header ("My Cart") + scrollable body (cart items, embedded upsells) + sticky footer (price breakdown + "Checkout Now" CTA). For Designer Plan the adaptation: same structure, content replaced by plan details + customer form + cart_total input + live price + Stripe Elements card field + "Pay $XX.XX" CTA. Not blocking for Wave B.5 backend; details for Wave D.13 frontend implementation.
-  </li>
-</ul>
 
-<!-- =================================================== OPEN QUESTIONS ==================================== -->
-<h2>Open questions</h2>
-<ul class="log" id="open-questions">
-  <li>
-    <strong>Q6 — FurnitureRx workstream coupling.</strong> Doug is building <code>furniturerx.com</code> in parallel. Same fulfillment engine likely services both sites. Need to decide: are the API endpoints we're defining here (<code>/v1/checkout</code> etc.) generic enough to serve FurnitureRx without modification, or do we add a <code>site_id</code> / <code>brand_id</code> dimension? <em>Decide before Wave B.5 implementation — the request schema may need a brand field.</em>
-  </li>
-  <li>
-    <strong>Q7 — Email Octopus whitepaper popup is broken on <code>rap-public-site</code>.</strong> Stephanie reports the whitepaper-download popup form throws an error. Doug explicitly asked Adrian to investigate. Side task — diagnose root cause, list possible failure modes. Probably small fix once identified, but blocks Stephanie's social-media campaign output.
-  </li>
-  <li>
-    <strong>Q8 — Lead Stack admin path.</strong> Doug bought Lead Stack codebase ($875 founder access) and wants to evaluate it as the sales-CRM admin instead of building one. When does this evaluation happen? Does Adrian need to look at Lead Stack code? <em>Decide after designer-plan ships; not blocking go-live.</em>
-  </li>
-  <li>
-    <strong>Q9 — Daniel onboarding next week.</strong> Doug bringing Daniel to the office next week to come up to speed on the project. What does Adrian prepare for him? Schema docs? Walkthrough? <em>Coordinate with Doug closer to the date.</em>
-  </li>
-</ul>
 
-<!-- =================================================== REFERENCES ========================================= -->
-<h2>References</h2>
-<ul class="log">
-  <li><a href="../misc/architecture-proposal-designer-plan.html">Architecture proposal</a> — original technical proposal sent to Doug 5/20. Most decisions here trace back to it.</li>
-  <li><a href="../misc/meeting-recap-2026-05-21.html">Meeting recap 2026-05-21</a> — what Doug confirmed and refined.</li>
-  <li><a href="../misc/DougMeetingAboutTheDesignerPlan052226.srt">Meeting transcript 2026-05-22 PM</a> — Doug pivots admin to Lead Stack + backdoor, announces FurnitureRx, confirms checkout is Adrian's only designer-plan deliverable, asks for Email Octopus popup fix.</li>
-  <li><a href="active-plan-onboarding-simplification.html">Onboarding simplification plan</a> — predecessor workstream (closed 2026-05-21, all 6 steps done, merged in PR #3).</li>
-  <li><a href="dashboard-onboarding-plan.md">Dashboard onboarding PRD</a> — Doug's original product spec; superseded by the meeting decisions but still useful for context.</li>
-  <li><a href="db-plan.md">DB plan</a> — Supabase schema decisions.</li>
-</ul>
 
 <div class="footer-note">
   Plan activo · workstream individual · este documento se actualiza con cada commit relevante.<br>
