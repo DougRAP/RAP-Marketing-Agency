@@ -29,8 +29,24 @@
 // Response (200): the engine's CheckoutResponse, passed through:
 //   { payment_intent_id, client_secret, amount_cents, currency,
 //     commission_cents?, designer_attributed }
+//   Honeypot hit also returns 200 but as { ok: true, honeypot: true } — a 200
+//   without client_secret must NOT start a payment.
 //
-// Errors (non-2xx): { code, message } — codes mirror the OpenAPI contract.
+// Errors (non-2xx): always { code, message } (engine errors may add `detail`).
+//   BFF-originated:
+//     405 method_not_allowed   — non-POST
+//     400 bad_json             — body not valid JSON
+//     400 validation_failed    — local pre-check (message names the field)
+//     502 upstream_unavailable — engine unreachable (network/timeout)
+//   Engine pass-through (ApiV1ExceptionHandler, status+body unchanged):
+//     400 validation_failed / bad_json · 415 unsupported_media_type
+//     422 business_rule_violation · 404 not_found · 409 conflict
+//     429 rate_limited · 502 stripe_unavailable · 500 internal_error
+//   HMAC 401 (HmacAuthFilter; only if THIS BFF's signing is misconfigured):
+//     missing_signature_headers / unknown_key_id / timestamp_skew /
+//     bad_timestamp / invalid_signature  → treat as upstream + alert ops.
+//   Front-end: switch on `code` when known, else show `message`; the set is
+//   open (controllers can add codes). Full catalog: docs/bff-error-contract.md
 //
 // Required env (Netlify dashboard):
 //   HMAC_KEY_ID, HMAC_SECRET, ENGINE_BASE_URL  (for engine call)

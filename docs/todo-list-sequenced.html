@@ -404,20 +404,20 @@
 
   <div class="summary-grid">
     <div class="summary-cell">
-      <span class="summary-label">Total blocks</span>
-      <span class="summary-value">13 Claude + 6 checkpoints</span>
+      <span class="summary-label">Estado actual</span>
+      <span class="summary-value">Backend listo · esperando HTML de Doug</span>
     </div>
     <div class="summary-cell">
-      <span class="summary-label">Claude time</span>
-      <span class="summary-value">~22h of coding</span>
+      <span class="summary-label">Fulfillment loop</span>
+      <span class="summary-value">Validado end-to-end · 2026-05-29</span>
     </div>
     <div class="summary-cell">
-      <span class="summary-label">Your time</span>
-      <span class="summary-value">~5h of verification</span>
+      <span class="summary-label">Bloqueante</span>
+      <span class="summary-value">HTML del slide-out (Doug)</span>
     </div>
     <div class="summary-cell">
-      <span class="summary-label">Calendar days</span>
-      <span class="summary-value">3-4 días</span>
+      <span class="summary-label">Decisiones abiertas</span>
+      <span class="summary-value">3 + backlog</span>
     </div>
   </div>
 </header>
@@ -622,6 +622,166 @@
           <ul>
             <li><code>netlify/functions/stripe-onboard.js</code> + <code>stripe-return.js</code> + landing</li>
             <li>Doug toma el front-end del checkout → menos urgente que el core de pago (ya validado)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- =================================================== PHASE 2.5: FULFILLMENT =============== -->
+<div class="phase-divider">
+  <h2>Phase 2.5 · Plan fulfillment — el showstopper de go-live</h2>
+  <p>Lo que destapó la prueba de pago: <strong>cobrar no entregaba el plan.</strong> El registro vivía en un form legacy acoplado a sesión que el slide-out no usa. Se construyó un camino nuevo, stateless, disparado por el webhook <code>payment_intent.succeeded</code>. <strong>Es el corazón del bridge y ya está validado end-to-end.</strong></p>
+</div>
+
+<div class="timeline">
+
+  <div class="block bot done">
+    <div class="block-icon">🤖</div>
+    <div class="block-card">
+      <div class="block-header">
+        <span class="block-num">Block 2.6</span>
+        <h3 class="block-title">Webhook plan fulfillment + email de confirmación</h3>
+        <div class="block-badges">
+          <span class="badge done">Done · 2026-05-29</span>
+          <span class="badge tasks">Engine + BFF</span>
+        </div>
+      </div>
+      <div class="block-content">
+        <div class="result-box">
+          <strong>Result — what shipped (engine):</strong>
+          <ul>
+            <li><code>PlanFulfillmentService.java</code> (nuevo, stateless): en <code>payment_intent.succeeded</code> registra <code>SoarSales</code> + <code>GrandMaster</code> (+ comisión si hay designer). Gated por metadata <code>fulfillment=v1</code>, idempotente vía <code>findByPaymentIntentId</code>, una tx <code>SERIALIZABLE</code>. NO toca el <code>registerPlan</code> legacy (invariante).</li>
+            <li><code>StripeWebhookController</code>: invoca fulfillment y devuelve 500 si falla (Stripe reintenta); lee el PaymentIntent vía <code>deserializeUnsafe()</code> porque la cuenta está pineada a API 2017-08-15 (<code>getObject()</code> viene vacío).</li>
+            <li>Email/SMS post-commit vía <code>CommunicationService.resendPlanDocument</code> (synchronization <code>afterCommit</code>, swallow-and-log — un fallo de correo no hace rollback ni rompe el 2xx).</li>
+            <li><code>CheckoutService</code>: overloads con metadata (firmas legacy intactas → designerplan.io a salvo). <code>CheckoutApiV1Controller</code>: arma la metadata de fulfillment, exige <code>plan_id</code> + <code>sales_order_number</code>. <code>CheckoutRequestDto</code>: <code>salesOrderNumber</code>.</li>
+            <li><strong>83/83 tests verdes</strong> (nuevo <code>PlanFulfillmentServiceTest</code> + checkout/bridge actualizados).</li>
+          </ul>
+        </div>
+        <div class="result-box">
+          <strong>Result — what shipped (BFF):</strong>
+          <ul>
+            <li><code>cart-checkout.js</code>: reenvía <code>plan_id</code> + <code>sales_order_number</code> al engine y los valida.</li>
+            <li><code>.gitignore</code>: <code>**/_local-*.html</code> (harness local nunca se deploya/pushea).</li>
+          </ul>
+        </div>
+        <div class="stop-signal" style="background: var(--warn-bg); color: var(--warn-fg); border-left-color: var(--warn-fg);">
+          <strong>Sin pushear:</strong> engine + BFF commiteados localmente, esperando tu OK para push. <code>PlanFulfillmentService.java</code> + su test están untracked (necesitan <code>git add</code>).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block human done">
+    <div class="block-icon">👤</div>
+    <div class="block-card">
+      <div class="block-header">
+        <span class="block-num">Checkpoint B2</span>
+        <h3 class="block-title">Validación end-to-end contra Stripe (test) — LOCAL</h3>
+        <div class="block-badges">
+          <span class="badge done">Done · 2026-05-29</span>
+          <span class="badge local-only">Local · Stripe CLI + netlify dev</span>
+        </div>
+      </div>
+      <div class="block-content">
+        <div class="result-box">
+          <strong>Cadena completa validada:</strong>
+          <ul>
+            <li>checkout BFF → HMAC → engine → Stripe → webhook → fulfillment → SOAR → email. Webhook responde <strong>200</strong>.</li>
+            <li>Pago real (<code>pi_…1YYBICwB</code>): <code>SoarSales</code> 9845, warranty <code>1574837470004707</code>, <code>Paid</code>; <code>GrandMaster</code> + <code>DesignerTransaction</code> + <code>DesignerCommission</code>.</li>
+            <li>Comisión cross-linkeada y exacta: venta 249.00 → comisión 24.90 (10%), designer <code>AB-4LK0</code>, <code>PENDING</code>.</li>
+            <li>Email de confirmación llega (plantilla <code>planDocumentEmail.html</code> — "under review / 24-48h").</li>
+            <li><strong>Link del plan validado en ambas ramas:</strong> Rama 1 (14600, doc link <code>registeraplan.com</code>) y Rama 2 (300000, token <code>5starservice.net/rapPlan</code>) — el <code>TandCLink</code> abre el documento.</li>
+          </ul>
+        </div>
+        <div class="verify-box">
+          <strong>Lo que esto destapó (ver "Decisiones abiertas" abajo):</strong>
+          <ul>
+            <li>Los planes designer reales son <code>300000 / 400000 / 500000</code> (no 14600) → fijar allowlist.</li>
+            <li>Reconciliación de comisión (<code>PENDING → PAID</code> + <code>StripeTransferId</code>) sigue abierta.</li>
+            <li>Decisión de copy del email (under-review vs auto-activar) y de credenciales (password vs magic link).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- =================================================== DECISIONS / NEXT ===================== -->
+<div class="phase-divider" style="border-top-color: var(--human-fg);">
+  <h2>⏳ Decisiones abiertas + qué sigue</h2>
+  <p>El backend está listo y validado. Lo que falta para go-live se divide en: lo que <strong>depende de Doug</strong>, las <strong>decisiones de negocio</strong>, y el <strong>backlog técnico</strong> (no bloquea).</p>
+</div>
+
+<div class="timeline">
+
+  <div class="block human">
+    <div class="block-icon">👤</div>
+    <div class="block-card">
+      <div class="block-header">
+        <span class="block-num">Espera 1</span>
+        <h3 class="block-title">HTML del slide-out (Doug) → merge, deploy, test real</h3>
+        <div class="block-badges">
+          <span class="badge critical">Bloqueante go-live</span>
+        </div>
+      </div>
+      <div class="block-content">
+        <div class="verify-box">
+          <strong>Pendiente de Doug (email enviado):</strong>
+          <ul>
+            <li>Su HTML del slide-out → mergear al repo, deployar y probar el flujo completo de verdad (no con harness).</li>
+            <li>Confirmar los 3 <code>plan_id</code> que ofrece el slide-out (evidencia: <code>300000 / 400000 / 500000</code>).</li>
+            <li>El piece de subida del recibo y cómo se captura el <code>sales_order_number</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block human">
+    <div class="block-icon">👤</div>
+    <div class="block-card">
+      <div class="block-header">
+        <span class="block-num">Decisión 2</span>
+        <h3 class="block-title">Copy del email + activación, y método de login</h3>
+        <div class="block-badges">
+          <span class="badge depend">Negocio · Doug/RAP</span>
+        </div>
+      </div>
+      <div class="block-content">
+        <div class="verify-box">
+          <strong>A decidir:</strong>
+          <ul>
+            <li><strong>Activación:</strong> ¿dejar "under review 24-48h" (revisión manual del recibo) o auto-activar al pagar? Cambia <code>PlanActiveStatus</code> + la copy de <code>planDocumentEmail.html</code>.</li>
+            <li><strong>Login del cliente:</strong> (A) mandar credenciales por email como el legacy, o (B) sin password — magic link / reset. Recomendado: B (sin contraseñas por email; el documento ya se entrega por link sin login).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block bot">
+    <div class="block-icon">🤖</div>
+    <div class="block-card">
+      <div class="block-header">
+        <span class="block-num">Backlog técnico</span>
+        <h3 class="block-title">Endurecimiento + reconciliación (no bloquea, paralelo a Doug)</h3>
+        <div class="block-badges">
+          <span class="badge tasks">Claude · independiente</span>
+        </div>
+      </div>
+      <div class="block-content">
+        <div class="does-what">
+          <strong>Candidatos mientras esperamos el HTML:</strong>
+          <ul>
+            <li><strong>Reconciliación de comisión:</strong> cablear ramas <code>transfer.created</code> / <code>payout.*</code> del webhook (mismo fix <code>deserializeUnsafe</code>) para poblar <code>StripeTransferId</code> y mover <code>PENDING → PAID</code>.</li>
+            <li><strong>Go-live engine:</strong> fijar <code>checkout.allowed-plan-ids</code> con los IDs reales; flip <code>pricing.tampering.mode=strict</code>; verificar índice único en <code>SoarSales.StripePaymentIntentId</code>.</li>
+            <li><strong>Tests:</strong> <code>StripeWebhookControllerTest</code> del branch de fulfillment (no-2xx pre-commit, 2xx si falla side-effect, skip sin marca v1).</li>
+            <li><strong>Menores:</strong> <code>CommissionPercentage</code> NULL en el detalle; log cosmético "$2490.0" (centavos con $); email <code>@Async</code> para no sumar latencia SMTP al webhook.</li>
+            <li><strong>Higiene:</strong> gitignorear smoke-test scripts con secretos.</li>
           </ul>
         </div>
       </div>

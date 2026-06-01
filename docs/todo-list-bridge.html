@@ -298,7 +298,19 @@
     <span class="legend-item"><span class="legend-chip deprioritized"></span> Post go-live / deferido</span>
   </div>
 
-  <p class="subtitle" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft); color: var(--warn-fg);"><strong>Estado 5/23:</strong> ✓ B.6 (seller-account), ✓ HMAC helper, ✓ cart-checkout BFF — validado end-to-end local (browser→BFF→HMAC→engine→Stripe). <strong>Pivote:</strong> checkout pasó a amount-based (precio lo manda la página). B.8 (writeback) deferido por timing del plan_number. Front-end del checkout (slide-out) ahora lo hace Doug. Falta: deploy real + pago Stripe Elements + dashboard + Stripe Connect BFFs.</p>
+  <p class="subtitle" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft); color: var(--good-fg);"><strong>Estado 5/29:</strong> ✓ B.6 (seller-account), ✓ HMAC helper, ✓ cart-checkout BFF, ✓ checkout amount-based, ✓ <strong>plan fulfillment por webhook</strong> (SoarSales+GrandMaster+comisión+email) — <strong>validado end-to-end contra Stripe test</strong> (pago→entrega→comisión→email, 200; link del plan abre en ambas ramas). El showstopper "cobrar sin entregar" está resuelto. <span style="color: var(--warn-fg);">Bloqueante: HTML del slide-out de Doug (merge/deploy/test real). Abierto: allowlist de plan IDs reales (300000/400000/500000), copy/activación del email, login (password vs magic link), reconciliación comisión PENDING→PAID. Ver <code>todo-list-sequenced.html</code> (fuente viva del "qué sigue").</span></p>
+
+  <div class="flow-summary" style="margin-top:18px;margin-bottom:0;border-left:4px solid var(--err-fg);">
+    <h3 style="color:var(--err-fg);">Gates globales — por qué casi nada es 100% autónomo</h3>
+    <ol>
+      <li><strong>Push manual</strong> — Claude no pushea; Adrian avisa cuándo.</li>
+      <li><strong>Sin dashboards</strong> — no hay acceso a UI de Netlify / Stripe / Supabase.</li>
+      <li><strong>Motor en repo aparte + Rackspace Tomcat</strong> — sin SSH ni deploy desde aquí.</li>
+      <li><strong>Doug es dueño del front-end de checkout</strong> (slide-out) — acuerdo 5/23.</li>
+      <li><strong>Nunca tocar designerplan.io en vivo.</strong></li>
+    </ol>
+    <p style="margin-top:8px;font-size:12.5px;color:var(--ink-50);">Audit 5/29 (workflow, 8 agentes, juez adversarial): de 25 tareas <strong>solo la #10 es 100% autónoma</strong> (ya hecha). El resto requiere push, dashboard, servidor, HTML de Doug, interacción Stripe/navegador en vivo, o una decisión sin tomar.</p>
+  </div>
 </header>
 
 <!-- =================================================== FLOW SUMMARY ============================ -->
@@ -357,7 +369,7 @@
       </div>
     </div>
     <div class="task-body">
-      <p><strong>Bloqueado por hallazgo (Block 1):</strong> el <code>plan_number</code> (<code>SoarSales.warrantyNumber</code>) NO existe en el momento del webhook <code>payment_intent.succeeded</code> — se genera en <code>PlanRegistrationController:537</code> (flujo de registro/fulfillment). Escribir desde el webhook guardaría <code>null</code>.</p>
+      <p><strong>Actualización 5/29 — bloqueo disuelto:</strong> el supuesto de que <code>plan_number</code> (<code>warrantyNumber</code>) no existe en el webhook es ahora FALSO — se genera en <code>PlanFulfillmentService.java:160</code> dentro de la tx de <code>payment_intent.succeeded</code>. Reencuadre: de "bloqueado por código" a <strong>desbloqueado, decision-gated</strong>. Gates reales: el motor no tiene cliente Supabase/HTTP (código nuevo en repo aparte), falta env SUPABASE + redeploy WAR, y una decisión sí/no sobre si el writeback a <code>orders</code> se quiere (feed de dashboard despriorizado 5/22). Sigue sin ser autónoma, pero por otras razones.</p>
       <ul class="actions">
         <li>Decidir timing: (a) hook en el fulfillment SOAR donde nace el plan_number, (b) write-then-update, o (c) diferir hasta integrar la entrega del plan</li>
         <li>Confirmar con Doug: la "plan deliver" (fulfillment) es ahora scope de Adrian</li>
@@ -472,7 +484,7 @@
       </ul>
       <dl class="meta">
         <dt>Files</dt><dd><code>netlify/functions/stripe-onboard.js</code></dd>
-        <dt>Depends on</dt><dd>Task 4, engine endpoint for <code>/stripe-connect/start</code> (exists)</dd>
+        <dt>Depends on</dt><dd>Task 4; engine endpoint <code>/api/v1/stripe-connect/start</code> <strong>NO existe</strong> (audit 5/29) — solo hay <code>POST /stripe/onboard</code> acoplado a sesión. Decidir el contrato HMAC servidor-a-servidor antes de escribir el BFF.</dd>
         <dt>Blocks</dt><dd>Frontend "Connect Stripe" button (D.14)</dd>
       </dl>
     </div>
@@ -552,16 +564,18 @@
     </div>
   </article>
 
-  <article class="task critical">
+  <article class="task done">
     <div class="task-header">
       <div class="task-num">10</div>
       <h3 class="task-title">BFF error contract documentation</h3>
       <div class="badges">
-        <span class="badge critical">Critical</span>
+        <span class="badge done">Done · 5/29</span>
+        <span class="badge done">✅ Autonomous</span>
         <span class="badge repo" data-r="netlify">netlify</span>
       </div>
     </div>
     <div class="task-body">
+      <p style="margin:0 0 8px;color:var(--good-fg);"><strong>Hecho 5/29 (única tarea 100% autónoma):</strong> creado <code>docs/bff-error-contract.md</code> (catálogo completo browser→BFF + pass-through del motor + 401 HMAC, con guía de manejo para el front-end) y extendido el JSDoc de <code>cart-checkout.js</code>. Sin push — commit local pendiente.</p>
       <ul class="actions">
         <li>Add JSDoc/comments in <code>cart-checkout.js</code> listing all possible response shapes</li>
         <li>Document for whoever does frontend: which HTTP codes mean what, what to display to user</li>
@@ -574,11 +588,30 @@
     </div>
   </article>
 
+  <article class="task done">
+    <div class="task-header">
+      <div class="task-num">★</div>
+      <h3 class="task-title">Webhook plan fulfillment + email — el showstopper real de go-live</h3>
+      <div class="badges">
+        <span class="badge done">Done · 5/29</span>
+        <span class="badge repo" data-r="spring">spring</span>
+        <span class="badge repo" data-r="netlify">netlify</span>
+      </div>
+    </div>
+    <div class="task-body">
+      <p style="margin:0 0 8px;"><strong>Faltaba en esta lista</strong> (solo estaba en la secuenciada). En <code>payment_intent.succeeded</code>, <code>PlanFulfillmentService</code> registra <code>SoarSales</code> + <code>GrandMaster</code> + comisión y envía el email de confirmación. Idempotente, gated por <code>fulfillment=v1</code>, una tx SERIALIZABLE; lee el PI vía <code>deserializeUnsafe()</code> (API 2017-08-15). Validado end-to-end vs Stripe test el 5/29 (link del plan abre en ambas ramas). Commiteado local, sin push.</p>
+      <dl class="meta">
+        <dt>Files</dt><dd><code>PlanFulfillmentService.java</code>, <code>StripeWebhookController.java</code>, <code>CheckoutService.java</code>, <code>CheckoutApiV1Controller.java</code>, <code>cart-checkout.js</code></dd>
+        <dt>Abierto</dt><dd>Reconciliación comisión PENDING→PAID; fijar <code>checkout.allowed-plan-ids</code> (300000/400000/500000); decisión copy/activación email</dd>
+      </dl>
+    </div>
+  </article>
+
 </div>
 
 <!-- =================================================== GROUP 3: FRONTEND (PARALLELIZABLE) ====== -->
 <h2>3 · Frontend integration <span class="count">(parallel-safe · delegable)</span></h2>
-<p class="group-desc">Once Task 10 documents the contract, these can be picked up in parallel by anyone with frontend skills. They unblock the user-facing experience but do NOT block the engine/BFF work.</p>
+<p class="group-desc"><strong style="color:var(--err-fg);">Reclasificado 5/29 — DOUG-OWNED:</strong> el slide-out de checkout (tareas 11-13) y el banner "Connect Stripe" (14-15) son el front-end que Doug rehace y envía directo (acuerdo 5/23). NO son "Claude-puede-hacerlo": authorearlos ahora colisiona con su HTML entrante. La 16 (Playwright) corre contra un deploy → human-gated. La 14 además depende de la 6 (contrato de motor sin fijar). El badge "Parallel-safe" de abajo es engañoso para este grupo.</p>
 
 <div class="tasks">
 
