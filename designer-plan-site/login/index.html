@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/_shared/_partials.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
 <script src="/js/auth.js" defer></script>
 </head>
 <body>
@@ -73,14 +73,32 @@
     status.style.color = isError ? '#b22222' : 'var(--ink-65)';
   }
 
+  // Auth resolves through several network hops (public-config, getSession,
+  // account-bootstrap, partner select). Never block the UI on it forever:
+  // cb(false) means auth did not resolve in time.
+  var AUTH_TIMEOUT_MS = 8000;
+
   function whenAuthReady(cb){
-    if (window.DP_AUTH && window.DP_AUTH.ready) { cb(); return; }
-    document.addEventListener('dp-auth-ready', cb, { once: true });
+    if (window.DP_AUTH && window.DP_AUTH.ready) { cb(true); return; }
+    var settled = false;
+    function onReady(){
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      cb(true);
+    }
+    var timer = setTimeout(function(){
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('dp-auth-ready', onReady);
+      cb(false);
+    }, AUTH_TIMEOUT_MS);
+    document.addEventListener('dp-auth-ready', onReady, { once: true });
   }
 
-  whenAuthReady(function(){
-    if (window.DP_AUTH.user) {
-      window.location.replace('/dashboard');
+  whenAuthReady(function(ready){
+    if (ready && window.DP_AUTH.user) {
+      window.location.replace('/dashboard/');
     }
   });
 
@@ -91,10 +109,20 @@
     submitBtn.disabled = true;
     setStatus('Sending magic link…');
 
-    whenAuthReady(function(){
-      if (!window.DP_AUTH || typeof window.DP_AUTH.signIn !== 'function') {
-        submitBtn.disabled = false;
-        setStatus('Sign-in not available. Email designer.programs@raptns.com for help.', true);
+    function fail(msg){
+      submitBtn.disabled = false;
+      setStatus(msg, true);
+    }
+
+    whenAuthReady(function(ready){
+      if (!ready) {
+        fail('Sign-in is taking longer than usual. Check your connection and try again, or email designer.programs@raptns.com.');
+        return;
+      }
+      // DP_AUTH.signIn always exists: the placeholder in auth.js is a
+      // function too. DP_AUTH.mode is what tells us it is the real one.
+      if (!window.DP_AUTH || window.DP_AUTH.mode !== 'live') {
+        fail('Sign-in is unavailable right now. Email designer.programs@raptns.com and we will send you a link by hand.');
         return;
       }
       window.DP_AUTH.signIn(email).then(function(res){
@@ -103,11 +131,10 @@
           setStatus(res.error.message || 'Could not send link. Try again.', true);
           return;
         }
-        setStatus('Check your inbox — we just sent a one-tap link to ' + email + '.');
+        setStatus('Check your inbox. We just sent a one-tap link to ' + email + '.');
         form.reset();
       }).catch(function(err){
-        submitBtn.disabled = false;
-        setStatus((err && err.message) || 'Could not send link. Try again.', true);
+        fail((err && err.message) || 'Could not send link. Try again.');
       });
     });
   });

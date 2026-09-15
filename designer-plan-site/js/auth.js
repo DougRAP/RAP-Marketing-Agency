@@ -14,6 +14,7 @@
     user: null,
     partner: null,
     ready: false,
+    mode: 'stub',
     signIn: function () {
       return Promise.reject(new Error('auth.js not initialized yet'));
     },
@@ -70,17 +71,6 @@
     document.dispatchEvent(new Event('dp-auth-ready'));
   }
 
-  // ?partner=1 preview shortcut for dev/QA (no real session).
-  try {
-    var params = new URLSearchParams(window.location.search);
-    if (params.get('partner') === '1') {
-      window.DP_AUTH.user = { email: 'preview@studio.com' };
-      window.DP_AUTH.partner = { id: 'preview', commission_rate: 0.35 };
-      markReady();
-      return;
-    }
-  } catch (e) { /* noop */ }
-
   if (!window.supabase) {
     console.warn('[auth] Supabase JS not loaded; running in stub mode.');
     markReady();
@@ -99,10 +89,11 @@
 
       var sb = window.supabase.createClient(cfg.url, cfg.anonKey);
       window.dpSupabase = sb;
+      window.DP_AUTH.mode = 'live';
 
       window.DP_AUTH.signIn = function (email, options) {
         var opts = Object.assign(
-          { emailRedirectTo: window.location.origin + '/dashboard' },
+          { emailRedirectTo: window.location.origin + '/dashboard/' },
           options || {}
         );
         return sb.auth.signInWithOtp({ email: email, options: opts });
