@@ -24,6 +24,9 @@
     setPassword: function () {
       return Promise.reject(new Error('auth.js not initialized yet'));
     },
+    requestPasswordReset: function () {
+      return Promise.reject(new Error('auth.js not initialized yet'));
+    },
     signOut: function () {
       return Promise.reject(new Error('auth.js not initialized yet'));
     },
@@ -122,6 +125,15 @@
           return sb.auth.signOut({ scope: 'others' })
             .catch(function () { /* best effort, the password is already set */ })
             .then(function () { return res; });
+        });
+      };
+
+      // The recovery email is a single-use link like any other, so it goes
+      // through /login/confirm too. Supabase deliberately answers the same
+      // way whether or not the address is registered.
+      window.DP_AUTH.requestPasswordReset = function (email) {
+        return sb.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/dashboard/profile'
         });
       };
 

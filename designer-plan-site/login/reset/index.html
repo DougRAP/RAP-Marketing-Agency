@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reset password &mdash; Designer Plan</title>
+<meta name="description" content="Reset your Designer Plan password.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared/_partials.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
+<script src="/js/auth.js" defer></script>
+</head>
+<body>
+
+<header class="nav-simple">
+  <div class="container nav-inner">
+    <a href="/" class="logo">Designer Plan</a>
+    <nav><ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/partner">Partner with us</a></li>
+      <li><a href="/plans">Shop plans</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+      <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+      <li><a href="/login">Log in</a></li>
+    </ul></nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container container-narrow">
+    <span class="eyebrow">Partner sign-in</span>
+    <h1>Reset your password.</h1>
+    <p class="lead">Tell us your email and we will send you a link to choose a new one.</p>
+
+    <form class="simple-form" id="reset-form">
+      <div>
+        <label for="reset-email">Email</label>
+        <input type="email" id="reset-email" name="email" required autocomplete="email" placeholder="you@studio.com">
+      </div>
+      <button type="submit" class="btn-primary" id="reset-submit">Send reset link &rarr;</button>
+      <p id="reset-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
+    </form>
+
+    <p style="margin-top: 32px;">Remembered it? <a href="/login">Back to log in</a>.</p>
+  </div>
+</main>
+
+<footer class="footer-simple">
+  <div class="container footer-inner">
+    <div>&copy; 2026 Risk Assurance Partners</div>
+    <div>
+      <a href="/about">About</a>
+      <a href="/partnership">Partnership</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  var AUTH_TIMEOUT_MS = 8000;
+
+  var form = document.getElementById('reset-form');
+  var emailInput = document.getElementById('reset-email');
+  var status = document.getElementById('reset-status');
+  var submitBtn = document.getElementById('reset-submit');
+
+  function setStatus(msg, isError){
+    status.textContent = msg;
+    status.style.color = isError ? '#b22222' : 'var(--ink-65)';
+  }
+
+  function whenAuthReady(cb){
+    if (window.DP_AUTH && window.DP_AUTH.ready) { cb(true); return; }
+    var settled = false;
+    function onReady(){
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      cb(true);
+    }
+    var timer = setTimeout(function(){
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('dp-auth-ready', onReady);
+      cb(false);
+    }, AUTH_TIMEOUT_MS);
+    document.addEventListener('dp-auth-ready', onReady, { once: true });
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var email = (emailInput.value || '').trim();
+    if (!email) { setStatus('Enter your email first.', true); return; }
+
+    submitBtn.disabled = true;
+    setStatus('Sending your reset link...');
+
+    function fail(msg){
+      submitBtn.disabled = false;
+      setStatus(msg, true);
+    }
+
+    whenAuthReady(function(ready){
+      if (!ready || !window.DP_AUTH || window.DP_AUTH.mode !== 'live') {
+        fail('Password reset is unavailable right now. Email designer.programs@raptns.com and we will help.');
+        return;
+      }
+
+      window.DP_AUTH.requestPasswordReset(email).then(function(){
+        submitBtn.disabled = false;
+        // Deliberately the same answer whether or not the address is
+        // registered, so this page never reveals who has an account.
+        setStatus('If that email has an account, a reset link is on its way.');
+        form.reset();
+      }).catch(function(){
+        fail('Could not send the reset link. Try again in a moment.');
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
