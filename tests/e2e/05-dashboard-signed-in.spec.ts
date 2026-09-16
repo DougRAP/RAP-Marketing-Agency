@@ -97,4 +97,32 @@ test.describe('Dashboard — signed-in state', () => {
     // And the figures themselves carry a note, for anyone scrolling past it.
     await expect(page.locator('.dp-sample-note')).toBeVisible();
   });
+
+  test('D.4 — a partner with no referral code yet is told so, not shown the sample one', async ({ page, context }) => {
+    await context.clearCookies();
+    const link = await generateMagicLink(testEmail, 'http://localhost:8888/dashboard');
+    await page.goto(link);
+    await page.waitForURL(/\/dashboard/, { timeout: 20_000 });
+    await waitForAuth(page);
+
+    await page.goto('/dashboard/overview/');
+    await waitForAuth(page);
+
+    // account-bootstrap creates the row without a referral code.
+    const code = await page.locator('[data-field="referral-code"]').textContent();
+    expect(code).toBe('Not assigned yet');
+    expect(code).not.toContain('EXAMPLESTUDIO');
+
+    const clientLink = await page.locator('[data-field="client-link"]').textContent();
+    expect(clientLink).not.toContain('EXAMPLESTUDIO');
+
+    // Copying a placeholder would be worse than not offering it. The page
+    // repeats the pair three times, so check every one of them.
+    const copyButtons = page.locator('[data-action="copy-referral-code"], [data-action="copy-client-link"]');
+    const count = await copyButtons.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      await expect(copyButtons.nth(i)).toBeDisabled();
+    }
+  });
 });

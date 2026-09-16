@@ -104,9 +104,17 @@
 
     setField('account-number', partner.account_number);
 
+    // A fresh account has no referral code yet. Leaving the sample code on
+    // screen would read as the partner's own, so say what is actually true
+    // and take the copy buttons out of service.
     if (partner.referral_code) {
       setField('referral-code', partner.referral_code);
       setField('client-link', PLANS_URL + partner.referral_code);
+      setCopyButtonsEnabled(true);
+    } else {
+      setField('referral-code', 'Not assigned yet');
+      setField('client-link', 'Ready once your referral code is assigned');
+      setCopyButtonsEnabled(false);
     }
 
     var step = Number(partner.onboarding_step);
@@ -121,6 +129,15 @@
     setField('stripe-note', partner.stripe_account_id
       ? 'Stripe connected. Commission is paid straight to your account.'
       : 'Stripe not connected yet. Connect it to receive commission.');
+  }
+
+  function setCopyButtonsEnabled(enabled) {
+    all('[data-action="copy-client-link"], [data-action="copy-referral-code"]').forEach(function (btn) {
+      btn.disabled = !enabled;
+      btn.setAttribute('aria-disabled', String(!enabled));
+      btn.style.opacity = enabled ? '' : '0.45';
+      btn.style.cursor = enabled ? '' : 'not-allowed';
+    });
   }
 
   // Show the state the account is actually in, and retire the dev switcher
@@ -197,7 +214,7 @@
   function wireCopyButtons() {
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-action="copy-client-link"], [data-action="copy-referral-code"]');
-      if (!btn) return;
+      if (!btn || btn.disabled) return;
       e.preventDefault();
       var name = btn.getAttribute('data-action') === 'copy-client-link'
         ? 'client-link'
