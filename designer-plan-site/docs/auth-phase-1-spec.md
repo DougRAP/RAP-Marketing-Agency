@@ -114,10 +114,19 @@ Same for the recovery flow. Leave it disabled while both methods coexist.
 
 ## 5. A3 — recovery
 
-`resetPasswordForEmail` with the Reset Password template rewritten to point at
-`/login/confirm?token_hash=...&type=recovery&next=set-password`. The same page
-handles it with no changes: `verifyOtp` with `type=recovery` opens a session and
-emits `PASSWORD_RECOVERY`, then `next` lands the user on the password form.
+`resetPasswordForEmail` with the Reset Password template pointing at
+`/login/confirm?token_hash=...&type=recovery&next=/login/new-password`. The
+confirmation page handles it unchanged: `verifyOtp` with `type=recovery` opens
+the session, then `next` lands the user on a page that asks for the new
+password and nothing else.
+
+`/login/new-password` exists because the first attempt landed recovery on
+`/dashboard/profile`, whose heading reads "Tell us about your studio" and which
+buries the password section below the profile form. Someone who asked for a new
+password should not have to go looking for the field. The change still runs
+through `DP_AUTH.setPassword`, shared with the profile page, so the rules live
+in one place; only the form is duplicated. No session there means the link
+expired or was never followed, so it redirects to `/login/reset`.
 
 The recovery email is a single-use link too, so without A1 it would break for the
 same people, in the same way.
@@ -131,7 +140,7 @@ panel is not under version control.
 |---|---|---|
 | Email Templates → Magic Link | link to `/login/confirm` with `{{ .TokenHash }}` | A1 |
 | Email Templates → Confirm signup | same | new users get this template, not Magic Link |
-| Email Templates → Reset Password | same, `type=recovery` | A3 |
+| Email Templates → Reset Password | same, `type=recovery&next=/login/new-password` | A3 |
 | Redirect URLs | add `<origin>/login/confirm` per origin | otherwise Supabase drops the destination |
 | Require current password | **off** | would block first password creation |
 | Email OTP expiration | 900 s | shrinks the window the token is exposed |

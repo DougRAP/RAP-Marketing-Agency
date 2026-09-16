@@ -90,7 +90,7 @@
   <li><strong>A1</strong> añade una página intermedia, <code>/login/confirm</code>, que no canjea nada hasta que alguien pulsa un botón. Un escáner que abra la página se encuentra HTML inerte.</li>
   <li><strong>A2</strong> añade acceso con contraseña junto al enlace mágico, que sigue funcionando. La contraseña se ofrece, nunca se obliga.</li>
   <li><strong>A3</strong> añade recuperación de contraseña, que se apoya en la misma página de confirmación.</li>
-  <li>La suite automática pasa de 24 a <strong>44 pruebas, todas en verde</strong>.</li>
+  <li>La suite automática pasa de 24 a <strong>47 pruebas, todas en verde</strong>.</li>
   <li><span class="badge b-imp">Importante</span> El código por sí solo no arregla nada: hay que editar tres plantillas de correo en Supabase. Sin ese paso, producción sigue igual y las pruebas automáticas <em>igualmente pasan</em>.</li>
 </ul>
 
@@ -114,6 +114,7 @@
   <tr><th>Archivo</th><th>Qué es</th></tr>
   <tr><td><code>designer-plan-site/login/confirm/index.html</code></td><td>Página de confirmación (A1)</td></tr>
   <tr><td><code>designer-plan-site/login/reset/index.html</code></td><td>Solicitud de recuperación (A3)</td></tr>
+  <tr><td><code>designer-plan-site/login/new-password/index.html</code></td><td>Elegir contraseña nueva tras recuperar (A3)</td></tr>
   <tr><td><code>designer-plan-site/_headers</code></td><td>Cabeceras de seguridad</td></tr>
   <tr><td><code>designer-plan-site/docs/auth-phase-1-spec.md</code></td><td>Especificación y decisiones</td></tr>
   <tr><td><code>designer-plan-site/docs/email-templates.md</code></td><td>Las tres plantillas de correo, versionadas</td></tr>
@@ -239,7 +240,7 @@
   </tr>
   <tr>
     <td class="paso">9</td>
-    <td>Plantilla <strong>Reset Password</strong>, con <code>type=recovery&amp;next=/dashboard/profile</code></td>
+    <td>Plantilla <strong>Reset Password</strong>, con <code>type=recovery&amp;next=/login/new-password</code></td>
     <td>Guardada</td>
     <td class="estado">☐</td>
   </tr>
@@ -312,7 +313,7 @@
   <tr>
     <td class="paso">20</td>
     <td>Cerrar sesión, ir a "Forgot your password?", pedir el enlace y completar el cambio</td>
-    <td>Mensaje neutro, correo recibido, y el enlace lleva a <code>/login/confirm</code> y de ahí al perfil</td>
+    <td>Mensaje neutro, correo recibido, y el enlace lleva a <code>/login/confirm</code> y de ahí a <code>/login/new-password</code>, una pantalla que solo pide la contraseña. Al guardar, va al panel</td>
     <td class="estado">☐</td>
   </tr>
   <tr>
@@ -396,7 +397,7 @@
 
 <h2>Checklist final</h2>
 <ul class="check">
-  <li>☐ <code>npx playwright test</code> devuelve 44 en verde</li>
+  <li>☐ <code>npx playwright test</code> devuelve 47 en verde</li>
   <li>☐ Las tres plantillas de correo están guardadas en Supabase</li>
   <li>☐ <code>/login/confirm</code> está en las Redirect URLs</li>
   <li>☐ Site URL apunta a producción, no a localhost</li>
