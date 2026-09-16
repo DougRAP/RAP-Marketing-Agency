@@ -1,7 +1,7 @@
 # HANDOFF — Designer Plan project
 
 **Maintained for:** any fresh Claude Code agent picking this up. Read this first.
-**Last updated:** 2026-05-21
+**Last updated:** 2026-09-16
 **Owner:** Doug Wright (dwright@raptns.com)
 
 ---

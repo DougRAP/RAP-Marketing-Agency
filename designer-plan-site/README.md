@@ -15,7 +15,9 @@ designer-plan-site/
 ├── partnership/            ← /partnership — benefits page
 ├── terms/                  ← /terms
 ├── privacy/                ← /privacy
-├── login/                  ← /login — magic-link stub
+├── login/                  ← /login — password + magic link (live)
+│   ├── confirm/            ← /login/confirm — holds the email token until a click
+│   └── reset/              ← /login/reset — request a password reset
 ├── _shared/                ← shared CSS partials (no build step yet)
 ├── assets/img/             ← brand imagery
 ├── js/
@@ -32,8 +34,8 @@ designer-plan-site/
 
 - Both `/` and `/plans` are valid entry points; each links to the other. Not strictly linear by design — the email campaign sends to either.
 - Popup on `/` triggers at 20s OR 40% scroll, first visit only (suppressed via sessionStorage).
-- Cart drawer (`/plans` only) renders commission inline when a partner is logged in (`?partner=1` query string is a dev preview hook).
-- `/partner-apply` is the dedicated application form. Logged-in partner state isn't required to view it.
+- Cart drawer (`/plans` only) renders commission inline when `DP_AUTH.partner` is present, meaning a real session with a real partner row. The `?partner=1` preview hook was removed.
+- `/partner-apply` no longer holds a form: it redirects. Anonymous goes to `/login`, signed in goes to `/dashboard/profile`. Accounts are created at `/login`.
 
 ## Related
 

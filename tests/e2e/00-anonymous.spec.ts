@@ -35,13 +35,13 @@ test.describe('Camino A — anonymous visitor', () => {
   });
 
   test('A.4 — /partner-apply redirects to /login when anonymous', async ({ page }) => {
-    await page.goto('/partner-apply');
+    await page.goto('/partner-apply', { waitUntil: 'commit' });
     await page.waitForURL(/\/login/, { timeout: 15_000 });
     await expect(page).toHaveURL(/\/login/);
   });
 
   test('A.5 — /dashboard/profile redirects to /login when anonymous (gate)', async ({ page }) => {
-    await page.goto('/dashboard/profile');
+    await page.goto('/dashboard/profile', { waitUntil: 'commit' });
     await page.waitForURL(/\/login/, { timeout: 15_000 });
     await expect(page).toHaveURL(/\/login/);
   });

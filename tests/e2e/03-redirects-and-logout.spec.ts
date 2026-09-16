@@ -23,13 +23,13 @@ test.describe('Camino D — redirects and logout', () => {
   });
 
   test('D.1 — /partner-apply redirects to /dashboard/profile when authenticated', async ({ page }) => {
-    await page.goto('/partner-apply');
+    await page.goto('/partner-apply', { waitUntil: 'commit' });
     await page.waitForURL(/\/dashboard\/profile/, { timeout: 15_000 });
     await expect(page).toHaveURL(/\/dashboard\/profile/);
   });
 
   test('D.2 — /login redirects to /dashboard when already authenticated', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/login', { waitUntil: 'commit' });
     await page.waitForURL(/\/dashboard(\/?|$|\?)/, { timeout: 15_000 });
     await expect(page).toHaveURL(/\/dashboard/);
   });
@@ -57,7 +57,7 @@ test.describe('Camino D — redirects and logout', () => {
     });
 
     // After sign-out, visiting /dashboard/profile should bounce to /login.
-    await page.goto('/dashboard/profile');
+    await page.goto('/dashboard/profile', { waitUntil: 'commit' });
     await page.waitForURL(/\/login/, { timeout: 15_000 });
     await expect(page).toHaveURL(/\/login/);
   });

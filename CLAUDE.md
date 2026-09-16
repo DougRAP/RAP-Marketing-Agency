@@ -36,7 +36,7 @@ When adding a new form/webhook, follow the existing function pattern: validate i
 
 ### Known `lead_events.source` values
 
-`whitepaper-request`, `designer-sign-up` (rap-public-site), `landing_popup`, `plans_credit_capture`, `partner_application`, `cart_started`, `plan_purchase` (designer-plan-site). Extend by adding new string values — no schema change required.
+Emitted by the code today: `landing_popup` (`popup-capture.js`), `partner_apply_form` (`partner-apply.js`), `cart_started` (`cart-checkout.js`), and on rap-public-site whatever `formName` the form passes (`whitepaper-request`, `designer-sign-up`). Planned but **not implemented**: `plans_credit_capture`, `plan_purchase`. Note that `account-bootstrap.js` upserts into `leads` but writes no `lead_events` row, so a magic-link signup leaves no event trail. Extend by adding new string values — no schema change required.
 
 ## Supabase grants — explicit, today
 
@@ -79,7 +79,7 @@ supabase db push
 # Or paste each migration SQL into Supabase Studio in order
 ```
 
-There are no tests, no linter, and no build script. Validation happens at deploy time on Netlify.
+There is no linter and no build script. There **is** a Playwright end-to-end suite in `tests/e2e/` covering the auth paths: run it with `npm run test:e2e`. Everything else is validated at deploy time on Netlify.
 
 ## Deploy / Netlify settings (do NOT edit in the dashboard ad-hoc)
 
@@ -98,7 +98,7 @@ Per the working agreement in `docs/db-plan.md`:
 - **Marketing-center `/private/*` Basic Auth is non-negotiable.** It gates the admin lists UI (`/private/lists/`) which calls `admin-leads.js` with no other auth layer. The function trusts the gate.
 - **The admin lists UI** (`marketing-center-site/private/lists/index.html` + `admin-leads.js`) uses query-string `?mode=overview|list|leads|export` for GETs and `op` in POST body (`add`, `remove`, `create_list`).
 - **`designer-plan-site` cart** is client-side localStorage (`dp_cart_v1` key); `cart-checkout.js` is currently a stub — real Stripe checkout is dev-team TODO.
-- **`designer-plan-site/js/auth.js`** sets `window.DP_AUTH`. Real Supabase auth is commented out; the partner-mode commission banner is gated by `?partner=1` for dev previews.
+- **`designer-plan-site/js/auth.js`** is live Supabase auth, not a stub. It fetches `/.netlify/functions/public-config`, creates the client, and exposes `window.dpSupabase` plus `window.DP_AUTH` (`{ user, partner, ready, mode, signIn, signInPassword, setPassword, requestPasswordReset, signOut, requireAuth }`), firing `dp-auth-ready` once state resolves. `DP_AUTH.mode` is `'stub'` until the real client exists, then `'live'` — check that, not `typeof signIn`, because the placeholder is a function too. The `?partner=1` dev bypass was removed; the cart commission banner now renders only for a real partner row.
 - **Consent capture**: every new form must POST `consent_text` (the literal copy shown to the user); the function writes `consent_at` + `consent_text` on the `leads` row.
 - **Honeypot field**: forms include a hidden field; functions silently 200 when `body.hp` is truthy. Preserve this.
 - **`lead_events` is meant to be append-only / immutable** — never `UPDATE` or `DELETE` rows there. Status changes are recorded as new `status_changed` events.
