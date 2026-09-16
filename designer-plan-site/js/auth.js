@@ -142,7 +142,8 @@
           return {};
         }).then(function(){
           return sb.from('partners')
-            .select('id, commission_rate, status, account_number')
+            .select('id, commission_rate, status, account_number, studio_name, ' +
+                    'referral_code, stripe_account_id, lifecycle_status, onboarding_step')
             .eq('auth_user_id', session.user.id)
             .maybeSingle()
             .then(function(r){
@@ -151,7 +152,12 @@
                   id: r.data.id,
                   account_number: r.data.account_number,
                   commission_rate: r.data.commission_rate || 0.35,
-                  status: r.data.status
+                  status: r.data.status,
+                  studio_name: r.data.studio_name,
+                  referral_code: r.data.referral_code,
+                  stripe_account_id: r.data.stripe_account_id,
+                  lifecycle_status: r.data.lifecycle_status,
+                  onboarding_step: r.data.onboarding_step
                 };
               }
               markReady();

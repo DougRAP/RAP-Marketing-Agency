@@ -12,6 +12,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/dashboard.js"></script>
 
 <style>
 /* ============================================================
@@ -729,16 +730,23 @@ section:last-of-type { padding-bottom: var(--sp-section); }
        ============================================================ -->
   <section class="hero" aria-labelledby="hero-title">
     <div class="container hero-wrap">
-      <span class="eyebrow">Your dashboard</span>
+      <span class="eyebrow" data-dp-when="signed-out">Your dashboard</span>
+      <span class="eyebrow" data-dp-when="signed-in" hidden>Signed in &middot; <span data-field="studio-name">Your studio</span></span>
       <h1 id="hero-title" class="h-display">The control room for your studio.</h1>
       <p class="hero-subhead">Your client link, referral code, tracked commission, recent clients and plans, sales tools, and service support &mdash; all in one place.</p>
 
-      <div class="hero-ctas">
+      <div class="hero-ctas" data-dp-when="signed-out">
         <a href="/login" class="btn btn--accent">Log in to my dashboard <span class="arrow">&rarr;</span></a>
         <a href="/dashboard/overview" class="btn btn--primary">See an example <span class="arrow">&rarr;</span></a>
       </div>
 
-      <p class="hero-tertiary">Or <a href="tel:+15613743147">call us at 561-374-3147</a> and we&rsquo;ll get you set up.</p>
+      <div class="hero-ctas" data-dp-when="signed-in" hidden>
+        <a href="/dashboard/overview" class="btn btn--accent">Open my dashboard <span class="arrow">&rarr;</span></a>
+        <a href="/dashboard/profile" class="btn btn--primary">My profile <span class="arrow">&rarr;</span></a>
+      </div>
+
+      <p class="hero-tertiary" data-dp-when="signed-out">Or <a href="tel:+15613743147">call us at 561-374-3147</a> and we&rsquo;ll get you set up.</p>
+      <p class="hero-tertiary" data-dp-when="signed-in" hidden>Account <span data-field="account-number">&mdash;</span>. Need a hand? <a href="tel:+15613743147">Call us at 561-374-3147</a>.</p>
     </div>
   </section>
 
@@ -862,7 +870,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
   <!-- ============================================================
        NOT A PARTNER YET — welcome benefit echo
        ============================================================ -->
-  <section aria-labelledby="apply-title">
+  <section aria-labelledby="apply-title" data-dp-when="signed-out">
     <div class="container">
       <div class="welcome-benefit reveal">
         <span class="eyebrow">Not a partner yet?</span>
