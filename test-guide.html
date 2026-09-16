@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de pruebas: Fase 1 de acceso (A1, A2, A3)</title>
+<style>
+  body {
+    background: #fff;
+    color: #1a1a1a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  h2 { font-size: 19px; margin: 36px 0 10px; padding-top: 18px; border-top: 1px solid #ddd; }
+  h3 { font-size: 15px; margin: 22px 0 8px; }
+  .meta { color: #666; font-size: 13px; margin: 0 0 8px; }
+  p, li { margin: 8px 0; }
+  ul { padding-left: 22px; }
+  code {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 0.88em;
+    background: #f2f2f2;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: #f7f7f7;
+    border: 1px solid #e0e0e0;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 13.5px; }
+  th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f4f4f4; font-weight: 600; }
+  td.estado { text-align: center; width: 48px; font-size: 17px; }
+  td.paso { width: 46px; text-align: center; color: #666; }
+  .badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 3px;
+    vertical-align: middle;
+  }
+  .b-imp { background: #fae3e3; color: #8c2f2f; }
+  .b-inf { background: #e6edf7; color: #2b5178; }
+  .b-pen { background: #f7eeda; color: #7d5a14; }
+  .aviso {
+    border-left: 3px solid #8c2f2f;
+    background: #fdf5f5;
+    padding: 12px 16px;
+    margin: 16px 0;
+  }
+  .nota {
+    border-left: 3px solid #999;
+    background: #f7f7f7;
+    padding: 12px 16px;
+    margin: 16px 0;
+  }
+  .check { list-style: none; padding-left: 0; }
+  .check li { margin: 7px 0; }
+  @media print {
+    h2 { page-break-after: avoid; }
+    table { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Guía de pruebas: Fase 1 de acceso</h1>
+<p class="meta">
+  Proyecto: <strong>RAPMarketingAgency</strong> / <code>designer-plan-site</code> (thedesignerplan.com)<br>
+  Generada: 16 de septiembre de 2026<br>
+  Commits: <code>01dde58</code> (A1), <code>89e1763</code> (A2), <code>edd9d21</code> (A3), <code>aa90b44</code> (documentación)
+</p>
+
+<h2>Resumen ejecutivo</h2>
+<ul>
+  <li>Los enlaces de acceso por correo fallaban para cualquiera con correo corporativo, porque el antivirus de correo abre el enlace antes que la persona y lo gasta.</li>
+  <li><strong>A1</strong> añade una página intermedia, <code>/login/confirm</code>, que no canjea nada hasta que alguien pulsa un botón. Un escáner que abra la página se encuentra HTML inerte.</li>
+  <li><strong>A2</strong> añade acceso con contraseña junto al enlace mágico, que sigue funcionando. La contraseña se ofrece, nunca se obliga.</li>
+  <li><strong>A3</strong> añade recuperación de contraseña, que se apoya en la misma página de confirmación.</li>
+  <li>La suite automática pasa de 24 a <strong>44 pruebas, todas en verde</strong>.</li>
+  <li><span class="badge b-imp">Importante</span> El código por sí solo no arregla nada: hay que editar tres plantillas de correo en Supabase. Sin ese paso, producción sigue igual y las pruebas automáticas <em>igualmente pasan</em>.</li>
+</ul>
+
+<h2>Contexto: qué había antes</h2>
+<p>El único modo de entrar era el enlace mágico. <code>/login</code> pedía un correo, Supabase enviaba un mensaje con un enlace, y ese enlace apuntaba directamente a la URL de verificación de Supabase.</p>
+<p>Esa URL es un <strong>GET que gasta un token de un solo uso</strong>. No había página intermedia, ni contraseña, ni forma de recuperar nada.</p>
+
+<h2>Problema</h2>
+<p>Microsoft Defender para Office 365, igual que Proofpoint o Mimecast, abre los enlaces del correo entrante para analizarlos antes de entregarlo. Al abrirlo, consume el token. Cuando la persona hace clic, Supabase responde <code>otp_expired</code>: "Email link is invalid or has expired".</p>
+
+<div class="aviso">
+  <strong>Evidencia del 16 de septiembre de 2026.</strong> El mismo enlace enviado a <code>@raptns.com</code> (Microsoft 365) falló, y enviado a <code>@rapqa.com</code> (Mailgun, sin escáner) funcionó. El DNS confirma la diferencia: <code>raptns.com</code> tiene MX hacia <code>outlook.com</code>, <code>rapqa.com</code> hacia <code>mailgun.org</code>.
+</div>
+
+<p>Esto afecta directamente al cliente: su cuenta es <code>dwright@raptns.com</code>, el mismo dominio con el mismo escáner.</p>
+
+<h2>Qué se hizo</h2>
+
+<h3>Archivos nuevos</h3>
+<table>
+  <tr><th>Archivo</th><th>Qué es</th></tr>
+  <tr><td><code>designer-plan-site/login/confirm/index.html</code></td><td>Página de confirmación (A1)</td></tr>
+  <tr><td><code>designer-plan-site/login/reset/index.html</code></td><td>Solicitud de recuperación (A3)</td></tr>
+  <tr><td><code>designer-plan-site/_headers</code></td><td>Cabeceras de seguridad</td></tr>
+  <tr><td><code>designer-plan-site/docs/auth-phase-1-spec.md</code></td><td>Especificación y decisiones</td></tr>
+  <tr><td><code>designer-plan-site/docs/email-templates.md</code></td><td>Las tres plantillas de correo, versionadas</td></tr>
+  <tr><td><code>tests/e2e/06-login-confirm.spec.ts</code></td><td>9 pruebas de A1</td></tr>
+  <tr><td><code>tests/e2e/07-password-login.spec.ts</code></td><td>10 pruebas de A2</td></tr>
+  <tr><td><code>tests/e2e/08-password-recovery.spec.ts</code></td><td>5 pruebas de A3</td></tr>
+  <tr><td><code>tests/e2e/helpers/session.ts</code></td><td>Ayudantes de navegador</td></tr>
+</table>
+
+<h3>Archivos modificados</h3>
+<table>
+  <tr><th>Archivo</th><th>Cambio</th></tr>
+  <tr><td><code>designer-plan-site/js/auth.js</code></td><td>Nuevos métodos en <code>DP_AUTH</code>: <code>signInPassword</code>, <code>setPassword</code>, <code>requestPasswordReset</code></td></tr>
+  <tr><td><code>designer-plan-site/login/index.html</code></td><td>Campo de contraseña, botón de enlace mágico, enlace de recuperación</td></tr>
+  <tr><td><code>designer-plan-site/dashboard/profile/index.html</code></td><td>Sección de contraseña, en un formulario separado</td></tr>
+  <tr><td><code>tests/e2e/helpers/supabase.ts</code></td><td>Ayudantes nuevos y arreglo de paginación en <code>cleanupTestUser</code></td></tr>
+  <tr><td><code>CLAUDE.md</code>, <code>HANDOFF.md</code>, <code>README.md</code>, <code>DEPLOY.md</code></td><td>Documentación al día</td></tr>
+</table>
+
+<h3>Configuración fuera del repositorio</h3>
+<p><span class="badge b-pen">Pendiente</span> Estos pasos son manuales y <strong>sin ellos nada de lo anterior tiene efecto</strong>. Están detallados en <code>designer-plan-site/docs/email-templates.md</code>.</p>
+<ul>
+  <li>Tres plantillas de correo en Supabase: Magic Link, Confirm signup, Reset Password.</li>
+  <li>Añadir <code>/login/confirm</code> a las Redirect URLs.</li>
+  <li>Dejar desactivado "Require current password when changing password".</li>
+  <li>Bajar "Email OTP expiration" a 900 segundos.</li>
+</ul>
+
+<h2>Cómo se resolvió</h2>
+
+<h3>A1: la página espera a una persona</h3>
+<p>El correo deja de enlazar a Supabase y enlaza a <code>thedesignerplan.com/login/confirm</code>, llevando el token en la URL. La página lo lee, limpia la URL, y no hace nada más. El canje ocurre <strong>solo dentro del manejador del clic</strong>. Un escáner abre la página, no pulsa botones, y se va.</p>
+
+<p>Cuatro decisiones que sostienen esa propiedad:</p>
+<ul>
+  <li><strong>Nada canjea fuera del clic.</strong> Sin temporizadores, sin canje al cargar.</li>
+  <li><strong>El <code>type</code> se lee de la URL, nunca se fija en el código.</strong> Supabase manda "Confirm signup" a un correo nuevo y "Magic Link" a uno existente, con tipos distintos. Fijar uno rompería el otro.</li>
+  <li><strong>La URL se limpia al cargar</strong>, no después de canjear, para que el token no viva en la barra de direcciones mientras la persona lee.</li>
+  <li><strong>El <code>next</code> es una ruta del sitio, nunca una URL.</strong> Una URL sería una redirección abierta, y un valor <code>javascript:</code> entregaría la sesión.</li>
+</ul>
+
+<h3>A2: contraseña, sin quitar el enlace</h3>
+<p>Un solo mensaje de error para todo, a propósito. Supabase devuelve el mismo <code>Invalid login credentials</code> para contraseña incorrecta, para cuenta sin contraseña y para correo inexistente, y documenta que no se pueden distinguir. Ramificar la interfaz según eso filtraría qué correos tienen cuenta.</p>
+<p>La contraseña se fija desde <code>/dashboard/profile</code>, en un <strong>formulario separado</strong>. No es cosmético: el formulario de perfil se serializa con <code>FormData</code> y se envía a una función de Netlify, así que un campo de contraseña dentro acabaría en los logs de esa función.</p>
+<p>Tras fijarla se cierran las demás sesiones (<code>signOut({ scope: 'others' })</code>). Sin eso, quien encuentre una sesión abierta en un ordenador compartido podría ponerle contraseña y quedarse con la cuenta para siempre.</p>
+
+<h3>A3: recuperación heredada</h3>
+<p>El correo de recuperación es también un enlace de un solo uso, así que se enruta por la misma página. Tres de las cinco pruebas de A3 pasaron antes de escribir una línea de A3.</p>
+
+<h2>Precondiciones para probar</h2>
+<table>
+  <tr><th>Requisito</th><th>Detalle</th></tr>
+  <tr><td>Rama</td><td><code>main</code>, commit <code>aa90b44</code> o posterior</td></tr>
+  <tr><td>Node</td><td>Ya instalado. <code>npm install</code> si es una copia limpia</td></tr>
+  <tr><td>Variables</td><td><code>.env</code> en la raíz con <code>SUPABASE_URL</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code> y <code>SUPABASE_ANON_KEY</code></td></tr>
+  <tr><td>Servidor local</td><td>Lo levanta Playwright solo. Manual: <code>cd designer-plan-site &amp;&amp; netlify dev --dir . --functions netlify/functions --port 8888</code></td></tr>
+  <tr><td>Buzón corporativo</td><td><span class="badge b-imp">Importante</span> Hace falta una cuenta Microsoft 365 real para la prueba que de verdad importa. Un Gmail no sirve: no tiene escáner y pasaría igual antes y después</td></tr>
+  <tr><td>Acceso a Supabase</td><td>Para editar las plantillas antes de las pruebas manuales</td></tr>
+</table>
+
+<div class="nota">
+  <strong>Orden recomendado.</strong> Primero las pruebas automáticas (bloque A), que no tocan producción. Luego la configuración de Supabase (bloque B). Después las manuales en producción (bloque C).
+</div>
+
+<h2>Pasos para probar</h2>
+
+<h3>Bloque A: pruebas automáticas</h3>
+<table>
+  <tr><th class="paso">Paso</th><th>Acción</th><th>Resultado esperado</th><th class="estado">Estado</th></tr>
+  <tr>
+    <td class="paso">1</td>
+    <td>Desde la raíz del repositorio:<pre>npx playwright test</pre></td>
+    <td><code>44 passed</code>. Tarda unos 2 a 3 minutos porque cada prueba hace un acceso real contra Supabase</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">2</td>
+    <td>Solo la prueba clave de A1:<pre>npx playwright test tests/e2e/06-login-confirm.spec.ts --grep "E.1"</pre></td>
+    <td><code>1 passed</code>. Esta prueba carga la página, espera dos segundos, y luego comprueba <strong>desde Node con la clave anónima</strong> que el token sigue siendo utilizable. Es la demostración de que la página no lo gasta</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">3</td>
+    <td>Simulación del escáner:<pre>npx playwright test tests/e2e/06-login-confirm.spec.ts --grep "E.2"</pre></td>
+    <td><code>1 passed</code>. Hace una petición HTTP cruda sin ejecutar JavaScript, que es lo que hace un escáner, y comprueba que el token sobrevive</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">4</td>
+    <td>No regresión del enlace mágico:<pre>npx playwright test tests/e2e/01-auth-flow.spec.ts tests/e2e/07-password-login.spec.ts --grep "F.6|B.1"</pre></td>
+    <td>Ambas verdes. Confirman que la vía que todos usan hoy no se tocó</td>
+    <td class="estado">☐</td>
+  </tr>
+</table>
+
+<h3>Bloque B: configuración en Supabase</h3>
+<p>Proyecto <code>myjbhfqtdzcqmbmegqqh</code>. El HTML exacto de cada plantilla está en <code>designer-plan-site/docs/email-templates.md</code>.</p>
+<table>
+  <tr><th class="paso">Paso</th><th>Acción</th><th>Resultado esperado</th><th class="estado">Estado</th></tr>
+  <tr>
+    <td class="paso">5</td>
+    <td>Authentication, URL Configuration. Comprobar que Site URL es <code>https://thedesignerplan.com</code></td>
+    <td>No debe decir <code>localhost</code>. Si lo dijera, todos los enlaces apuntarían a la máquina del destinatario</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">6</td>
+    <td>En Redirect URLs, añadir <code>https://thedesignerplan.com/login/confirm</code>. Si ya existe <code>https://thedesignerplan.com/**</code>, queda cubierto</td>
+    <td>Guardado sin error</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">7</td>
+    <td>Authentication, Emails, Templates. Sustituir <strong>Magic Link</strong> por el HTML del documento</td>
+    <td>El enlace del cuerpo apunta a <code>{{ .SiteURL }}/login/confirm?token_hash={{ .TokenHash }}&amp;type=magiclink</code></td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">8</td>
+    <td>Misma pantalla, plantilla <strong>Confirm signup</strong>, con <code>type=signup</code></td>
+    <td>Guardada. <span class="badge b-imp">Importante</span> Si se olvida, todo registro nuevo sigue roto, porque un correo que no existe recibe esta plantilla y no la de Magic Link</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">9</td>
+    <td>Plantilla <strong>Reset Password</strong>, con <code>type=recovery&amp;next=/dashboard/profile</code></td>
+    <td>Guardada</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">10</td>
+    <td>Authentication, Providers, Email. Verificar que "Require current password when changing password" está <strong>desactivado</strong></td>
+    <td>Desactivado. Si estuviera activo, quien solo usó enlace mágico no podría crear su primera contraseña</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">11</td>
+    <td>En la misma pantalla, bajar "Email OTP expiration" a <code>900</code></td>
+    <td>Guardado</td>
+    <td class="estado">☐</td>
+  </tr>
+</table>
+
+<h3>Bloque C: pruebas manuales en producción</h3>
+<p>Requiere haber desplegado (<code>git push origin main</code>) y completado el bloque B.</p>
+<table>
+  <tr><th class="paso">Paso</th><th>Acción</th><th>Resultado esperado</th><th class="estado">Estado</th></tr>
+  <tr>
+    <td class="paso">12</td>
+    <td>Abrir <code>https://thedesignerplan.com/login/</code></td>
+    <td>Se ven campos de correo y contraseña, el botón "Log in", y debajo "Email me a sign-in link instead" junto a "Forgot your password?"</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">13</td>
+    <td>Pulsar "Email me a sign-in link instead" con una dirección <strong>de Microsoft 365</strong> (por ejemplo <code>abarres@raptns.com</code>)</td>
+    <td>Mensaje "Check your inbox". El correo llega en menos de un minuto, remitente <strong>Designer Plan</strong> desde <code>no-reply@send.thedesignerplan.com</code></td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">14</td>
+    <td><strong>Esperar un minuto</strong> antes de hacer clic, para dar tiempo a que el escáner abra el enlace</td>
+    <td>Este es el paso que reproduce el fallo original. Sin esta espera, la prueba no demuestra nada</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">15</td>
+    <td>Hacer clic en el enlace del correo</td>
+    <td>Aterriza en <code>/login/confirm</code> con el texto "One more tap" y un botón. <strong>No</strong> aparece "invalid or has expired"</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">16</td>
+    <td>Mirar la barra de direcciones antes de pulsar</td>
+    <td>Dice <code>/login/confirm</code> a secas. El <code>token_hash</code> ya no está: se limpió al cargar</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">17</td>
+    <td>Pulsar "Confirm sign-in"</td>
+    <td>Entra y aterriza en <code>/dashboard/</code>. El menú superior muestra el correo y "Log out"</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">18</td>
+    <td>Ir a <code>/dashboard/profile</code>, bajar hasta "Password", escribir la misma contraseña en los dos campos y guardar</td>
+    <td>Mensaje "Password saved. You can use it next time you sign in." en verde</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">19</td>
+    <td>Cerrar sesión desde el menú superior, volver a <code>/login/</code> y entrar con correo y contraseña</td>
+    <td>Entra directo, sin pasar por el correo</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">20</td>
+    <td>Cerrar sesión, ir a "Forgot your password?", pedir el enlace y completar el cambio</td>
+    <td>Mensaje neutro, correo recibido, y el enlace lleva a <code>/login/confirm</code> y de ahí al perfil</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">21</td>
+    <td>Comprobar las cabeceras:<pre>curl -sI https://thedesignerplan.com/login/confirm | grep -i "x-frame\|cache-control"</pre></td>
+    <td><code>X-Frame-Options: DENY</code> y <code>Cache-Control: no-store</code>. No se puede comprobar en local: el servidor de <code>netlify dev</code> ignora <code>_headers</code></td>
+    <td class="estado">☐</td>
+  </tr>
+</table>
+
+<h2>Escenarios negativos y casos límite</h2>
+<table>
+  <tr><th class="paso">Paso</th><th>Acción</th><th>Resultado esperado</th><th class="estado">Estado</th></tr>
+  <tr>
+    <td class="paso">22</td>
+    <td>Abrir <code>/login/confirm</code> sin ningún parámetro</td>
+    <td>"This link looks incomplete. Request a new one and it will work.", botón deshabilitado, y enlace visible para volver a <code>/login</code>. Sin errores en consola</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">23</td>
+    <td>Abrir <code>/login/confirm?token_hash=basura&amp;type=magiclink</code> y pulsar</td>
+    <td>"That link has expired or was already used. Request a new one." Nada de <code>AuthApiError</code> ni códigos HTTP</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">24</td>
+    <td>Usar un enlace ya consumido (pulsar, volver atrás y pulsar otra vez)</td>
+    <td>Al recargar con sesión ya abierta redirige al panel sin intentar canjear de nuevo</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">25</td>
+    <td>Redirección abierta: añadir <code>&amp;next=https://example.com</code> a un enlace válido y pulsar</td>
+    <td>Ignora el destino externo y va a <code>/dashboard/</code>. Cubierto por la prueba E.6</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">26</td>
+    <td>Contraseña incorrecta en <code>/login</code></td>
+    <td>"That email and password did not match. If you have not set a password yet, use the sign-in link below." El botón vuelve a habilitarse</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">27</td>
+    <td>Intentar entrar con contraseña usando una cuenta que solo ha usado enlace mágico</td>
+    <td>El <strong>mismo</strong> mensaje del paso 26, que es deliberado, y que ya señala la salida</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">28</td>
+    <td>En el perfil, escribir contraseñas distintas en los dos campos</td>
+    <td>"Those two do not match. Try again." y ninguna petición de red. La contraseña anterior sigue sirviendo</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">29</td>
+    <td>En el perfil, escribir una contraseña de 3 caracteres</td>
+    <td>"Use at least 6 characters." Validado antes de llamar a Supabase</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">30</td>
+    <td>Recuperación con un correo que no existe</td>
+    <td>Exactamente el mismo mensaje que con uno que sí existe. Nunca dice si la cuenta existe</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">31</td>
+    <td>Regresión: guardar el perfil (nombre del estudio) después de cambiar la contraseña</td>
+    <td>"Saved. Update anytime." La contraseña no interfiere, porque van en formularios distintos</td>
+    <td class="estado">☐</td>
+  </tr>
+  <tr>
+    <td class="paso">32</td>
+    <td>Regresión: visitar <code>/dashboard/profile</code> sin sesión</td>
+    <td>Rebota a <code>/login</code></td>
+    <td class="estado">☐</td>
+  </tr>
+</table>
+
+<h2>Checklist final</h2>
+<ul class="check">
+  <li>☐ <code>npx playwright test</code> devuelve 44 en verde</li>
+  <li>☐ Las tres plantillas de correo están guardadas en Supabase</li>
+  <li>☐ <code>/login/confirm</code> está en las Redirect URLs</li>
+  <li>☐ Site URL apunta a producción, no a localhost</li>
+  <li>☐ "Require current password" está desactivado</li>
+  <li>☐ Un enlace enviado a una cuenta Microsoft 365 funciona <strong>después</strong> de esperar un minuto</li>
+  <li>☐ Se puede crear una contraseña y entrar con ella</li>
+  <li>☐ La recuperación completa funciona de punta a punta</li>
+  <li>☐ <code>X-Frame-Options: DENY</code> responde en producción</li>
+  <li>☐ El enlace mágico sigue funcionando exactamente igual que antes</li>
+  <li>☐ El panel sigue mostrando el número de cuenta del socio</li>
+</ul>
+
+<h2>Notas, riesgos y pendientes</h2>
+
+<h3>Riesgo aceptado</h3>
+<p>Un escáner que ejecutara JavaScript y pulsara botones seguiría gastando el token. Defender no hace eso, y Supabase documenta esta página como la mitigación, pero <strong>no es una garantía</strong>. La contraseña de A2 es la alternativa para quien se viera afectado.</p>
+<p>Si llegara a ocurrir, el siguiente paso está documentado en la especificación: añadir <code>{{ .Token }}</code> a las plantillas y un campo de código de seis dígitos. Un escáner puede leer un código, pero no gastarlo. No se ha construido porque no hay evidencia de que haga falta, y sería una segunda pantalla que mantener.</p>
+
+<h3>Lo que las pruebas automáticas no cubren</h3>
+<ul>
+  <li><span class="badge b-imp">Importante</span> <strong>Que las plantillas se hayan cambiado.</strong> Las pruebas acuñan sus propios tokens y construyen la URL ellas mismas, así que pasan igual aunque Supabase siga mandando el enlace viejo. Es el punto ciego mayor de esta entrega, y por eso los pasos 7 a 9 son manuales y obligatorios.</li>
+  <li><strong>El comportamiento real de Defender.</strong> La prueba E.2 simula un escáner con una petición sin JavaScript, que es el modelo correcto, pero no es el producto real.</li>
+  <li><strong>Las cabeceras de seguridad servidas.</strong> <code>netlify dev</code> con <code>--dir</code> usa un servidor estático simple que ignora <code>_headers</code>. La prueba E.9 comprueba que las reglas están declaradas en el archivo; que se sirvan se verifica en el paso 21.</li>
+  <li><strong>Caducidad real del token.</strong> Se sustituye por un token ya gastado, que produce el mismo error.</li>
+  <li><strong>Entregabilidad y aspecto del correo</strong> en Outlook de escritorio, web, Gmail y iOS.</li>
+</ul>
+
+<h3>Decisiones que conviene conocer</h3>
+<ul>
+  <li><strong>El mínimo de contraseña son 6 caracteres</strong>, por decisión explícita de Adrian: "no compliquemos esto, esto tampoco es una cosa bancaria".</li>
+  <li><strong>El enlace mágico no desaparece.</strong> Se mantiene porque mucha gente prefiere no recordar contraseñas.</li>
+  <li><strong>La contraseña se ofrece, no se obliga.</strong></li>
+  <li><span class="badge b-inf">Inferido</span> <strong>Esto deroga una línea del PRD.</strong> <code>docs/dashboard-onboarding-plan.md:108</code> decía que la contraseña se introducía solo al comprometerse con Stripe, como señal de "esto ya es una cuenta con dinero". La decisión de Doug del 28 de mayo la sustituyó. Queda anotado en la especificación.</li>
+</ul>
+
+<h3>Pendiente</h3>
+<ul>
+  <li><span class="badge b-pen">Pendiente</span> <strong>Desplegar.</strong> Los cuatro commits están en local, sin subir. Producción sigue sirviendo el estado anterior.</li>
+  <li><span class="badge b-pen">Pendiente</span> <strong>Activar "Prevent use of leaked passwords"</strong> en Supabase. Con un mínimo de 6 caracteres, es la medida de mayor efecto por menor esfuerzo, y no contradice esa decisión. Requiere plan Pro.</li>
+  <li><span class="badge b-pen">Pendiente</span> Aviso por correo cuando cambia la contraseña. Supabase no lo hace de serie.</li>
+  <li><span class="badge b-inf">Inferido</span> <code>plans/index.html</code> carga <code>auth.js</code> pero <strong>no</strong> carga el SDK de Supabase, así que ahí <code>auth.js</code> queda en modo stub y el banner de comisión del carrito no aparece nunca. Es anterior a este trabajo y merece decisión propia: o es intencionado y se documenta, o es un fallo y se corrige.</li>
+</ul>
+
+</div>
+</body>
+</html>
