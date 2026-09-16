@@ -53,6 +53,7 @@ test.describe('Camino F — password sign-in', () => {
     }));
     expect(state.email).toBe(testEmail);
     expect(state.account).toMatch(/^DP-\d+$/);
+    expect(page.url()).toContain('/dashboard/overview');
 
     const user = await getAuthUserByEmail(testEmail);
     expect(await countPartnersForAuthUserId(user!.id)).toBe(1);

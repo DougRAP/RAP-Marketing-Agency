@@ -69,7 +69,10 @@
   // redeeming on load. That rule is the entire security property.
 
   var AUTH_TIMEOUT_MS = 8000;
-  var DEFAULT_NEXT = '/dashboard/';
+  // Signing in lands on the panel itself. /dashboard/ is the marketing
+  // landing that explains what the panel is, which is useful to an anonymous
+  // visitor and pointless to someone who just signed in.
+  var DEFAULT_NEXT = '/dashboard/overview/';
 
   // Supabase decides which template an address receives: a brand-new address
   // gets "Confirm signup", an existing one gets "Magic Link", recovery gets

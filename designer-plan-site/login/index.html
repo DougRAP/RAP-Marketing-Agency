@@ -109,7 +109,7 @@
 
   whenAuthReady(function(ready){
     if (ready && window.DP_AUTH.user) {
-      window.location.replace('/dashboard/');
+      window.location.replace('/dashboard/overview/');
     }
   });
 
@@ -163,7 +163,7 @@
           setStatus(WRONG_DETAILS, true);
           return;
         }
-        window.location.replace('/dashboard/');
+        window.location.replace('/dashboard/overview/');
       }).catch(function(){
         fail(WRONG_DETAILS);
       });

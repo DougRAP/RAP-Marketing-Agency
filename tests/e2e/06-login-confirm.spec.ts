@@ -82,6 +82,8 @@ test.describe('Camino E — /login/confirm', () => {
     expect(state.account).toMatch(/^DP-\d+$/);
 
     expect(goTrue.filter(r => /\/auth\/v1\/verify/.test(r))).toHaveLength(1);
+    // Straight to the panel, not to the page that explains the panel.
+    expect(page.url()).toContain('/dashboard/overview');
 
     const user = await getAuthUserByEmail(testEmail);
     expect(await getPartnerByAuthUserId(user!.id)).toBeTruthy();
