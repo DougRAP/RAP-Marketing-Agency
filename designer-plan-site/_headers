@@ -1,0 +1,24 @@
+# Security headers for thedesignerplan.com
+#
+# Netlify applies these at the edge. The publish root is this directory, so
+# this file must live here, not at the repo root.
+#
+# The framing rules are load bearing, not boilerplate: /login/confirm defends
+# itself by requiring a real human click, and an invisible iframe is exactly
+# how that click gets stolen. See docs/auth-phase-1-spec.md.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Sign-in pages carry a single-use token in the query string on arrival.
+# no-referrer keeps it out of requests to third parties, and no-store keeps
+# the page out of the back-button cache on shared computers.
+/login/*
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store, max-age=0
+
+/dashboard/*
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store, max-age=0

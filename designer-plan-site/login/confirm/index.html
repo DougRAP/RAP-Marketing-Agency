@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confirm sign-in &mdash; Designer Plan</title>
+<meta name="description" content="Confirm your Designer Plan sign-in.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared/_partials.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
+<script src="/js/auth.js" defer></script>
+</head>
+<body>
+
+<header class="nav-simple">
+  <div class="container nav-inner">
+    <a href="/" class="logo">Designer Plan</a>
+    <nav><ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/partner">Partner with us</a></li>
+      <li><a href="/plans">Shop plans</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+      <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+      <li><a href="/login">Log in</a></li>
+    </ul></nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container container-narrow">
+    <span class="eyebrow">Partner sign-in</span>
+    <h1>One more tap.</h1>
+    <p class="lead">Your email app checks links before you see them, so we wait for you to confirm. Nobody else can finish this for you.</p>
+
+    <form class="simple-form" id="confirm-form">
+      <button type="submit" class="btn-primary" id="confirm-submit" disabled>Confirm sign-in &rarr;</button>
+      <p id="confirm-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
+    </form>
+
+    <p style="margin-top: 32px;">Link not working? <a href="/login">Request a new one</a> and it will be waiting in your inbox.</p>
+  </div>
+</main>
+
+<footer class="footer-simple">
+  <div class="container footer-inner">
+    <div>&copy; 2026 Risk Assurance Partners</div>
+    <div>
+      <a href="/about">About</a>
+      <a href="/partnership">Partnership</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  // This page holds a single-use sign-in token and spends it ONLY when a
+  // person clicks. Corporate link scanners (Microsoft Defender and friends)
+  // fetch every link in incoming mail; a scanner that fetches this page gets
+  // inert HTML and the token survives for its owner.
+  //
+  // Nothing below may redeem outside the click handler. No timers, no
+  // redeeming on load. That rule is the entire security property.
+
+  var AUTH_TIMEOUT_MS = 8000;
+  var DEFAULT_NEXT = '/dashboard/';
+
+  // Supabase decides which template an address receives: a brand-new address
+  // gets "Confirm signup", an existing one gets "Magic Link", recovery gets
+  // its own. So the type travels in the URL and must never be hardcoded.
+  var ALLOWED_TYPES = ['magiclink', 'signup', 'email', 'recovery', 'invite', 'email_change'];
+
+  var form = document.getElementById('confirm-form');
+  var submitBtn = document.getElementById('confirm-submit');
+  var status = document.getElementById('confirm-status');
+
+  function setStatus(msg, isError){
+    status.textContent = msg;
+    status.style.color = isError ? '#b22222' : 'var(--ink-65)';
+  }
+
+  // Read the token into memory and scrub the URL immediately, before the
+  // visitor spends any time on the page. Doing this after redeeming would
+  // leave the token in the address bar and history for the whole read.
+  var params = new URLSearchParams(window.location.search);
+  var tokenHash = params.get('token_hash');
+  var rawType = params.get('type');
+  var rawNext = params.get('next');
+  history.replaceState(null, '', window.location.pathname);
+
+  var type = ALLOWED_TYPES.indexOf(rawType) === -1 ? null : rawType;
+
+  // `next` is a destination on this site, never a URL. Anything else is an
+  // open redirect, and a javascript: value would hand over the session.
+  function safeNext(raw){
+    if (!raw || raw.charAt(0) !== '/') return DEFAULT_NEXT;
+    if (raw.charAt(1) === '/' || raw.charAt(1) === '\\') return DEFAULT_NEXT;
+    return raw;
+  }
+  var next = safeNext(rawNext);
+
+  function whenAuthReady(cb){
+    if (window.DP_AUTH && window.DP_AUTH.ready) { cb(true); return; }
+    var settled = false;
+    function onReady(){
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      cb(true);
+    }
+    var timer = setTimeout(function(){
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('dp-auth-ready', onReady);
+      cb(false);
+    }, AUTH_TIMEOUT_MS);
+    document.addEventListener('dp-auth-ready', onReady, { once: true });
+  }
+
+  if (!tokenHash || !type) {
+    setStatus('This link looks incomplete. Request a new one and it will work.', true);
+    return;
+  }
+
+  setStatus('Checking your link…');
+
+  whenAuthReady(function(ready){
+    if (!ready || !window.DP_AUTH || window.DP_AUTH.mode !== 'live') {
+      setStatus('Sign-in is unavailable right now. Email designer.programs@raptns.com and we will get you in.', true);
+      return;
+    }
+
+    // Reloading after a successful confirmation would try to spend a token
+    // that already did its job. If the session is here, just move on.
+    if (window.DP_AUTH.user) {
+      window.location.replace(next);
+      return;
+    }
+
+    submitBtn.disabled = false;
+    setStatus('');
+  });
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    setStatus('Signing you in…');
+
+    window.dpSupabase.auth.verifyOtp({ token_hash: tokenHash, type: type })
+      .then(function(res){
+        if (res.error || !res.data || !res.data.session) {
+          submitBtn.disabled = false;
+          setStatus('That link has expired or was already used. Request a new one.', true);
+          return;
+        }
+        window.location.replace(next);
+      })
+      .catch(function(){
+        submitBtn.disabled = false;
+        setStatus('That link has expired or was already used. Request a new one.', true);
+      });
+  });
+})();
+</script>
+
+</body>
+</html>
