@@ -18,6 +18,12 @@
     signIn: function () {
       return Promise.reject(new Error('auth.js not initialized yet'));
     },
+    signInPassword: function () {
+      return Promise.reject(new Error('auth.js not initialized yet'));
+    },
+    setPassword: function () {
+      return Promise.reject(new Error('auth.js not initialized yet'));
+    },
     signOut: function () {
       return Promise.reject(new Error('auth.js not initialized yet'));
     },
@@ -97,6 +103,26 @@
           options || {}
         );
         return sb.auth.signInWithOtp({ email: email, options: opts });
+      };
+
+      window.DP_AUTH.signInPassword = function (email, password) {
+        return sb.auth.signInWithPassword({ email: email, password: password });
+      };
+
+      // Sets the password on the session that is already open. Works for a
+      // magic-link session, which is how every existing partner got here.
+      //
+      // The signOut of other sessions is not optional: setting a password
+      // turns temporary access into a permanent credential, so anyone who
+      // found an abandoned session on a shared computer could otherwise keep
+      // the account for good.
+      window.DP_AUTH.setPassword = function (password) {
+        return sb.auth.updateUser({ password: password }).then(function (res) {
+          if (res.error) return res;
+          return sb.auth.signOut({ scope: 'others' })
+            .catch(function () { /* best effort, the password is already set */ })
+            .then(function () { return res; });
+        });
       };
 
       window.DP_AUTH.signOut = function () {

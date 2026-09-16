@@ -33,18 +33,25 @@
   <div class="container container-narrow">
     <span class="eyebrow">Partner sign-in</span>
     <h1>Log in.</h1>
-    <p class="lead">Approved partners: enter your email and we&rsquo;ll send a one-tap link.</p>
+    <p class="lead">Enter your password, or have us email you a one-tap link instead.</p>
 
     <form class="simple-form" id="login-form">
       <div>
         <label for="login-email">Email</label>
         <input type="email" id="login-email" name="email" required autocomplete="email" placeholder="you@studio.com">
       </div>
-      <button type="submit" class="btn-primary">Send magic link &rarr;</button>
+      <div>
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" name="password" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary" id="login-password-submit">Log in &rarr;</button>
       <p id="login-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
+      <p style="margin: 0; font-size: 0.875rem;">
+        <button type="button" id="login-magic-submit" style="background: none; border: 0; padding: 0; font: inherit; color: var(--ink-65); text-decoration: underline; cursor: pointer;">Email me a sign-in link instead</button>
+      </p>
     </form>
 
-    <p style="margin-top: 32px;">First time? Just enter your email above &mdash; we&rsquo;ll create your account automatically.</p>
+    <p style="margin-top: 32px;">First time, or no password yet? Use the sign-in link &mdash; we&rsquo;ll create your account automatically, and you can add a password from your profile.</p>
   </div>
 </main>
 
@@ -65,8 +72,10 @@
   'use strict';
   var form = document.getElementById('login-form');
   var emailInput = document.getElementById('login-email');
+  var passwordInput = document.getElementById('login-password');
   var status = document.getElementById('login-status');
-  var submitBtn = form.querySelector('button[type="submit"]');
+  var submitBtn = document.getElementById('login-password-submit');
+  var magicBtn = document.getElementById('login-magic-submit');
 
   function setStatus(msg, isError){
     status.textContent = msg;
@@ -102,15 +111,17 @@
     }
   });
 
-  form.addEventListener('submit', function(e){
-    e.preventDefault();
+  // Both routes need the same guard rails, so they share one runner: read the
+  // email, wait for auth with a ceiling, then hand over to the action.
+  function withAuth(button, working, action){
     var email = (emailInput.value || '').trim();
     if (!email) { setStatus('Enter your email first.', true); return; }
-    submitBtn.disabled = true;
-    setStatus('Sending magic link…');
+
+    button.disabled = true;
+    setStatus(working);
 
     function fail(msg){
-      submitBtn.disabled = false;
+      button.disabled = false;
       setStatus(msg, true);
     }
 
@@ -125,19 +136,55 @@
         fail('Sign-in is unavailable right now. Email designer.programs@raptns.com and we will send you a link by hand.');
         return;
       }
+      action(email, fail, function(){ button.disabled = false; });
+    });
+  }
+
+  // Password route. Supabase answers the same error for a wrong password, for
+  // an account with no password, and for an address that does not exist, so
+  // one message serves all three without revealing which it is. It carries the
+  // way out for the second case.
+  var WRONG_DETAILS = 'That email and password did not match. If you have not set a password yet, use the sign-in link below.';
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var password = passwordInput.value || '';
+    if (!password) {
+      setStatus('Enter your password, or use the sign-in link below.', true);
+      return;
+    }
+
+    withAuth(submitBtn, 'Signing you in...', function(email, fail, done){
+      window.DP_AUTH.signInPassword(email, password).then(function(res){
+        done();
+        if (res.error || !res.data || !res.data.session) {
+          setStatus(WRONG_DETAILS, true);
+          return;
+        }
+        window.location.replace('/dashboard/');
+      }).catch(function(){
+        fail(WRONG_DETAILS);
+      });
+    });
+  });
+
+  // Magic-link route, unchanged in behaviour.
+  magicBtn.addEventListener('click', function(){
+    withAuth(magicBtn, 'Sending your sign-in link...', function(email, fail, done){
       window.DP_AUTH.signIn(email).then(function(res){
-        submitBtn.disabled = false;
+        done();
         if (res.error) {
           setStatus(res.error.message || 'Could not send link. Try again.', true);
           return;
         }
         setStatus('Check your inbox. We just sent a one-tap link to ' + email + '.');
-        form.reset();
+        passwordInput.value = '';
       }).catch(function(err){
         fail((err && err.message) || 'Could not send link. Try again.');
       });
     });
   });
+
 })();
 </script>
 

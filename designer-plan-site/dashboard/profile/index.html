@@ -188,6 +188,25 @@
       <button type="submit" class="btn-primary" id="apply-submit">Save profile &rarr;</button>
       <p id="apply-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
     </form>
+
+    <h2>Password</h2>
+    <p>Set one and you can sign in without waiting for an email. The sign-in link keeps working either way.</p>
+
+    <!-- Deliberately a separate form: #apply-form serialises itself with
+         FormData and posts to a Netlify Function, so a password field inside
+         it would be written to that function's logs. -->
+    <form class="simple-form" id="security-form" novalidate>
+      <div>
+        <label for="new-password">New password</label>
+        <input type="password" id="new-password" name="new-password" autocomplete="new-password" minlength="6" required>
+      </div>
+      <div>
+        <label for="new-password-confirm">Confirm password</label>
+        <input type="password" id="new-password-confirm" name="new-password-confirm" autocomplete="new-password" minlength="6" required>
+      </div>
+      <button type="submit" class="btn-primary" id="security-submit">Save password &rarr;</button>
+      <p id="security-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
+    </form>
   </div>
 </main>
 
@@ -254,6 +273,53 @@
       status.textContent = 'Could not save. Email designer.programs@raptns.com if it keeps failing.';
       status.style.color = '#b22222';
       btn.disabled = false; btn.textContent = 'Try again →';
+    });
+  });
+
+  // ---- Password ----------------------------------------------------------
+  // Own form, own handler, talks straight to Supabase. Nothing here goes near
+  // /partner-apply.
+  var MIN_PASSWORD = 6;
+  var securityForm = document.getElementById('security-form');
+  var securityStatus = document.getElementById('security-status');
+  var securityBtn = document.getElementById('security-submit');
+
+  function setSecurityStatus(msg, isError){
+    securityStatus.textContent = msg;
+    securityStatus.style.color = isError ? '#b22222' : '#486838';
+  }
+
+  securityForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var pw = document.getElementById('new-password').value || '';
+    var confirm = document.getElementById('new-password-confirm').value || '';
+
+    // Both checks happen before any network call, so a typo never reaches
+    // Supabase and never changes anything.
+    if (pw.length < MIN_PASSWORD) {
+      setSecurityStatus('Use at least ' + MIN_PASSWORD + ' characters.', true);
+      return;
+    }
+    if (pw !== confirm) {
+      setSecurityStatus('Those two do not match. Try again.', true);
+      return;
+    }
+
+    securityBtn.disabled = true;
+    setSecurityStatus('Saving...');
+
+    window.DP_AUTH.setPassword(pw).then(function(res){
+      securityBtn.disabled = false;
+      if (res && res.error) {
+        setSecurityStatus(res.error.message || 'Could not save your password. Try again.', true);
+        return;
+      }
+      securityForm.reset();
+      setSecurityStatus('Password saved. You can use it next time you sign in.');
+    }).catch(function(err){
+      securityBtn.disabled = false;
+      console.error('[profile] password save failed:', err);
+      setSecurityStatus('Could not save your password. Try again.', true);
     });
   });
 })();
