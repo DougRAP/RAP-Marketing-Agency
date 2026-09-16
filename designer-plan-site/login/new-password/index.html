@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choose a new password &mdash; Designer Plan</title>
+<meta name="description" content="Choose a new password for your Designer Plan account.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared/_partials.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
+<script src="/js/auth.js" defer></script>
+</head>
+<body>
+
+<header class="nav-simple">
+  <div class="container nav-inner">
+    <a href="/" class="logo">Designer Plan</a>
+    <nav><ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/partner">Partner with us</a></li>
+      <li><a href="/plans">Shop plans</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+      <li><a href="https://5starservice.net" rel="noopener">File a claim</a></li>
+      <li><a href="/login">Log in</a></li>
+    </ul></nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container container-narrow">
+    <span class="eyebrow">Partner sign-in</span>
+    <h1>Choose a new password.</h1>
+    <p class="lead">Pick one you will remember. We will take you to your dashboard right after.</p>
+
+    <form class="simple-form" id="new-password-form" novalidate>
+      <div>
+        <label for="new-password">New password</label>
+        <input type="password" id="new-password" name="new-password" autocomplete="new-password" minlength="6" required>
+      </div>
+      <div>
+        <label for="new-password-confirm">Confirm password</label>
+        <input type="password" id="new-password-confirm" name="new-password-confirm" autocomplete="new-password" minlength="6" required>
+      </div>
+      <button type="submit" class="btn-primary" id="new-password-submit">Save password &rarr;</button>
+      <p id="new-password-status" role="status" aria-live="polite" style="color: var(--ink-65); font-size: 0.875rem; margin: 0;"></p>
+    </form>
+  </div>
+</main>
+
+<footer class="footer-simple">
+  <div class="container footer-inner">
+    <div>&copy; 2026 Risk Assurance Partners</div>
+    <div>
+      <a href="/about">About</a>
+      <a href="/partnership">Partnership</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  // Where the recovery email lands, after /login/confirm has opened the
+  // session. Deliberately has nothing on it but the password: someone who
+  // gets here is locked out and wants exactly one thing.
+  //
+  // The change itself lives in DP_AUTH.setPassword, shared with the profile
+  // page, so the rules (and the signOut of other sessions) are in one place.
+
+  var AUTH_TIMEOUT_MS = 8000;
+  var MIN_PASSWORD = 6;
+
+  var form = document.getElementById('new-password-form');
+  var status = document.getElementById('new-password-status');
+  var submitBtn = document.getElementById('new-password-submit');
+
+  function setStatus(msg, isError){
+    status.textContent = msg;
+    status.style.color = isError ? '#b22222' : '#486838';
+  }
+
+  function whenAuthReady(cb){
+    if (window.DP_AUTH && window.DP_AUTH.ready) { cb(true); return; }
+    var settled = false;
+    function onReady(){
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      cb(true);
+    }
+    var timer = setTimeout(function(){
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('dp-auth-ready', onReady);
+      cb(false);
+    }, AUTH_TIMEOUT_MS);
+    document.addEventListener('dp-auth-ready', onReady, { once: true });
+  }
+
+  // No session means the recovery link was never followed, or it expired.
+  // Send them back to ask for a fresh one rather than showing a form that
+  // cannot possibly work.
+  whenAuthReady(function(ready){
+    if (!ready || !window.DP_AUTH || !window.DP_AUTH.user) {
+      window.location.replace('/login/reset');
+    }
+  });
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var pw = document.getElementById('new-password').value || '';
+    var confirm = document.getElementById('new-password-confirm').value || '';
+
+    // Checked before any network call, so a typo never reaches Supabase and
+    // never changes anything.
+    if (pw.length < MIN_PASSWORD) {
+      setStatus('Use at least ' + MIN_PASSWORD + ' characters.', true);
+      return;
+    }
+    if (pw !== confirm) {
+      setStatus('Those two do not match. Try again.', true);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    setStatus('Saving...');
+
+    window.DP_AUTH.setPassword(pw).then(function(res){
+      if (res && res.error) {
+        submitBtn.disabled = false;
+        setStatus(res.error.message || 'Could not save your password. Try again.', true);
+        return;
+      }
+      setStatus('Password saved. Taking you to your dashboard...');
+      window.location.replace('/dashboard/overview/');
+    }).catch(function(err){
+      submitBtn.disabled = false;
+      console.error('[new-password] save failed:', err);
+      setStatus('Could not save your password. Try again.', true);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

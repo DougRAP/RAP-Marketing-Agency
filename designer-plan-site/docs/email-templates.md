@@ -68,7 +68,7 @@ you to confirm on the next screen.</p>
 <p>Tap below to set a new password for your Designer Plan account. For your
 security we will ask you to confirm on the next screen.</p>
 
-<p><a href="{{ .SiteURL }}/login/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/dashboard/profile">Reset my password</a></p>
+<p><a href="{{ .SiteURL }}/login/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/login/new-password">Reset my password</a></p>
 
 <p>If you did not ask for this, you can ignore it and your password stays as
 it is. The link expires shortly.</p>
