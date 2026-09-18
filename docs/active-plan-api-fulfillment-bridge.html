@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan activo · API / Fulfillment Bridge</title>
+<meta name="robots" content="noindex">
+<!--
+============================================================
+UPDATE CONVENTION (read before editing)
+============================================================
+Living plan for the workstream that connects thedesignerplan.com
+(this repo) to the Spring Boot fulfillment engine (designerplan.io,
+separate Bitbucket repo).
+
+To update:
+  1. Marcar step "in-progress" → cambiar data-status="pending" a "in-progress"
+  2. Marcar step "done" → cambiar a "done" + pegar commit ref
+  3. Agregar entrada al decision log: append <li> al <ul id="decisions-log">
+  4. Open question cerrada → mover a decision log + delete <li>
+
+NO hace falta tocar progress bar, Next action, ni los contadores —
+el JS al final recalcula desde data-status.
+============================================================
+-->
+<style>
+  :root {
+    --paper: #f7f5f1;
+    --paper-card: #ffffff;
+    --ink: #1a1a1a;
+    --ink-70: #4a4a4a;
+    --ink-50: #6e6e6e;
+    --ink-30: #a8a8a8;
+    --terra: #a64f2f;
+    --terra-soft: rgba(166, 79, 47, 0.08);
+    --border: #d8d0c0;
+    --border-soft: #ece5d6;
+    --code-bg: #efe9da;
+    --good-bg: #e6efdd;
+    --good-fg: #486838;
+    --warn-bg: #f5e8cf;
+    --warn-fg: #8b5a1a;
+    --err-bg: #f3dcd0;
+    --err-fg: #8a3320;
+    --muted-bg: #ece9e0;
+    --muted-fg: #6e6e6e;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  header.hero {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--terra);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 28px; font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+    line-height: 1.2;
+  }
+  .subtitle { color: var(--ink-50); margin: 0 0 24px; font-size: 15px; }
+  .at-glance {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    border-top: 1px solid var(--border-soft);
+    padding-top: 20px;
+  }
+  .glance-cell { display: flex; flex-direction: column; gap: 4px; }
+  .glance-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-50);
+    font-weight: 600;
+  }
+  .glance-value { font-size: 15px; color: var(--ink); font-weight: 500; }
+  .glance-value.next-action { color: var(--terra); }
+
+  .progress-wrap { margin-top: 20px; }
+  .progress-bar-bg {
+    height: 8px;
+    background: var(--border-soft);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .progress-bar-fg {
+    height: 100%;
+    background: linear-gradient(90deg, var(--terra), #c46a4a);
+    border-radius: 100px;
+    width: 0%;
+    transition: width 400ms ease;
+  }
+  .progress-text {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--ink-50);
+    font-weight: 500;
+  }
+
+  h2 {
+    font-size: 19px; font-weight: 600;
+    margin: 40px 0 14px;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  h2 .count { color: var(--ink-50); font-weight: 400; font-size: 14px; margin-left: 8px; }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; color: var(--ink); }
+  p, li { color: var(--ink-70); margin: 8px 0; }
+  strong { color: var(--ink); font-weight: 600; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    padding: 1.5px 6px;
+    border-radius: 3px;
+  }
+  a { color: var(--terra); text-decoration: underline; text-underline-offset: 2px; }
+
+  .decision-box {
+    background: var(--terra-soft);
+    border-left: 3px solid var(--terra);
+    padding: 14px 20px;
+    border-radius: 0 6px 6px 0;
+    margin: 16px 0;
+  }
+  .invariants-box {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .invariants-box h3 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--err-fg);
+  }
+  .invariants-box ul { margin: 0; padding-left: 20px; }
+  .invariants-box li { font-size: 14px; }
+
+  /* Wave header */
+  .wave {
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .wave:first-of-type { border-top: 0; padding-top: 0; }
+  .wave-title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .wave-title h2 {
+    margin: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+  .wave-meta { color: var(--ink-50); font-size: 13px; }
+  .wave-desc { color: var(--ink-50); font-size: 13px; margin: 0 0 14px; }
+
+  .steps { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .step {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    transition: opacity 200ms ease;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--code-bg);
+    color: var(--ink-50);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 12px;
+    flex-shrink: 0;
+    transition: all 200ms ease;
+  }
+  .step-title {
+    font-size: 15px; font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    margin: 0;
+  }
+  .step-pill {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: var(--muted-bg);
+    color: var(--muted-fg);
+    white-space: nowrap;
+  }
+  .repo-badge {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--code-bg);
+    color: var(--ink-50);
+    margin-right: 4px;
+  }
+  .repo-badge[data-repo="here"] { background: #e8f0e0; color: #486838; }
+  .repo-badge[data-repo="spring"] { background: #e8e3f0; color: #5a4878; }
+  .repo-badge[data-repo="config"] { background: #f5e8cf; color: #8b5a1a; }
+
+  .step-body {
+    padding-left: 40px;
+    font-size: 13.5px;
+    color: var(--ink-70);
+  }
+  .step-body dl {
+    margin: 6px 0 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 14px;
+  }
+  .step-body dt {
+    font-weight: 600;
+    color: var(--ink-50);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    align-self: center;
+  }
+  .step-body dd { margin: 0; color: var(--ink-70); font-size: 13.5px; }
+  .commit-ref {
+    font-family: ui-monospace, SFMono-Regular, Monaco, monospace;
+    font-size: 11.5px;
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: var(--ink-50);
+  }
+  .commit-ref[data-empty="true"] { color: var(--ink-30); font-style: italic; }
+
+  .step[data-status="pending"] .step-pill {
+    background: var(--muted-bg); color: var(--muted-fg);
+  }
+  .step[data-status="in-progress"] {
+    border-color: var(--terra);
+    box-shadow: 0 0 0 3px var(--terra-soft);
+  }
+  .step[data-status="in-progress"] .step-num,
+  .step[data-status="in-progress"] .step-pill {
+    background: var(--terra); color: white;
+  }
+  .step[data-status="done"] .step-num,
+  .step[data-status="done"] .step-pill {
+    background: var(--good-bg); color: var(--good-fg);
+  }
+  .step[data-status="done"] .step-title {
+    text-decoration: line-through;
+    text-decoration-color: var(--ink-30);
+    color: var(--ink-50);
+  }
+  .step[data-status="done"] { opacity: 0.72; }
+  .step[data-status="blocked"] {
+    border-color: var(--err-fg);
+    box-shadow: 0 0 0 2px var(--err-bg);
+  }
+  .step[data-status="blocked"] .step-num,
+  .step[data-status="blocked"] .step-pill {
+    background: var(--err-bg); color: var(--err-fg);
+  }
+  .step[data-status="deprioritized"] {
+    opacity: 0.55;
+    border-style: dashed;
+  }
+  .step[data-status="deprioritized"] .step-num,
+  .step[data-status="deprioritized"] .step-pill {
+    background: var(--code-bg); color: var(--ink-50);
+  }
+  .step[data-status="deprioritized"] .step-title {
+    color: var(--ink-50);
+  }
+
+  ul.log { list-style: none; padding: 0; margin: 0; }
+  ul.log li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 14px;
+  }
+  ul.log li:last-child { border-bottom: 0; }
+  ul.log .date {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    color: var(--terra);
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 10px;
+  }
+
+  .footer-note {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--ink-50);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- =================================================== HERO ================================================== -->
+<header class="hero">
+  <div class="eyebrow">Plan activo · workstream individual</div>
+  <h1>API / Fulfillment Bridge</h1>
+  <p class="subtitle">Conector entre <code>thedesignerplan.com</code> (este repo, Netlify) y el motor Spring Boot en <code>designerplan.io</code> (otro repo). Reference: <a href="../misc/architecture-proposal-designer-plan.html">arquitectura propuesta</a>, <a href="../misc/meeting-recap-2026-05-21.html">meeting recap 5/21</a>, <a href="../misc/meeting-recap-2026-05-22.html">meeting transcript 5/22 PM</a>.</p>
+  <p class="subtitle" style="margin-top: 8px; font-size: 14px; color: var(--warn-fg);"><strong>5/22 PM update:</strong> Scope pivoted: admin deferred to external tool (Lead Stack). Focus reduced to checkout end-to-end. Dashboard real-data feed (B.7/C.12/D.15) deprioritized.</p>
+
+  <div class="at-glance">
+    <div class="glance-cell">
+      <span class="glance-label">Status</span>
+      <span class="glance-value" id="overall-status">Not started</span>
+    </div>
+    <div class="glance-cell">
+      <span class="glance-label">Next action</span>
+      <span class="glance-value next-action" id="next-action">—</span>
+    </div>
+    <div class="glance-cell">
+      <span class="glance-label">Started</span>
+      <span class="glance-value">2026-05-21</span>
+    </div>
+    <div class="glance-cell">
+      <span class="glance-label">Target</span>
+      <span class="glance-value">2026-06-01 go-live</span>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fg" id="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+    <div class="progress-text">
+      <span id="progress-text">0 / 0 complete</span>
+      <span id="progress-pct">0%</span>
+    </div>
+  </div>
+</header>
+
+<!-- =================================================== DECISION ============================================== -->
+<h2>Decision summary</h2>
+<div class="decision-box">
+  <p style="margin: 0;"><strong>Reuse the existing Spring Boot engine, expose it via 4 JSON endpoints.</strong> Browser → Netlify Function (BFF) → Spring Boot via HMAC-SHA256 signed requests. Spring Boot handles payment, plan numbers, SOAR writes, commission ledger. Supabase keeps marketing/dashboard data + a writeback cache of <code>plan_number</code>. No user JWT crosses into the engine. The browser never talks to the engine directly.</p>
+</div>
+
+<!-- =================================================== INVARIANTS =========================================== -->
+<h2>Invariants (no se rompen)</h2>
+<div class="invariants-box">
+  <h3>⚠ Money rules · auth rules · data flow rules</h3>
+  <ul>
+    <li><strong>Spring Boot = canonical source for money.</strong> Plan numbers, commission ledger, payouts. Never duplicated in Supabase.</li>
+    <li><strong>Supabase = canonical source for marketing/auth.</strong> Leads, partners (identity), dashboard data, plan_number cache.</li>
+    <li><strong>HMAC secret never in client JS.</strong> Lives in Netlify env vars + Spring Boot env vars only.</li>
+    <li><strong>User JWT never crosses into Spring Boot.</strong> Netlify Function validates JWT, then talks to engine using its own HMAC identity.</li>
+    <li><strong>Stripe Connect onboarding return URL</strong> points to <code>thedesignerplan.com</code>, NOT designerplan.io anymore.</li>
+    <li><strong>The Spring Boot continues to serve designerplan.io</strong> until cutover (we don't break the old site).</li>
+    <li><strong>All money writes are idempotent.</strong> Stripe webhook may fire twice — engine handles dedup.</li>
+  </ul>
+</div>
+
+<!-- =================================================== WAVE A — CONTRACTS =================================== -->
+<div class="wave">
+  <div class="wave-title">
+    <h2>Wave A · Contracts <span class="count" id="wave-a-count">(0/3)</span></h2>
+    <span class="wave-meta">~1-2h · doc-only · parallel</span>
+  </div>
+  <p class="wave-desc">Define request/response schemas, HMAC auth, and error model BEFORE writing any code. Cheap to change, expensive once shipped.</p>
+
+  <div class="steps">
+
+    <article class="step" data-status="done" data-step="1">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <span class="repo-badge" data-repo="here">docs</span>
+        <h3 class="step-title">Endpoint specs (4 endpoints, OpenAPI YAML)</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> single source of truth for what Netlify Functions call and what Spring Boot returns. Doc once, implement twice.</p>
+        <dl>
+          <dt>Output</dt>
+          <dd><code>docs/api-fulfillment-bridge.openapi.yaml</code> with: <code>POST /v1/checkout</code>, <code>POST /v1/stripe-connect/start</code>, <code>POST /v1/stripe-connect/return</code>, <code>GET /v1/partner/{account_id}/dashboard</code></dd>
+          <dt>Done when</dt>
+          <dd>Each endpoint has request schema, response schema, error response shapes, example bodies.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="done" data-step="2">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <span class="repo-badge" data-repo="here">docs</span>
+        <h3 class="step-title">HMAC auth contract (headers, signing, key rotation)</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> server-to-server auth needs to be deterministic on both sides.</p>
+        <dl>
+          <dt>Decides</dt>
+          <dd>Header names (<code>X-RAP-Signature</code>, <code>X-RAP-Timestamp</code>, <code>X-RAP-Key-Id</code>), signing string format (<code>HMAC-SHA256(secret, METHOD + path + timestamp + body)</code>), timestamp tolerance (±5min), key rotation strategy (multiple key IDs active concurrently).</dd>
+          <dt>Output</dt>
+          <dd>Section in <code>docs/api-fulfillment-bridge.openapi.yaml</code> + a small <code>docs/hmac-auth.md</code> with examples in JS (Netlify) and Java (Spring).</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="done" data-step="3">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <span class="repo-badge" data-repo="here">docs</span>
+        <h3 class="step-title">Error model · status codes · client-visible messages</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> consistent error handling on the BFF side, no leaking engine internals to browser.</p>
+        <dl>
+          <dt>Defines</dt>
+          <dd>HTTP status codes (400 validation, 401 auth, 409 conflict, 502 engine_down, etc.), error body shape <code>{ code, message, detail? }</code>, what's safe to show users vs. what stays in logs.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+  </div>
+</div>
+
+<!-- =================================================== WAVE B — SPRING BOOT ================================ -->
+<div class="wave">
+  <div class="wave-title">
+    <h2>Wave B · Spring Boot endpoints <span class="count" id="wave-b-count">(0/5)</span></h2>
+    <span class="wave-meta">~3-4 days · sequential · separate repo</span>
+  </div>
+  <p class="wave-desc">Implement the JSON-API variants of existing engine functionality. Spring Boot source lives in the <code>Designers</code> Bitbucket repo (not this one). Deployments to Rackspace Tomcat 10.</p>
+
+  <div class="steps">
+
+    <article class="step" data-status="done" data-step="4">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <span class="repo-badge" data-repo="spring">spring</span>
+        <h3 class="step-title">HMAC auth filter (request validation)</h3>
+        <span class="step-pill">Done</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> every JSON endpoint behind this filter. No JWT, just signed server-to-server requests.</p>
+        <dl>
+          <dt>Where</dt><dd>New filter <code>HmacAuthFilter</code> + <code>SecurityConfig</code> applies to <code>/api/v1/**</code></dd>
+          <dt>Done when</dt>
+          <dd>Filter validates signature + timestamp; rejects with 401 if invalid; logs key_id of requester; unit tests cover happy path + 4 failure modes.</dd>
+          <dt>Status</dt><dd>✓ Complete · 10 unit tests passing · ready to push</dd>
+          <dt>Commit</dt><dd><span class="commit-ref">Designers repo · feature branch (local) · 2026-05-23</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="done" data-step="5">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <span class="repo-badge" data-repo="spring">spring</span>
+        <h3 class="step-title">POST /v1/checkout (JSON variant of existing checkout)</h3>
+        <span class="step-pill">Done</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> the slide-out checkout in the new site needs to create a PaymentIntent and return a <code>client_secret</code> for Stripe Elements (no external redirect).</p>
+        <dl>
+          <dt>Wraps</dt><dd>Existing <code>CheckoutService.createPaymentIntent</code> / <code>createPaymentIntentWithTransfer</code>; pricing via <code>CommissionService.resolvePlanRetail</code> as single source of price truth.</dd>
+          <dt>Done when</dt>
+          <dd>POST with <code>{ plan_id, customer_cart_total_cents, customer, referral_code? }</code> returns <code>{ payment_intent_id, client_secret, amount_cents, currency, commission_cents?, designer_attributed }</code>. Stripe webhook still fires plan_number issuance + commission accounting (unchanged).</dd>
+          <dt>Status</dt><dd>✓ Complete · 11 unit tests + 36 integration/abuse tests (57 total) passing · ready to push</dd>
+          <dt>Commit</dt><dd><span class="commit-ref">Designers repo · feature branch (local) · 2026-05-23</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="in-progress" data-step="6">
+      <div class="step-header">
+        <div class="step-num">6</div>
+        <span class="repo-badge" data-repo="spring">spring</span>
+        <h3 class="step-title">GET /v1/seller-account (Stripe Connect account lookup)</h3>
+        <span class="step-pill">In Progress</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> BFF needs to check if a designer has a Stripe Connect account set up and is ready to receive payouts before proceeding with commission splits.</p>
+        <dl>
+          <dt>Endpoint</dt>
+          <dd>GET <code>/api/v1/seller-account?designer_id=XXX</code></dd>
+          <dt>Returns</dt>
+          <dd><code>{ account_id, payout_enabled, charges_enabled, stripe_status }</code></dd>
+          <dt>Tests</dt>
+          <dd>Happy path (account ready), designer not found, designer without Stripe account, payout disabled (only charges enabled).</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="deprioritized" data-step="7">
+      <div class="step-header">
+        <div class="step-num">7</div>
+        <span class="repo-badge" data-repo="spring">spring</span>
+        <h3 class="step-title">GET /v1/partner/{account_id}/dashboard (feed for designer dashboard) <span style="font-size:11px;font-weight:500;color:var(--warn-fg);">— deprioritized 5/22 PM</span></h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> dashboard subpages (overview, clients, sales-tools, service) need real data from SOAR — sales attributed to the partner, commission tracked vs. paid, Stripe connection status.</p>
+        <dl>
+          <dt>Returns</dt>
+          <dd><code>{ partner: { account_number, stripe_status }, sales: [...], totals: { tracked_cents, paid_cents } }</code></dd>
+          <dt>Source</dt>
+          <dd>SOAR via existing engine code; <code>account_id</code> = <code>partners.id</code> (Supabase UUID), engine looks up via <code>soar_dealer_id</code> bridge.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="8">
+      <div class="step-header">
+        <div class="step-num">8</div>
+        <span class="repo-badge" data-repo="spring">spring</span>
+        <h3 class="step-title">Supabase writeback (plan_number cache on payment webhook)</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> per 5/21 decision — Supabase is the new site's only DB. The engine writes back the plan_number so the dashboard can show it without querying SOAR every time.</p>
+        <dl>
+          <dt>Trigger</dt><dd><code>payment_intent.succeeded</code> webhook handler in Spring Boot</dd>
+          <dt>Writes</dt>
+          <dd>Upsert to Supabase <code>orders</code> table via service-role key: <code>{ partner_id, plan_number, amount_cents, commission_cents, status: 'paid' }</code></dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+  </div>
+</div>
+
+<!-- =================================================== WAVE C — BFF ======================================== -->
+<div class="wave">
+  <div class="wave-title">
+    <h2>Wave C · Netlify Functions BFF <span class="count" id="wave-c-count">(0/4)</span></h2>
+    <span class="wave-meta">~1-2 days · parallelizable after each Wave B endpoint ships</span>
+  </div>
+  <p class="wave-desc">Thin wrappers in <code>designer-plan-site/netlify/functions/</code> that validate user JWT, sign HMAC, call Spring Boot, translate errors. No business logic — just glue.</p>
+
+  <div class="steps">
+
+    <article class="step" data-status="pending" data-step="9">
+      <div class="step-header">
+        <div class="step-num">9</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">cart-checkout BFF (replaces current stub)</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Files</dt><dd><code>designer-plan-site/netlify/functions/cart-checkout.js</code></dd>
+          <dt>Done when</dt>
+          <dd>Receives <code>{ plan_id, customer, referral_code? }</code> from browser, calls Spring Boot <code>/v1/checkout</code> with HMAC signature, returns <code>{ checkout_url }</code> to the browser.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="10">
+      <div class="step-header">
+        <div class="step-num">10</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">stripe-onboard BFF</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Files</dt><dd><code>designer-plan-site/netlify/functions/stripe-onboard.js</code></dd>
+          <dt>Done when</dt>
+          <dd>Authenticated user, looks up their partner_id, calls Spring Boot <code>/v1/stripe-connect/start</code>, returns Stripe-hosted onboarding URL.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="11">
+      <div class="step-header">
+        <div class="step-num">11</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">stripe-return BFF (post-Stripe-onboarding landing)</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Files</dt><dd><code>designer-plan-site/netlify/functions/stripe-return.js</code> + page handler <code>/stripe/return/index.html</code></dd>
+          <dt>Done when</dt>
+          <dd>Validates session token from URL, calls engine <code>/v1/stripe-connect/return</code> to confirm, redirects to <code>/dashboard?stripe=connected</code>.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="deprioritized" data-step="12">
+      <div class="step-header">
+        <div class="step-num">12</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">dashboard-data BFF <span style="font-size:11px;font-weight:500;color:var(--warn-fg);">— deprioritized 5/22 PM</span></h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Files</dt><dd><code>designer-plan-site/netlify/functions/dashboard-data.js</code></dd>
+          <dt>Done when</dt>
+          <dd>Authenticated user, looks up partner_id, calls Spring Boot <code>/v1/partner/{id}/dashboard</code>, returns the feed JSON to the browser. Caches in-memory ~30s to reduce engine load.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+  </div>
+</div>
+
+<!-- =================================================== WAVE D — FRONTEND ================================== -->
+<div class="wave">
+  <div class="wave-title">
+    <h2>Wave D · Frontend integration <span class="count" id="wave-d-count">(0/3)</span></h2>
+    <span class="wave-meta">~2 days · sequential, depends on Wave C</span>
+  </div>
+  <p class="wave-desc">Replace the static/stub UI with calls to the BFFs. Where it gets visible.</p>
+
+  <div class="steps">
+
+    <article class="step" data-status="pending" data-step="13">
+      <div class="step-header">
+        <div class="step-num">13</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">Slide-out checkout panel (replaces cart drawer)</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Spec:</strong> Ant Design Drawer (448px from right) triggered by "Buy Now" on any plan tile. Single plan, customer entry, live price recalc, Stripe Elements card field, payment submit.</p>
+        <dl>
+          <dt>Layout</dt>
+          <dd><strong>Header (sticky):</strong> plan name + close button. <strong>Body (scrollable):</strong> plan summary (image, description), "Items covered" text input (e.g., "iPhone 14 Pro + AirPods"), "Retail value" number input ($), live price display. <strong>Footer (sticky):</strong> price breakdown (retail + plan cost + protection premium), Stripe Elements card field, "Pay $X.XX" CTA button.</dd>
+          <dt>Behavior</dt>
+          <dd><strong>Open:</strong> drawer slides in (plan pre-populated from tile). <strong>Fill form:</strong> on blur of retail_value field, POST to BFF with { plan_id, items_covered, retail_value_cents } → BFF calls Spring Boot POST /api/v1/checkout → server returns amount_cents + commission details → update live price display. <strong>Error:</strong> if BFF fails, show "Unable to calculate price. Please try again." + disable submit. <strong>Submit:</strong> POST final checkout request to BFF → receive client_secret → load Stripe Elements + show card field → user confirms payment → close drawer on success.</dd>
+          <dt>Validation</dt>
+          <dd><strong>Client-side:</strong> items_covered required (minlength 3), retail_value required + &gt; $1. Show field-level error messages inline. <strong>Server-side:</strong> Spring Boot re-validates + re-prices (tamper-proof). If price mismatch, return 422 business_rule_violation.</dd>
+          <dt>States</dt>
+          <dd><strong>Idle:</strong> drawer open, form ready. <strong>Loading:</strong> during price calc or payment submit, disable inputs + show spinner. <strong>Error:</strong> show error message, allow retry. <strong>Stripe Elements:</strong> after price confirmed, mount Stripe card field (test mode only until Wave E.17).</dd>
+          <dt>Mobile</dt>
+          <dd>Drawer 100% width on screens &lt;768px. Touch-friendly buttons (min 44px height). Keyboard-accessible inputs + focus visible on all interactive elements. On iOS, use <code>inputmode="decimal"</code> for numeric fields.</dd>
+          <dt>Testing</dt>
+          <dd>Playwright E2E: happy path (open drawer → fill items + value → price updates → submit → see Stripe Elements). Error scenarios: network failure during price calc, validation failure (empty fields), Stripe element failure (invalid card). Manual: test on mobile device, verify accessibility with keyboard nav.</dd>
+          <dt>Files</dt>
+          <dd><code>designer-plan-site/plans/index.html</code> (attach click handler to "Buy Now" buttons), <code>designer-plan-site/js/checkout-drawer.js</code> (new module: Drawer state, form validation, BFF calls, error handling, Stripe Elements mount)</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="14">
+      <div class="step-header">
+        <div class="step-num">14</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">"Connect Stripe" button in dashboard + status display</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Where</dt>
+          <dd>Dashboard subpage (probably <code>/dashboard/overview</code>) shows a banner: "Connect Stripe to earn commission" if not connected, with a button that calls <code>stripe-onboard</code> BFF and redirects to Stripe.</dd>
+          <dt>Done when</dt>
+          <dd>Banner reflects state (disconnected/in-progress/connected). After successful onboarding, banner disappears and shows "✓ Connected — payouts active."</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="deprioritized" data-step="15">
+      <div class="step-header">
+        <div class="step-num">15</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">Dashboard subpages consume real data feed <span style="font-size:11px;font-weight:500;color:var(--warn-fg);">— deprioritized 5/22 PM</span></h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Where</dt>
+          <dd><code>/dashboard/overview</code>, <code>/dashboard/clients</code> — replace static sample data with fetch to <code>dashboard-data</code> BFF.</dd>
+          <dt>Fallback</dt>
+          <dd>If user has no sales yet, show empty-state copy ("Your first sale will appear here. Share your referral link…"). If <code>?partner=1</code> query is present, keep the sample-data preview mode for marketing demos.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+  </div>
+</div>
+
+<!-- =================================================== WAVE E — DEPLOY ==================================== -->
+<div class="wave">
+  <div class="wave-title">
+    <h2>Wave E · Deploy &amp; validate <span class="count" id="wave-e-count">(0/4)</span></h2>
+    <span class="wave-meta">~1-2 days · last mile</span>
+  </div>
+  <p class="wave-desc">Ship to production, validate end-to-end, stakeholder sign-off.</p>
+
+  <div class="steps">
+
+    <article class="step" data-status="pending" data-step="16">
+      <div class="step-header">
+        <div class="step-num">16</div>
+        <span class="repo-badge" data-repo="config">deploy</span>
+        <h3 class="step-title">Deploy Spring Boot WAR to Rackspace Tomcat 10</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>What</dt>
+          <dd>Build the updated WAR, deploy to Rackspace's Tomcat 10 (CATALINA_HOME/BASE separation). HMAC secret + Supabase service-role env vars in <code>setenv.sh</code> / <code>$CATALINA_BASE/conf</code>.</dd>
+          <dt>Done when</dt>
+          <dd>designerplan.io still serves the old UI (no break), <code>/api/v1/**</code> endpoints respond to signed requests, logs show key_id of caller.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">n/a (deploy artifact)</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="17">
+      <div class="step-header">
+        <div class="step-num">17</div>
+        <span class="repo-badge" data-repo="config">config</span>
+        <h3 class="step-title">Stripe webhook + Connect return URLs repointed</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Where</dt>
+          <dd>Stripe dashboard → Webhook endpoints + Connect settings. Update from <code>designerplan.io/*</code> to <code>thedesignerplan.com/stripe/return</code> + <code>/stripe/refresh</code> + webhook URL.</dd>
+          <dt>Risk</dt>
+          <dd>Misconfig here breaks new sales silently. Test with Stripe CLI in stripe-mode=test first.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">n/a (dashboard config)</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="18">
+      <div class="step-header">
+        <div class="step-num">18</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">End-to-end smoke test on production</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Path</dt>
+          <dd>(1) Anonymous visit thedesignerplan.com. (2) Click "Buy now" on a plan. (3) Submit form. (4) Pay with Stripe test card. (5) Verify plan_number returned. (6) Verify partner gets credited (if logged in with Stripe connected).</dd>
+          <dt>Cleanup</dt>
+          <dd>Refund the test charge; delete the test plan from SOAR + Supabase.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">n/a (manual test)</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="19">
+      <div class="step-header">
+        <div class="step-num">19</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">Security audit + go-live checklist + stakeholder sign-off</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Checks</dt>
+          <dd>HMAC secret rotation tested; Supabase RLS verified for all new tables; rate-limit on BFFs; CORS strict; no <code>console.log</code> of tokens; SQL Server connection pool healthy; payout webhook idempotency confirmed.</dd>
+          <dt>Done when</dt>
+          <dd>Stakeholder runs a smoke test, confirms it works, approves go-live. DNS cutover for designerplan.io.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+  </div>
+</div>
+
+<!-- =================================================== WAVE F — PROMOTIONS ================================= -->
+<div class="wave">
+  <div class="wave-title">
+    <h2>Wave F · Promotions <span class="count" id="wave-f-count">(0/3)</span></h2>
+    <span class="wave-meta">~1-2 days · last · IN for go-live per Q5 decision</span>
+  </div>
+  <p class="wave-desc">Promo A (first-plan-on-us) and Promo B (refer-a-designer) per the original PRD. Scheduled last so they don't block the core fulfillment flow — but they ship for 2026-06-01. Engine + BFF + UI for each promo.</p>
+
+  <div class="steps">
+
+    <article class="step" data-status="pending" data-step="20">
+      <div class="step-header">
+        <div class="step-num">20</div>
+        <span class="repo-badge" data-repo="spring">spring</span>
+        <h3 class="step-title">Promo A — "first plan on us" claim endpoint + commission boost</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> Designer claims the promo on their first deal, names the client, gets 40% commission (35% standard + 5% boost) capped at $5,000 of coverage value. One claim per account.</p>
+        <dl>
+          <dt>Engine</dt>
+          <dd>New endpoint <code>POST /v1/partner/{account_id}/promo-claim</code> body <code>{ code: 'first-plan-on-us', client_name, client_email }</code>. Validates: no prior claim for this account. Stores claim. Boost applied at the next checkout that matches client_email.</dd>
+          <dt>Supabase</dt>
+          <dd>Engine writes to <code>promo_claims</code> table (already in migration 20260518). BFF wrapper in Wave C-equivalent.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="21">
+      <div class="step-header">
+        <div class="step-num">21</div>
+        <span class="repo-badge" data-repo="spring">spring</span>
+        <h3 class="step-title">Promo B — "refer a designer" referral link + bonus accounting</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <p><strong>Why:</strong> Designer A sends a referral link to Designer B. When B signs up and makes their first purchase, A earns a one-time 10% bonus commission. Repeatable across different referred designers.</p>
+        <dl>
+          <dt>Engine</dt>
+          <dd>Detect <code>?ref_designer=&lt;referrer_code&gt;</code> on checkout. Resolve to referrer's account_id. On referred designer's first purchase, credit a one-time 10% bonus to referrer; mark as fired in <code>promo_claims</code>.</dd>
+          <dt>UI</dt>
+          <dd>Dashboard exposes the referrer's unique link with copy/share button.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="step" data-status="pending" data-step="22">
+      <div class="step-header">
+        <div class="step-num">22</div>
+        <span class="repo-badge" data-repo="here">here</span>
+        <h3 class="step-title">Promotions card in dashboard (claim + referral link)</h3>
+        <span class="step-pill">Pending</span>
+      </div>
+      <div class="step-body">
+        <dl>
+          <dt>Where</dt>
+          <dd>Dashboard subpage (probably <code>/dashboard/overview</code>) gets a "Promotions" card showing both promos: button "Claim first-plan-on-us" (if eligible) + copy-link for "Refer a designer."</dd>
+          <dt>Done when</dt>
+          <dd>Designer can claim Promo A once, can copy/share referral link, sees bonus accruals in the activity table once Promo B fires.</dd>
+          <dt>Commit</dt><dd><span class="commit-ref" data-empty="true">pending</span></dd>
+        </dl>
+      </div>
+    </article>
+
+  </div>
+</div>
+
+
+
+
+<div class="footer-note">
+  Plan activo · workstream individual · este documento se actualiza con cada commit relevante.<br>
+  Cambios: solo via Edit del <code>data-status</code> attribute de cada step. JS recalcula progress + next action al refrescar.
+</div>
+
+</div>
+
+<!-- =================================================== AUTO-COMPUTE JS ==================================== -->
+<script>
+(function(){
+  'use strict';
+  document.addEventListener('DOMContentLoaded', function(){
+    var steps = document.querySelectorAll('.step');
+    var total = steps.length;
+    var done = document.querySelectorAll('.step[data-status="done"]').length;
+    var inProgress = document.querySelectorAll('.step[data-status="in-progress"]').length;
+    var blocked = document.querySelectorAll('.step[data-status="blocked"]').length;
+    var pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    var bar = document.getElementById('progress-bar');
+    bar.style.width = pct + '%';
+    bar.setAttribute('aria-valuenow', pct);
+    document.getElementById('progress-text').textContent = done + ' / ' + total + ' complete';
+    document.getElementById('progress-pct').textContent = pct + '%';
+
+    var overall = document.getElementById('overall-status');
+    if (done === total) {
+      overall.textContent = 'Complete ✓';
+      overall.style.color = 'var(--good-fg)';
+    } else if (blocked > 0) {
+      overall.textContent = 'Blocked';
+      overall.style.color = 'var(--err-fg)';
+    } else if (inProgress > 0) {
+      overall.textContent = 'In progress';
+    } else if (done > 0) {
+      overall.textContent = 'Paused';
+    } else {
+      overall.textContent = 'Not started';
+    }
+
+    var next = document.querySelector('.step[data-status="in-progress"]')
+            || document.querySelector('.step[data-status="pending"]');
+    var nextEl = document.getElementById('next-action');
+    if (next) {
+      var n = next.dataset.step;
+      var title = next.querySelector('.step-title').textContent.trim();
+      nextEl.textContent = 'Step ' + n + ' — ' + title;
+    } else {
+      nextEl.textContent = '✓ All steps complete';
+      nextEl.style.color = 'var(--good-fg)';
+    }
+
+    document.querySelectorAll('.step').forEach(function(s){
+      var pill = s.querySelector('.step-pill');
+      var status = s.dataset.status;
+      if (status === 'done') pill.textContent = 'Done';
+      else if (status === 'in-progress') pill.textContent = 'In progress';
+      else if (status === 'blocked') pill.textContent = 'Blocked';
+      else if (status === 'deprioritized') pill.textContent = 'Deprioritized';
+      else pill.textContent = 'Pending';
+    });
+
+    // Wave counts
+    function countWave(prefix, fromStep, toStep) {
+      var doneCount = 0, totalCount = 0;
+      for (var i = fromStep; i <= toStep; i++) {
+        var s = document.querySelector('.step[data-step="' + i + '"]');
+        if (!s) continue;
+        totalCount++;
+        if (s.dataset.status === 'done') doneCount++;
+      }
+      var el = document.getElementById(prefix + '-count');
+      if (el) el.textContent = '(' + doneCount + '/' + totalCount + ')';
+    }
+    countWave('wave-a', 1, 3);
+    countWave('wave-b', 4, 8);
+    countWave('wave-c', 9, 12);
+    countWave('wave-d', 13, 15);
+    countWave('wave-e', 16, 19);
+    countWave('wave-f', 20, 22);
+  });
+})();
+</script>
+
+</body>
+</html>

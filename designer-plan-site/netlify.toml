@@ -1,0 +1,15 @@
+# Local-dev configuration for `netlify dev`.
+#
+# Production build/publish/functions settings are managed in the Netlify
+# dashboard (per CLAUDE.md). This file exists so that running `netlify dev`
+# locally can discover the functions directory and the static publish root
+# without relying on `netlify link` to the production site.
+#
+# Only the [dev] section is set so this can't accidentally override
+# anything that runs in production.
+
+[dev]
+  publish = "."
+  functions = "netlify/functions"
+  port = 8888
+  framework = "#static"
