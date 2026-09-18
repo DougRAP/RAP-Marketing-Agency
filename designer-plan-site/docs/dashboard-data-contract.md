@@ -74,8 +74,10 @@ optionals are omitted rather than `null`.
   "stripe_status": "NOT_CONNECTED",
   "stripe_account_id": null,
 
-  "total_earned_cents": 85240,
-  "pending_amount_cents": 93600,
+  "tracked_cents": 178840,
+  "pending_cents": 93600,
+  "payable_cents": 0,
+  "paid_cents": 85240,
   "total_sales": 5,
 
   "commissions": [
@@ -105,10 +107,20 @@ optionals are omitted rather than `null`.
 | `dealer_name` | string | `Dealer.dealerName` | for designers this is the person's name, not a studio; the site keeps its own `studio_name` in Supabase |
 | `stripe_status` | enum | `StripeService.getAccountStatus().status()` | `NOT_CONNECTED`, `PENDING`, `RESTRICTED`, `READY`. See degradation below |
 | `stripe_account_id` | string or absent | `Dealer.stripeAccountId` | omitted when null |
-| `total_earned_cents` | int | sum of `CommissionAmount` where `TransferStatus = COMPLETED` | |
-| `pending_amount_cents` | int | sum where status in `PENDING`, `PENDING_STRIPE_ONBOARD`, `PROCESSING`, `TRANSFERRED` | the existing `DASHBOARD_PENDING_STATUSES` list |
+| `pending_cents` | int | sum of `CommissionAmount` where status in `PENDING`, `PENDING_STRIPE_ONBOARD` | earned but not moving; the designer has to connect Stripe |
+| `payable_cents` | int | sum where status in `PROCESSING`, `TRANSFERRED` | moving through Stripe, lands without any action |
+| `paid_cents` | int | sum where status is `COMPLETED` | paid out to the bank |
+| `tracked_cents` | int | `pending + payable + paid` | excludes `FAILED` and `CANCELLED` |
 | `total_sales` | int | count of all commission rows for the dealer | **no status filter**, matches the old dashboard |
 | `commissions[]` | array | `findByDesignerDealerIdOrderByCreatedDateDesc`, joined to `SoarSales` by `PlanRegistrationID` | newest first, all rows, no pagination in this phase |
+
+These three buckets are the page's ledger (*Pending commission*, *Payable now*,
+*Paid to date*, summing to *Tracked commission*), and they fall straight out of
+the status lifecycle: a commission is born `PENDING_STRIPE_ONBOARD` at checkout,
+moves to `PROCESSING` then `TRANSFERRED` once Stripe takes it, and ends
+`COMPLETED` when the payout lands. The old dashboard lumps the first four into
+one "pending"; this splits them because the page has room to say more, and
+because "waiting on you" and "on its way" are different messages to a designer.
 
 Commission item:
 
@@ -217,8 +229,10 @@ the request.** Anything else would let a caller ask for someone else's numbers.
   "affiliated_id": "AB-RPFG",
   "dealer_name": "Adrian Barres",
   "stripe_status": "NOT_CONNECTED",
-  "total_earned_cents": 85240,
-  "pending_amount_cents": 93600,
+  "tracked_cents": 178840,
+  "pending_cents": 93600,
+  "payable_cents": 0,
+  "paid_cents": 85240,
   "total_sales": 5,
   "commissions": [ ... ]
 }
@@ -255,10 +269,10 @@ account fields. Phase 2 extends it to fill the sales fields from this BFF.
 
 | `data-field` | From |
 |---|---|
-| `commission-tracked` | `total_earned_cents + pending_amount_cents` |
-| `commission-paid` | `total_earned_cents` |
-| `commission-pending` | `pending_amount_cents` |
-| `commission-payable` | `pending_amount_cents` (see open question 2) |
+| `commission-tracked` | `tracked_cents` |
+| `commission-paid` | `paid_cents` |
+| `commission-pending` | `pending_cents` |
+| `commission-payable` | `payable_cents` |
 | `plans-sold` | `total_sales` |
 | `active-plans` | count of `commissions` where `months_remaining > 0` |
 | `total-clients` | count of distinct `customer_last_name` |
@@ -284,7 +298,7 @@ The "sample data" ribbon and note from 2026-09-16 go away with this.
 |---|---|---|
 | 1 | Email travels in a POST body, not a query string | HMAC signs the raw query; `@` may be re-encoded; body bytes cannot |
 | 2 | Money is integer cents | floats on the wire drift |
-| 3 | `commission_status` is the 4-value label, not the raw status | the page needs the label; the mapping is server logic |
+| 3 | Per row, `commission_status` is the 4-value label, not the raw status; per dealer, the totals come split into pending, payable and paid | the page needs the label per row and the three buckets for its ledger; both mappings are server logic |
 | 4 | Stripe failure degrades to a status, never fails the response | a Stripe hiccup must not blank out sales |
 | 5 | Not-a-designer returns the same 404 as not-found | does not reveal that a store row exists for that email |
 | 6 | No pagination, newest first | a designer has dozens of sales, not thousands; revisit if that changes |
@@ -296,10 +310,9 @@ The "sample data" ribbon and note from 2026-09-16 go away with this.
 1. **`links-sent`.** SOAR does not count links. Either the tile is removed
    from `/dashboard/overview`, or it is computed from something in Supabase.
    Recommendation: remove it in B3. Nothing feeds it.
-2. **`commission-payable` vs `commission-pending`.** The page has both tiles.
-   The engine has one number for pending. Either they show the same value, or
-   "payable" means "pending and Stripe is connected" (money that could move
-   now). Recommendation: same value for now, and rename the tile if it confuses.
+2. ~~`commission-payable` vs `commission-pending`.~~ Settled 2026-09-18: the
+   engine returns three buckets derived from the status lifecycle (see the
+   totals table). No open question left here.
 3. **`ENGINE_BASE_URL`.** Needs the engine's public URL in Netlify. This is
    ops, not code, and blocks B2's integration test.
 4. **Which account demonstrates it to Doug.** He is not a designer in SOAR, so
