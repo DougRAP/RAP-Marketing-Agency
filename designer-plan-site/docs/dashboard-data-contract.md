@@ -85,6 +85,7 @@ optionals are omitted rather than `null`.
       "plan_registration_id": 12345,
       "purchase_date": "2026-09-09",
       "customer_last_name": "Estevez",
+      "customer_email": "qafake005@rapqa.com",
       "plan_number": "QAFAKE-W005",
       "plan_type": "Plan B",
       "retail_paid_cents": 304000,
@@ -129,6 +130,7 @@ Commission item:
 | `plan_registration_id` | int | `DesignerCommission.planRegistrationId` |
 | `purchase_date` | date, ISO 8601 (`YYYY-MM-DD`) | `SoarSales.planRegistrationDate` |
 | `customer_last_name` | string | `SoarSales.custLast` |
+| `customer_email` | string | `SoarSales.custEmail`, lowercased | the join key for the client pipeline (section F). The designer sold this person a plan; showing them the email they already have is not a disclosure |
 | `plan_number` | string | `SoarSales.warrantyNumber` |
 | `plan_type` | string | `SoarSales.planType` |
 | `retail_paid_cents` | int | `DesignerCommission.totalSaleAmount` |
@@ -269,6 +271,7 @@ account fields. Phase 2 extends it to fill the sales fields from this BFF.
 
 | `data-field` | From |
 |---|---|
+| `referral-code`, `client-link` | `affiliated_id` from the engine, **overriding** `partners.referral_code` from Supabase. SOAR's AffiliatedId is what the checkout actually attributes on, so once linked it is the source of truth. Supabase stays the fallback for unlinked accounts |
 | `commission-tracked` | `tracked_cents` |
 | `commission-paid` | `paid_cents` |
 | `commission-pending` | `pending_cents` |
@@ -278,7 +281,7 @@ account fields. Phase 2 extends it to fill the sales fields from this BFF.
 | `total-clients` | count of distinct `customer_last_name` |
 | `clients-table` | one row per item in `commissions` |
 | `clients-summary` | derived from that list |
-| `links-sent` | **no source**, see open question 1 |
+| `links-sent` | count of pipeline clients in status `link_sent` (section F) |
 
 Three states the page must render:
 
@@ -304,17 +307,159 @@ The "sample data" ribbon and note from 2026-09-16 go away with this.
 | 6 | No pagination, newest first | a designer has dozens of sales, not thousands; revisit if that changes |
 | 7 | "Not linked" is 200 with `linked:false`, not an error | it is the normal state for a new signup |
 | 8 | No caching of `dealer_id` in this phase | works without it, one extra lookup per load; needs a migration with grants when added |
+| 9 | The client pipeline is in scope; prospects live in Supabase, status is derived, the join key is the client's email | the wireframe's "Link sent" is a pipeline stage, not a metric, and it had no backend at all |
+| 10 | Pipeline email goes out through the Resend API from the already verified sending domain | one provider, one domain, nothing new on DNS |
+| 11 | Once linked, `affiliated_id` from SOAR is the referral code the page shows | it is what the checkout attributes on; two sources of truth would drift |
 
 ## E. Open questions, to settle before code
 
-1. **`links-sent`.** SOAR does not count links. Either the tile is removed
-   from `/dashboard/overview`, or it is computed from something in Supabase.
-   Recommendation: remove it in B3. Nothing feeds it.
+1. ~~`links-sent`.~~ Settled 2026-09-18: it is a stage of the client
+   pipeline, which is now in scope. See section F.
 2. ~~`commission-payable` vs `commission-pending`.~~ Settled 2026-09-18: the
    engine returns three buckets derived from the status lifecycle (see the
    totals table). No open question left here.
-3. **`ENGINE_BASE_URL`.** Needs the engine's public URL in Netlify. This is
-   ops, not code, and blocks B2's integration test.
-4. **Which account demonstrates it to Doug.** He is not a designer in SOAR, so
-   his own dashboard will read `linked:false`. The dealer 421 test account is
-   what shows numbers.
+3. ~~`ENGINE_BASE_URL` and `HMAC_SECRET`.~~ Verified 2026-09-18 against the
+   Netlify site: `ENGINE_BASE_URL` is `https://designerplan.io`, and
+   `HMAC_SECRET` matches the production engine's key (`application-prod`),
+   not the local `.env` one. Nothing to change. The local `.env` keeps the
+   local engine's key on purpose.
+4. ~~Which account demonstrates it to Doug.~~ Settled 2026-09-18: the dealer
+   421 test account, `adrian01@rapqa.com`, created in Supabase by signing in
+   once, then given a password from the profile page.
+5. **`RESEND_API_KEY` in Netlify**, for the pipeline's send-link email
+   (section F). Not there today. The auth mail uses Resend through Supabase's
+   SMTP settings, which is a separate place; Netlify Functions need their own
+   copy. Preferably a new key scoped to sending only, so it can be revoked
+   without touching auth mail.
+
+---
+
+## F. Client pipeline (added to scope 2026-09-18)
+
+The wireframe's clients page is a small CRM, not a report. The designer adds a
+client and a project, sends them the plan link **from the dashboard**, and
+watches the row move: `Harper Project | Dining Room | Premium | Link sent |
+Resend link`. Quick filters: *All / Links sent / Purchased / Active / Service
+needed*. None of that has a backend today: SOAR only knows a client once they
+have bought, and Supabase has no notion of a prospect.
+
+### What a row is
+
+A **prospect** lives in Supabase, entered by the designer. A **sale** lives in
+SOAR. The clients table is the union of both, joined on the client's email,
+lowercased. A sale with no prospect still shows (the client bought through the
+link without ever being "added"); a prospect with no sale shows in its
+pipeline stage.
+
+### Status, derived and never stored
+
+| Status | Rule |
+|---|---|
+| `added` | prospect exists, `link_sent_at` is null |
+| `link_sent` | `link_sent_at` set, no matching sale |
+| `active` | matching sale with `months_remaining > 0` |
+| `expired` | matching sale with `months_remaining = 0` |
+
+Storing status would let it drift from the facts. Deriving it means a purchase
+moves the row on its own, with no write from anyone.
+
+The wireframe's *Service needed* stage is **out**: claims live in 5Star
+Service and nothing here can see them. The filter is dropped rather than shown
+empty.
+
+### Table
+
+Migration `supabase/migrations/20260918_partner_clients.sql`, following the
+repo's grant rules to the letter (explicit grants co-located with the table,
+no `alter default privileges`).
+
+```sql
+create table public.partner_clients (
+  id               uuid primary key default gen_random_uuid(),
+  partner_id       uuid not null references public.partners(id) on delete cascade,
+  client_name      text not null,
+  project_name     text,
+  client_email     citext not null,
+  client_phone     text,
+  notes            text,
+  link_sent_at     timestamptz,
+  link_sent_count  integer not null default 0,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now(),
+  unique (partner_id, client_email)
+);
+```
+
+- RLS on. `partner_clients_select_own` for `authenticated`, narrowed through
+  `partners.auth_user_id = auth.uid()`. No insert or update policy for the
+  browser: writes go through functions, like every other write in this repo.
+- Grants: `service_role` full CRUD; `authenticated` select only.
+- `touch_updated_at` trigger, same as the other tables.
+
+### Two functions
+
+**`client-add.js`**, `POST { client_name, project_name?, client_email, client_phone?, notes?, hp }`.
+Validates the JWT, resolves the partner, inserts with the service role. 409
+when the email already exists for that partner. Honeypot for consistency with
+`partner-apply.js`. No `consent_text`: this is the designer's own client data,
+not marketing consent from the designer.
+
+**`client-send-link.js`**, `POST { client_id }`.
+Validates the JWT, checks the row belongs to that partner, **requires the
+account to be linked** (the link is `/plans?ref=<affiliated_id>` and unlinked
+accounts have none), sends the email, then sets `link_sent_at = now()` and
+increments `link_sent_count`. Re-sending is the same call. Cap: three sends
+per client per 24 hours, so a bug or a stuck finger cannot mail someone thirty
+times.
+
+Email goes through the **Resend HTTP API** with a new `RESEND_API_KEY` in
+Netlify. Same account and same verified `send.thedesignerplan.com` domain
+already carrying the auth mail; nothing new to set up on DNS. From
+`no-reply@send.thedesignerplan.com`, reply-to the designer's own email, so a
+client who hits reply reaches the designer and not a dead mailbox. The template
+is the designer's name, the client's name, one sentence, the link. Versioned
+in `designer-plan-site/docs/email-templates.md` next to the auth ones.
+
+### Where the join happens
+
+`dashboard-data.js` (contract B) also reads the partner's `partner_clients`
+rows and returns them merged with the engine's commissions:
+
+```json
+{
+  "linked": true,
+  "...": "engine fields as before",
+  "clients": [
+    {
+      "id": "...",
+      "client_name": "Harper Project",
+      "project_name": "Dining Room",
+      "client_email": "harper@example.com",
+      "status": "link_sent",
+      "link_sent_at": "2026-09-18T14:02:11Z",
+      "link_sent_count": 1,
+      "plan_number": null,
+      "months_remaining": null
+    }
+  ]
+}
+```
+
+For an unlinked account, `clients` still comes back (prospects exist before
+SOAR does), but every row is `added` or `link_sent` and *Send link* is
+disabled with a note.
+
+### Not doing, on purpose
+
+- **Per-client tokens in the link** (`?ref=CODE&c=<id>`) would attribute a
+  purchase precisely instead of by email, but need threading through the
+  checkout BFF, the engine and SOAR. Email matching needs nothing. If email
+  drift turns out to be a real problem, this is the upgrade.
+- **Unsubscribe links.** A one-off referral a person asked their designer for
+  is not a marketing list. Revisit if send volume ever suggests otherwise.
+
+### Cost
+
+About 11 hours: migration 1, `client-add` 1.5, `client-send-link` 2.5, the
+join in `dashboard-data` 1, the page 3, tests 2. It is a third lane, parallel
+to the engine and the BFF, meeting them only at the join.
