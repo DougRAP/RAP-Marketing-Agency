@@ -191,68 +191,84 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '502': { $ref: '#/components/responses/UpstreamUnavailable' }
 
-  /v1/partner/{account_id}/dashboard:
-    get:
+  /v1/partner/dashboard:
+    post:
       operationId: getPartnerDashboard
-      summary: Fetch the dashboard data feed for a partner
+      summary: Sales and commission feed for a designer, looked up by email
       description: |
-        Powers the designer dashboard subpages (overview, clients, etc.).
-        Returns the partner's basic identity, Stripe connection status, the
-        list of orders attributed to them (with masked client email for
-        privacy), and aggregated commission totals.
+        Powers the partner dashboard on thedesignerplan.com. The BFF
+        (`dashboard-data` Netlify Function) validates the user's Supabase JWT,
+        takes the email from the token, and calls this with that email in the
+        body. The browser never calls this endpoint.
 
-        The BFF wrapper applies an in-memory TTL cache before calling this
-        (TTL decided at Wave C.12).
+        **POST with a body, not GET with a query.** The HMAC filter signs
+        `getRequestURI()` plus `getQueryString()` exactly as they arrive on
+        the wire. An email carries `@`, which a client may send as `%40`, and
+        one character of difference invalidates the signature. The body is
+        hashed as bytes and has no such ambiguity.
+
+        The engine resolves the email with `DealerServices.findDealerByAnyEmail`
+        (DealerEmail first, KC_Email second, a designer row wins when several
+        dealers share the email). Money is integer cents. `commission_status`
+        is the four-value label the old dashboard shows, not the raw
+        TransferStatus. The three buckets fall out of the status lifecycle:
+        pending is `PENDING` or `PENDING_STRIPE_ONBOARD`, payable is
+        `PROCESSING` or `TRANSFERRED`, paid is `COMPLETED`, tracked is their
+        sum. `FAILED` and `CANCELLED` count in `total_sales` and appear in
+        `commissions` but add to no bucket.
+
+        If Stripe is unreachable the response is still 200: `stripe_status`
+        degrades to `READY` when the dealer has an account id and
+        `NOT_CONNECTED` when it does not. A designer with no sales is 200
+        with zeros and an empty `commissions` array. All rows, newest first,
+        no pagination in this phase.
+
+        Field-by-field contract: `designer-plan-site/docs/dashboard-data-contract.md`,
+        section A.
       tags: [Partner]
-      parameters:
-        - name: account_id
-          in: path
-          required: true
-          description: The partner's UUID from Supabase (`partners.id`).
-          schema:
-            type: string
-            format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
-        - name: limit
-          in: query
-          required: false
-          description: Max number of orders to return (default 50, max 200).
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 200
-            default: 50
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerDashboardRequest'
+            example:
+              email: adrian01@rapqa.com
       responses:
         '200':
-          description: Dashboard feed
+          description: |
+            Dashboard feed. `stripe_account_id` is omitted (not null) when
+            the designer has no Stripe account, as in this example.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PartnerDashboard'
+                $ref: '#/components/schemas/PartnerDashboardResponse'
               example:
-                partner:
-                  id: "550e8400-e29b-41d4-a716-446655440000"
-                  account_number: "DP-10042"
-                  stripe_status: connected
-                  commission_rate: 0.35
-                sales:
-                  - order_id: "abc-1234"
-                    plan_number: "PLAN-2026-12345"
-                    client_email_masked: "j***@example.com"
-                    tier: tier-2
-                    amount_cents: 24900
-                    commission_cents: 8715
-                    status: paid
-                    claim_status: no_claim
-                    purchased_at: "2026-05-15T14:23:00Z"
-                totals:
-                  commission_tracked_cents: 12345
-                  commission_paid_cents: 8000
-                  orders_count: 1
+                dealer_id: 421
+                affiliated_id: AB-RPFG
+                dealer_name: Adrian Barres
+                stripe_status: NOT_CONNECTED
+                tracked_cents: 178840
+                pending_cents: 93600
+                payable_cents: 0
+                paid_cents: 85240
+                total_sales: 5
+                commissions:
+                  - plan_registration_id: 12345
+                    purchase_date: "2026-09-09"
+                    customer_last_name: Estevez
+                    customer_email: qafake005@rapqa.com
+                    plan_number: QAFAKE-W005
+                    plan_type: Plan B
+                    retail_paid_cents: 304000
+                    commission_cents: 30400
+                    commission_status: Pending
+                    months_coverage: 36
+                    months_remaining: 36
+                    plan_sent: true
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '429': { $ref: '#/components/responses/RateLimited' }
         '500': { $ref: '#/components/responses/EngineError' }
 
 # -----------------------------------------------------------------------------
@@ -311,6 +327,10 @@ components:
         or rule failed. Examples: `invalid_email`, `invalid_plan_id`,
         `amount_mismatch`, `missing_field`. `message` is safe to surface
         directly to the end user.
+
+        `/v1/partner/dashboard` emits `validation_failed` (email missing,
+        blank or malformed) and, from the shared handler, `bad_json` when
+        the body is not valid JSON.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -338,12 +358,17 @@ components:
         Referenced entity (partner, order, session_token) does not exist.
         `code` examples: `partner_not_found`, `session_token_not_found`,
         `order_not_found`.
+
+        `/v1/partner/dashboard` answers `not_found` both when no dealer
+        matches the email and when the dealer matched is not a designer
+        (`dealerTypeId != 2`): same code, same message, so the response
+        never reveals that a store row exists for that email.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
           example:
-            code: partner_not_found
-            message: "No partner with that account ID."
+            code: not_found
+            message: "No designer found for that email."
 
     Conflict:
       description: |
@@ -613,91 +638,162 @@ components:
         payouts_enabled:
           type: boolean
 
-    # ---- /v1/partner/{account_id}/dashboard ------------------------------
+    # ---- /v1/partner/dashboard -------------------------------------------
 
-    PartnerDashboard:
+    PartnerDashboardRequest:
       type: object
-      required: [partner, sales, totals]
+      required: [email]
       properties:
-        partner:
-          $ref: '#/components/schemas/PartnerSummary'
-        sales:
-          type: array
-          items:
-            $ref: '#/components/schemas/SaleRow'
-        totals:
-          $ref: '#/components/schemas/PartnerTotals'
+        email:
+          type: string
+          format: email
+          description: |
+            The signed-in user's email, read by the BFF from the Supabase JWT.
+            Trimmed and lowercased by the engine before the lookup. Must be
+            non-empty and match `^[^\s@]+@[^\s@]+\.[^\s@]+$`.
+          example: adrian01@rapqa.com
 
-    PartnerSummary:
+    PartnerDashboardResponse:
       type: object
-      required: [id, account_number, stripe_status, commission_rate]
+      required:
+        - dealer_id
+        - affiliated_id
+        - dealer_name
+        - stripe_status
+        - tracked_cents
+        - pending_cents
+        - payable_cents
+        - paid_cents
+        - total_sales
+        - commissions
       properties:
-        id:
+        dealer_id:
+          type: integer
+          description: SOAR Dealer.dealerId. The BFF may cache this later.
+          example: 421
+        affiliated_id:
           type: string
-          format: uuid
-        account_number:
+          description: Dealer.affiliatedId, the referral code the checkout attributes on.
+          example: AB-RPFG
+        dealer_name:
           type: string
-          example: DP-10042
+          description: Dealer.dealerName. For designers this is the person's name, not a studio.
+          example: Adrian Barres
         stripe_status:
           type: string
-          enum: [not_started, in_progress, incomplete, connected]
-        commission_rate:
-          type: number
-          format: float
-          description: Decimal fraction. 0.35 = 35%.
-          example: 0.35
-
-    SaleRow:
-      type: object
-      required: [order_id, tier, amount_cents, commission_cents, status, purchased_at]
-      properties:
-        order_id:
-          type: string
-        plan_number:
+          enum: [NOT_CONNECTED, PENDING, RESTRICTED, READY]
+          description: |
+            `StripeService.getAccountStatus().status()`, the enum name in
+            uppercase (unlike `/v1/seller-account`, which uses lowercase).
+            Degrades on a Stripe failure: `READY` when the dealer has an
+            account id, `NOT_CONNECTED` when it does not.
+        stripe_account_id:
           type: string
           nullable: true
-          description: Issued post-payment. Null while pending.
-          example: PLAN-2026-12345
-        client_email_masked:
-          type: string
-          description: First letter + asterisks + domain. For dashboard display only.
-          example: "j***@example.com"
-        tier:
-          type: string
-          enum: [tier-1, tier-2, tier-3]
-        amount_cents:
+          description: Dealer.stripeAccountId. Omitted when the designer has none.
+          example: acct_1AbCdEfG
+        tracked_cents:
           type: integer
+          description: pending_cents + payable_cents + paid_cents. Excludes FAILED and CANCELLED.
+        pending_cents:
+          type: integer
+          description: |
+            Sum of CommissionAmount where TransferStatus is PENDING or
+            PENDING_STRIPE_ONBOARD. Earned but not moving; the designer has
+            to connect Stripe.
+        payable_cents:
+          type: integer
+          description: |
+            Sum where TransferStatus is PROCESSING or TRANSFERRED. Moving
+            through Stripe, lands without any action.
+        paid_cents:
+          type: integer
+          description: Sum where TransferStatus is COMPLETED. Paid out to the bank.
+        total_sales:
+          type: integer
+          description: Count of all commission rows for the dealer, no status filter.
+        commissions:
+          type: array
+          description: Newest first, all rows, no pagination in this phase.
+          items:
+            $ref: '#/components/schemas/PartnerDashboardCommission'
+
+    PartnerDashboardCommission:
+      type: object
+      description: |
+        One DesignerCommission row joined to its SoarSales row by
+        PlanRegistrationID. When the SoarSales row is missing the item still
+        appears: `customer_last_name` is empty, `plan_number` is the plan
+        registration id, and `customer_email`, `plan_type`, `months_coverage`
+        and `months_remaining` are absent. A commission is never dropped
+        because its sale is missing.
+      required:
+        - plan_registration_id
+        - purchase_date
+        - customer_last_name
+        - plan_number
+        - retail_paid_cents
+        - commission_cents
+        - commission_status
+        - plan_sent
+      properties:
+        plan_registration_id:
+          type: integer
+          example: 12345
+        purchase_date:
+          type: string
+          format: date
+          description: |
+            SoarSales.planRegistrationDate as YYYY-MM-DD, or the commission's
+            created date when the sale row is missing.
+          example: "2026-09-09"
+        customer_last_name:
+          type: string
+          description: SoarSales.custLast. Empty string when the sale row is missing.
+          example: Estevez
+        customer_email:
+          type: string
+          format: email
+          description: |
+            SoarSales.custEmail, lowercased. The join key for the client
+            pipeline. Absent when the sale row is missing.
+          example: qafake005@rapqa.com
+        plan_number:
+          type: string
+          description: SoarSales.warrantyNumber, or the plan registration id when blank.
+          example: QAFAKE-W005
+        plan_type:
+          type: string
+          description: SoarSales.planType. Absent when the sale row is missing.
+          example: Plan B
+        retail_paid_cents:
+          type: integer
+          description: DesignerCommission.totalSaleAmount as integer cents.
+          example: 304000
         commission_cents:
           type: integer
-          description: Designer's share. Includes Promo A/B boosts when applicable.
-        status:
+          description: DesignerCommission.commissionAmount as integer cents.
+          example: 30400
+        commission_status:
           type: string
-          enum: [pending, paid, refunded, disputed]
-        claim_status:
-          type: string
-          enum: [no_claim, open, closed]
-          description: Whether the client filed a claim against this plan.
-        purchased_at:
-          type: string
-          format: date-time
-
-    PartnerTotals:
-      type: object
-      required: [commission_tracked_cents, commission_paid_cents, orders_count]
-      properties:
-        commission_tracked_cents:
+          enum: [Paid, Pending, Failed, Cancelled]
+          description: |
+            Mapped from TransferStatus exactly as the old dashboard does:
+            COMPLETED is Paid, FAILED is Failed, CANCELLED is Cancelled,
+            anything else (PENDING included) is Pending.
+        months_coverage:
+          type: integer
+          description: SoarSales.planTerm. Absent when the sale row is missing.
+          example: 36
+        months_remaining:
           type: integer
           description: |
-            Total commission earned across all attributed orders, regardless
-            of whether the partner has Stripe Connect set up. This is the
-            motivator — visible even when payouts aren't enabled yet.
-        commission_paid_cents:
-          type: integer
-          description: |
-            Subset of tracked that has actually been transferred to the
-            partner's Stripe account.
-        orders_count:
-          type: integer
+            planTerm minus elapsed months since registration, floored at
+            zero. Absent when the sale row is missing.
+          example: 36
+        plan_sent:
+          type: boolean
+          description: True when SoarSales.planRegistrationDocLink is non-empty.
 
 tags:
   - name: Checkout
@@ -705,4 +801,6 @@ tags:
   - name: StripeConnect
     description: Designer payout onboarding via Stripe Express accounts.
   - name: Partner
-    description: Read-only dashboard feed for the designer.
+    description: |
+      Read-only sales and commission feed for the partner dashboard on
+      thedesignerplan.com, looked up by the signed-in user's email.

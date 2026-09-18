@@ -185,6 +185,7 @@ Every non-2xx is `{ "code": "...", "message": "..." }`, through the existing
 | HTTP | `code` | When |
 |---|---|---|
 | 400 | `validation_failed` | `email` missing or malformed |
+| 400 | `bad_json` | body is not valid JSON. Comes from the shared `ApiV1ExceptionHandler`, same as `/api/v1/checkout`; not worth a special case |
 | 404 | `not_found` | no designer matches that email. **Also** when a dealer matches but is not a designer (`dealerTypeId != 2`): same code, same message, so the response does not reveal that a store row exists |
 | 401 | HMAC codes | unchanged, from the filter |
 | 500 | `internal_error` | anything unexpected |
