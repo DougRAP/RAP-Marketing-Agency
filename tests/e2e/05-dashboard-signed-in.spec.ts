@@ -1,5 +1,7 @@
-// Dashboard signed-in state — the partner's own account data replaces the
-// public preview, and the sample sales figures stay labelled as samples.
+// Dashboard signed-in state: the partner's own account data replaces the
+// public preview. Sales figures come from the dashboard-data BFF (spec 10);
+// here the account is fresh and unlinked, so the page says sales are not
+// linked yet instead of showing sample numbers.
 //
 // Uses the Supabase admin API to mint a magic link (no email is sent), then
 // visits it like a real user would.
@@ -67,7 +69,7 @@ test.describe('Dashboard — signed-in state', () => {
     await expect(page.locator('section[data-dp-when="signed-out"]')).toBeHidden();
   });
 
-  test('D.3 — overview shows real account fields and labels the sample figures', async ({ page, context }) => {
+  test('D.3 - overview shows real account fields and says sales are not linked yet', async ({ page, context }) => {
     await context.clearCookies();
     const link = await generateMagicLink(testEmail, 'http://localhost:8888/dashboard');
     await page.goto(link);
@@ -88,14 +90,19 @@ test.describe('Dashboard — signed-in state', () => {
     const progress = await page.locator('[data-field="setup-progress-line"]').textContent();
     expect(progress).toMatch(/Account setup: [1-5] of 5 complete/);
 
-    // The ribbon tells the truth about which half of the page is real.
-    const ribbon = await page.locator('#preview-ribbon').textContent();
-    expect(ribbon).toContain('Your account is live');
-    expect(ribbon).toContain('sample data');
-    expect(ribbon).not.toContain('This is what your dashboard will look like');
+    // The ribbon tells the truth about which half of the page is real. The
+    // BFF answers after auth, so these assertions auto-wait for the final copy.
+    const ribbon = page.locator('#preview-ribbon');
+    await expect(ribbon).toContainText('Your account is live');
+    await expect(ribbon).toContainText('once your account is matched');
+    await expect(ribbon).not.toContainText('sample data');
+    await expect(ribbon).not.toContainText('This is what your dashboard will look like');
 
     // And the figures themselves carry a note, for anyone scrolling past it.
-    await expect(page.locator('.dp-sample-note')).toBeVisible();
+    await expect(page.locator('.dp-sales-note')).toBeVisible();
+    await expect(page.locator('.dp-sales-note')).toContainText('once your account is matched');
+    await expect(page.locator('.dp-sample-note')).toHaveCount(0);
+    await expect(page.locator('.hero__sample-note')).toBeHidden();
   });
 
   test('D.4 — a partner with no referral code yet is told so, not shown the sample one', async ({ page, context }) => {
