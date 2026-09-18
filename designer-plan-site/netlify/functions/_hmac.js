@@ -85,8 +85,10 @@ function signedHeaders(method, pathAndQuery, bodyString) {
  *
  * Throws on network failure. HTTP error responses are NOT thrown — caller
  * checks `status` and `json.code` to decide.
+ *
+ * @param {{ signal?: AbortSignal }} [opts]  optional; `signal` is passed to fetch so a caller can time the call out
  */
-async function callEngine(method, pathAndQuery, body) {
+async function callEngine(method, pathAndQuery, body, opts) {
   if (!ENGINE_BASE_URL) {
     throw new Error('ENGINE_BASE_URL must be set in env');
   }
@@ -105,6 +107,7 @@ async function callEngine(method, pathAndQuery, body) {
     method: m,
     headers,
     body: m === 'GET' ? undefined : bodyString,
+    signal: opts && opts.signal,
   });
 
   const raw = await res.text();
