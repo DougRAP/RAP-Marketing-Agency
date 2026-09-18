@@ -81,6 +81,19 @@ export async function getPartnerByAuthUserId(authUserId: string) {
 }
 
 /**
+ * The prospect rows (public.partner_clients) for one partner, oldest first.
+ */
+export async function getPartnerClients(partnerId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('partner_clients')
+    .select('*')
+    .eq('partner_id', partnerId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`getPartnerClients failed: ${error.message}`);
+  return data ?? [];
+}
+
+/**
  * Counts partner rows for an auth_user_id. Should always return 0 or 1.
  */
 export async function countPartnersForAuthUserId(authUserId: string): Promise<number> {
@@ -103,6 +116,13 @@ export async function cleanupTestUser(email: string): Promise<void> {
   const user = await getAuthUserByEmail(email);
   // Delete partner rows (filter by auth_user_id when we have user, else by lead match)
   if (user) {
+    // partner_clients cascades from partners, but delete it explicitly so the
+    // cleanup reads as the inverse of what the client pipeline specs create.
+    const partnerIds = (await supabaseAdmin.from('partners').select('id').eq('auth_user_id', user.id))
+      .data?.map(r => r.id) || [];
+    if (partnerIds.length) {
+      await supabaseAdmin.from('partner_clients').delete().in('partner_id', partnerIds);
+    }
     await supabaseAdmin.from('partners').delete().eq('auth_user_id', user.id);
     await supabaseAdmin.auth.admin.deleteUser(user.id);
   }

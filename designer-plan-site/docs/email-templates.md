@@ -74,6 +74,52 @@ security we will ask you to confirm on the next screen.</p>
 it is. The link expires shortly.</p>
 ```
 
+## Client plan link (sent by client-send-link.js through the Resend API)
+
+Unlike the three above, this one is not a Supabase template. It lives in
+code (`netlify/functions/client-send-link.js`, `buildMessage`) and goes out
+through the Resend HTTP API with `RESEND_API_KEY` from the Netlify env. This
+section is the reviewed copy; when the wording changes, change both.
+
+- From: `Designer Plan <no-reply@send.thedesignerplan.com>` (the verified
+  sending domain, same as the auth mail)
+- Reply-to: the designer's own sign-in email, so a reply reaches the designer
+- Subject: `{{designer_name}} sent you your Designer Plan link`
+
+Text body:
+
+```text
+Hi {{client_name}},
+
+{{designer_name}} is sending you the link to protect your new furnishings with Designer Plan.
+
+{{link}}
+
+Reply to this email to reach {{designer_name}} directly.
+```
+
+HTML twin, one paragraph per line above:
+
+```html
+<p>Hi {{client_name}},</p>
+<p>{{designer_name}} is sending you the link to protect your new furnishings with Designer Plan.</p>
+<p><a href="{{link}}">{{link}}</a></p>
+<p>Reply to this email to reach {{designer_name}} directly.</p>
+```
+
+Placeholders:
+
+| Placeholder | Value |
+|---|---|
+| `{{client_name}}` | `partner_clients.client_name` |
+| `{{designer_name}}` | `partners.studio_name`, else the engine's `dealer_name`, else the designer's email |
+| `{{link}}` | `https://thedesignerplan.com/plans?ref=<affiliated_id>` from the engine (contract A) |
+
+`client_name` and `designer_name` are HTML-escaped in code before they go
+into the HTML body; the text body carries them as typed. There is no
+unsubscribe link on purpose: a one-off referral a person asked their designer
+for is not a marketing list (contract F, "Not doing, on purpose").
+
 ---
 
 ## Settings that go with them
