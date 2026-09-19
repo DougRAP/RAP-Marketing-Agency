@@ -28,9 +28,11 @@
      #preview-ribbon              the ribbon above the hero preview
      .dp-sales-note               note under the figures (this script adds it)
 
-   window.DP_DASHBOARD exposes renderClientsTable, formatCents and
-   salesRowsFromCommissions so the client pipeline (B7) can feed
-   the same table with its own rows.
+   window.DP_DASHBOARD exposes renderClientsTable, formatCents,
+   salesRowsFromCommissions and lastData so the client pipeline
+   (dashboard-clients.js) can feed the same table with its own rows.
+   Every dashboard-data answer (or failure) is announced as a
+   'dp-dashboard-data' CustomEvent with detail { data, state }.
 
    Must load AFTER auth.js.
    ============================================================ */
@@ -333,7 +335,8 @@
 
   function renderFigures(data) {
     var commissions = data.commissions || [];
-    var clients = data.clients || [];
+    var hasClients = Array.isArray(data.clients);
+    var clients = hasClients ? data.clients : [];
     Object.keys(MONEY_FIELDS).forEach(function (name) {
       setFieldAll(name, formatCents(data[MONEY_FIELDS[name]]));
     });
@@ -341,7 +344,9 @@
     var linksSent = countLinksSent(clients);
     setFieldAll('plans-sold', Number(data.total_sales) || 0);
     setFieldAll('active-plans', active);
-    setFieldAll('total-clients', countDistinctClients(commissions));
+    // With the client pipeline (contract F) a client is a row of the merged
+    // list; without it, the distinct last names of the sales.
+    setFieldAll('total-clients', hasClients ? clients.length : countDistinctClients(commissions));
     setFieldAll('links-sent', linksSent);
 
     all('[data-field="clients-summary"]').forEach(function (el) {
@@ -372,7 +377,9 @@
   //   { id, name, project, plan,
   //     status: 'active' | 'expired' | 'link_sent' | 'added', statusLabel,
   //     commissionCents: number | null, commissionLabel: text after the amount,
-  //     details: [ { label, value } ] }
+  //     details: [ { label, value } ],
+  //     action: optional { label, action, clientId, disabled } rendered in
+  //             the last cell as <span class="link-action" data-action=...> }
   function salesRowsFromCommissions(commissions) {
     return (commissions || []).map(function (c) {
       var remaining = Number(c.months_remaining) || 0;
@@ -449,8 +456,18 @@
       }
       if (row.commissionLabel) commissionTd.appendChild(document.createTextNode(row.commissionLabel));
 
-      // Service column: the actions here have no backend yet (parked item 2).
-      cell(tr, '');
+      // Service column: empty for sales (their actions have no backend yet,
+      // parked item 2); the pipeline puts its send-link action here.
+      var actionTd = cell(tr, '');
+      if (row.action && row.action.action) {
+        var act = document.createElement('span');
+        act.className = 'link-action';
+        act.setAttribute('data-action', row.action.action);
+        if (row.action.clientId) act.setAttribute('data-client-id', row.action.clientId);
+        if (row.action.disabled) act.setAttribute('aria-disabled', 'true');
+        act.textContent = row.action.label || '';
+        actionTd.appendChild(act);
+      }
 
       var expanded = document.createElement('tr');
       expanded.className = 'expanded-row is-hidden';
@@ -560,13 +577,29 @@
     renderEmptyClientsTable(COPY.notLinked);
   }
 
+  // Which of the four sales states a payload lands in.
+  function salesState(data) {
+    if (!data) return 'unavailable';
+    if (data.linked !== true) return 'not-linked';
+    return (data.commissions || []).length ? 'linked' : 'no-sales';
+  }
+
+  // Lets the clients page (dashboard-clients.js) reuse this fetch instead of
+  // making its own: the payload is kept on DP_DASHBOARD.lastData for a
+  // listener that binds late, and announced for one that is already there.
+  function publishSales(data) {
+    var detail = { data: data || null, state: salesState(data) };
+    window.DP_DASHBOARD.lastData = detail;
+    document.dispatchEvent(new CustomEvent('dp-dashboard-data', { detail: detail }));
+  }
+
   function loadSales(partner) {
     renderRibbon(true, COPY.loading);
     renderSalesNote('loading');
     renderFigurePlaceholders(UNKNOWN);
     fetchDashboardData()
-      .then(function (data) { renderSales(data, partner); })
-      .catch(function () { renderSalesUnavailable(); });
+      .then(function (data) { renderSales(data, partner); publishSales(data); })
+      .catch(function () { renderSalesUnavailable(); publishSales(null); });
   }
 
   /* ---------------- copy buttons ---------------- */
@@ -633,8 +666,12 @@
 
   window.DP_DASHBOARD = {
     renderClientsTable: renderClientsTable,
+    renderEmptyClientsTable: renderEmptyClientsTable,
     formatCents: formatCents,
-    salesRowsFromCommissions: salesRowsFromCommissions
+    salesRowsFromCommissions: salesRowsFromCommissions,
+    // { data, state } of the last dashboard-data fetch, set by publishSales;
+    // null until the first answer. The 'dp-dashboard-data' event carries the same.
+    lastData: null
   };
 
   if (document.readyState === 'loading') {

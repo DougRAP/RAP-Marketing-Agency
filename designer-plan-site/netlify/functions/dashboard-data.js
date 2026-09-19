@@ -9,19 +9,26 @@
 // GET only, no query string, no body. The email comes from the Supabase JWT
 // and nowhere else, so nobody can ask for another partner's numbers.
 //
-//   engine 200            -> 200, engine body plus linked:true
-//   engine 404            -> 200 { linked: false }   (normal for a new signup)
+//   engine 200            -> 200, engine body plus linked:true and clients
+//   engine 404            -> 200 { linked: false, clients }   (normal for a new signup)
 //   engine 401            -> 502 upstream_unavailable + console.error (our HMAC creds are wrong)
 //   engine 5xx / down     -> 502 upstream_unavailable
+//
+// `clients` is contract F: the partner's prospects (public.partner_clients)
+// merged with the engine's commissions by _clients-merge.js. The prospects
+// are read in parallel with the engine call; if that read fails the sales
+// still come back, with the prospect side empty.
 //
 // Errors are { code, message } like cart-checkout.js. Never logs the JWT or
 // the email.
 //
-// createHandler(deps) exists for the unit tests: getUser and callEngine are
-// injectable so nothing touches the network there.
+// createHandler(deps) exists for the unit tests: getUser, callEngine,
+// getPartnerId and loadProspects are injectable so nothing touches the
+// network there.
 
 const { createClient } = require('@supabase/supabase-js');
 const hmac = require('./_hmac');
+const clientsMerge = require('./_clients-merge');
 
 const ENGINE_PATH = '/api/v1/partner/dashboard';
 // Netlify Functions time out at 10 s; leave room to answer with a 502.
@@ -55,11 +62,28 @@ function missingEnv() {
   return REQUIRED_ENV.filter((name) => !process.env[name]);
 }
 
-function defaultGetUser(jwt) {
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+function serviceClient() {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false }
   });
-  return supabase.auth.getUser(jwt);
+}
+
+function defaultGetUser(jwt) {
+  return serviceClient().auth.getUser(jwt);
+}
+
+async function defaultGetPartnerId(userId) {
+  const { data, error } = await serviceClient()
+    .from('partners')
+    .select('id')
+    .eq('auth_user_id', userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message || 'partner lookup failed');
+  return data ? data.id : null;
+}
+
+function defaultLoadProspects(partnerId) {
+  return clientsMerge.loadProspects(serviceClient(), partnerId);
 }
 
 function bearerToken(event) {
@@ -73,6 +97,22 @@ function createHandler(deps) {
   const getUser = d.getUser || defaultGetUser;
   const callEngine = d.callEngine || hmac.callEngine;
   const timeoutMs = d.timeoutMs || ENGINE_TIMEOUT_MS;
+  const getPartnerId = d.getPartnerId || defaultGetPartnerId;
+  const loadProspects = d.loadProspects || defaultLoadProspects;
+
+  // The prospects side of contract F. A failure here must not take the
+  // sales down with it: log it and carry on with no prospects, so the
+  // engine's commissions still render (each as a client with a null id).
+  async function loadPartnerProspects(userId) {
+    try {
+      const partnerId = await getPartnerId(userId);
+      if (!partnerId) return [];
+      return await loadProspects(partnerId);
+    } catch (e) {
+      console.error('[dashboard-data] prospects lookup failed: ' + ((e && e.message) || 'error'));
+      return [];
+    }
+  }
 
   return async (event) => {
     if (event.httpMethod !== 'GET') {
@@ -96,6 +136,10 @@ function createHandler(deps) {
       return errorResponse(401, 'invalid_token', 'Your session is not valid. Sign in again.');
     }
 
+    // Started before the engine call so both round trips overlap; awaited
+    // only once the engine has answered. Never rejects (see above).
+    const prospectsPromise = loadPartnerProspects(user.id);
+
     // AbortController + setTimeout rather than AbortSignal.timeout(): the
     // timer is cleared as soon as the engine answers, and it keeps the event
     // loop alive, which AbortSignal.timeout's unref'd timer does not.
@@ -115,12 +159,16 @@ function createHandler(deps) {
     }
 
     if (res.status === 200 && res.json) {
-      // B7 joins the partner's prospects (contract F) here, adding `clients`.
-      return jsonResponse(200, Object.assign({}, res.json, { linked: true }));
+      const prospects = await prospectsPromise;
+      return jsonResponse(200, Object.assign({}, res.json, {
+        linked: true,
+        clients: clientsMerge.buildClients(prospects, res.json.commissions || [])
+      }));
     }
 
     if (res.status === 404) {
-      return jsonResponse(200, { linked: false });
+      const prospects = await prospectsPromise;
+      return jsonResponse(200, { linked: false, clients: clientsMerge.buildClients(prospects, []) });
     }
 
     if (res.status === 401) {

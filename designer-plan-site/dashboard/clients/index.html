@@ -13,6 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/dashboard.js"></script>
+<script src="/js/dashboard-clients.js"></script>
 
 <style>
 /* ============================================================
@@ -322,6 +323,17 @@ section:last-of-type{padding-bottom:var(--sp-section);}
   .footer-baseline{flex-direction:row; justify-content:space-between; align-items:center; gap:24px;}
 }
 </style>
+<style>
+/* ADD CLIENT FORM + status line (client pipeline); inputs match .filters */
+#add-client-form{display:grid; gap:12px; margin-top:24px; max-width:560px;}
+#add-client-form label{display:grid; gap:6px; font-size:0.8125rem; color:var(--ink-65);}
+#add-client-form input, #add-client-form textarea{
+  border:1px solid var(--ink); border-radius:4px; padding:11px 14px;
+  font-family:var(--body); font-size:0.875rem; color:var(--ink); background:var(--paper);
+}
+#clients-status{flex-basis:100%;}
+#clients-status:empty{display:none;}
+</style>
 </head>
 <body>
 
@@ -557,6 +569,22 @@ section:last-of-type{padding-bottom:var(--sp-section);}
           <button class="btn" data-action="export-csv">Export CSV</button>
           <button class="btn btn--primary" data-action="add-client">Add client / project</button>
         </div>
+        <p id="clients-status" role="status" aria-live="polite" class="row-actions-note"></p>
+      </div>
+
+      <div data-dp-when="signed-in" hidden>
+        <form id="add-client-form" hidden novalidate>
+          <div style="position:absolute;left:-9999px;" aria-hidden="true">
+            <label>Do not fill <input type="text" name="hp" tabindex="-1" autocomplete="off"></label>
+          </div>
+          <label>Client name <input type="text" name="client_name" required autocomplete="off"></label>
+          <label>Client email <input type="email" name="client_email" required autocomplete="off"></label>
+          <label>Project <input type="text" name="project_name" autocomplete="off"></label>
+          <label>Phone <input type="tel" name="client_phone" autocomplete="off"></label>
+          <label>Notes <textarea name="notes" rows="3"></textarea></label>
+          <div class="btn-row"><button type="submit" class="btn btn--primary">Save client</button></div>
+          <p id="add-client-status" role="status" class="row-actions-note"></p>
+        </form>
       </div>
     </div>
   </section>
@@ -636,14 +664,8 @@ section:last-of-type{padding-bottom:var(--sp-section);}
     navDrawer.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeDrawer); });
   }
 
-  // Row expansion
-  document.querySelectorAll('[data-row-toggle]').forEach(function(r){
-    r.addEventListener('click', function(e){
-      if(e.target.classList.contains('link-action')) return;
-      var next = r.nextElementSibling;
-      if(next && next.classList.contains('expanded-row')) next.classList.toggle('is-hidden');
-    });
-  });
+  // Row expansion: one delegated handler in /js/dashboard.js (wireClientsTable)
+  // covers the sample rows above and the rows rendered at runtime alike.
 })();
 </script>
 
