@@ -279,10 +279,11 @@ account fields. Phase 2 extends it to fill the sales fields from this BFF.
 | `commission-payable` | `payable_cents` |
 | `plans-sold` | `total_sales` |
 | `active-plans` | count of `commissions` where `months_remaining > 0` |
-| `total-clients` | count of distinct `customer_last_name` |
+| `total-clients` | number of rows in `clients` (section F); before the pipeline answered, the count of distinct `customer_last_name` |
 | `clients-table` | one row per item in `commissions` |
 | `clients-summary` | derived from that list |
 | `links-sent` | count of pipeline clients in status `link_sent` (section F) |
+| `stripe-note`, the "Stripe connected" checklist item | `stripe_status` once linked: NOT_CONNECTED, PENDING, RESTRICTED each have their sentence; READY ticks the item. Not linked keeps the Supabase-based copy |
 
 Three states the page must render:
 
@@ -291,6 +292,9 @@ Three states the page must render:
   empty table. This is what most designers will see at first.
 - **Not linked:** the account fields from Supabase as today, and a sentence
   saying sales will appear here once the account is matched. Not an error.
+- **Unavailable** (BFF 502 or unreachable): placeholders and "Sales and
+  commission are temporarily unavailable. Refresh in a moment." It says
+  nothing about the account, because a failure is not a fact about it.
 
 The "sample data" ribbon and note from 2026-09-16 go away with this.
 
@@ -458,6 +462,17 @@ disabled with a note.
   drift turns out to be a real problem, this is the upgrade.
 - **Unsubscribe links.** A one-off referral a person asked their designer for
   is not a marketing list. Revisit if send volume ever suggests otherwise.
+
+### Sending limits, as shipped
+
+- One send per client every 10 minutes, enforced twice: a cheap check on
+  `link_sent_at`, then a conditional update that stamps the row only if the
+  window is still clear, so two concurrent clicks cannot both send.
+- At most 50 sends per partner per 24 hours (`daily_limit`, 429). The from
+  domain also carries the sign-in mail; one account must not be able to
+  damage its reputation.
+- Resend is called with a 4 second timeout; a failed send rolls the stamp
+  back so the designer can retry.
 
 ### Cost
 

@@ -79,7 +79,7 @@ supabase db push
 # Or paste each migration SQL into Supabase Studio in order
 ```
 
-There is no linter and no build script. There **is** a Playwright end-to-end suite in `tests/e2e/` covering the auth paths: run it with `npm run test:e2e`. Everything else is validated at deploy time on Netlify.
+There is no linter and no build script. There **is** a Playwright end-to-end suite in `tests/e2e/` covering the auth paths and the dashboard (`npm run test:e2e`), and a unit suite for the Netlify Functions on Node's built-in runner (`npm run test:unit`, files in `tests/unit/`, no network). Everything else is validated at deploy time on Netlify.
 
 ## Deploy / Netlify settings (do NOT edit in the dashboard ad-hoc)
 
@@ -97,7 +97,9 @@ Per the working agreement in `docs/db-plan.md`:
 
 - **Marketing-center `/private/*` Basic Auth is non-negotiable.** It gates the admin lists UI (`/private/lists/`) which calls `admin-leads.js` with no other auth layer. The function trusts the gate.
 - **The admin lists UI** (`marketing-center-site/private/lists/index.html` + `admin-leads.js`) uses query-string `?mode=overview|list|leads|export` for GETs and `op` in POST body (`add`, `remove`, `create_list`).
-- **`designer-plan-site` cart** is client-side localStorage (`dp_cart_v1` key); `cart-checkout.js` is currently a stub — real Stripe checkout is dev-team TODO.
+- **`designer-plan-site` cart** is client-side localStorage (`dp_cart_v1` key); `cart-checkout.js` calls the fulfillment engine (Spring Boot, designerplan.io, repo `C:\SourceCode\RAP\Designers`) through `_hmac.js` with HMAC-signed requests. Env: `ENGINE_BASE_URL`, `HMAC_KEY_ID`, `HMAC_SECRET`.
+- **The partner dashboard reads real data** through `dashboard-data.js` (browser JWT in, HMAC-signed call to the engine's `POST /api/v1/partner/dashboard` out). The contract for every field and state is `designer-plan-site/docs/dashboard-data-contract.md`; read it before touching `js/dashboard.js`, `js/dashboard-clients.js` or the engine controller. The engine's dev and prod profiles share one database, so "test data" means dealer 421 with `@rapqa.com` emails.
+- **Prospects (`public.partner_clients`)** are the designer's own clients, added from the dashboard. They never go into `leads` (no consent to RAP), and status is derived at read time from `link_sent_at` plus the engine's sales, never stored. `client-send-link.js` emails through the Resend API (`RESEND_API_KEY`) with reply-to the designer.
 - **`designer-plan-site/js/auth.js`** is live Supabase auth, not a stub. It fetches `/.netlify/functions/public-config`, creates the client, and exposes `window.dpSupabase` plus `window.DP_AUTH` (`{ user, partner, ready, mode, signIn, signInPassword, setPassword, requestPasswordReset, signOut, requireAuth }`), firing `dp-auth-ready` once state resolves. `DP_AUTH.mode` is `'stub'` until the real client exists, then `'live'` — check that, not `typeof signIn`, because the placeholder is a function too. The `?partner=1` dev bypass was removed; the cart commission banner now renders only for a real partner row.
 - **Consent capture**: every new form must POST `consent_text` (the literal copy shown to the user); the function writes `consent_at` + `consent_text` on the `leads` row.
 - **Honeypot field**: forms include a hidden field; functions silently 200 when `body.hp` is truthy. Preserve this.

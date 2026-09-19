@@ -22,13 +22,26 @@ designer-plan-site/
 ├── assets/img/             ← brand imagery
 ├── js/
 │   ├── auth.js             ← Supabase session check, sets window.DP_AUTH
+│   ├── dashboard.js        ← signed-in dashboard: account fields + sales from the BFF
+│   ├── dashboard-clients.js ← clients page: prospects + sales, add client, send link
 │   └── cart.js             ← slide-in cart drawer, localStorage-backed
 └── netlify/functions/
     ├── _supabase.js        ← shared service-role client
+    ├── _hmac.js            ← signed calls to the engine (designerplan.io)
+    ├── _engine-dashboard.js ← one call: the partner dashboard from the engine
+    ├── _resend.js          ← transactional email through the Resend API
+    ├── _clients-merge.js   ← joins prospects with engine sales by email
+    ├── public-config.js    ← anon key + publishable keys for the browser
+    ├── account-bootstrap.js ← creates the partners row on first sign-in
     ├── popup-capture.js    ← landing popup submissions
     ├── partner-apply.js    ← partner application submissions
-    └── cart-checkout.js    ← cart checkout stub (dev team wires real backend)
+    ├── cart-checkout.js    ← checkout through the engine (HMAC signed)
+    ├── dashboard-data.js   ← sales, commission, Stripe status, clients (contract B)
+    ├── client-add.js       ← add a prospect (partner_clients)
+    └── client-send-link.js ← email the plan link to a prospect
 ```
+
+The engine side of the dashboard is documented in `docs/dashboard-data-contract.md`; parked follow-ups in `docs/phase-2-followups.md`.
 
 ## Funnel flow
 

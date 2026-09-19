@@ -31,6 +31,9 @@ Site #4 in the `RAP-Marketing-Agency` monorepo. Publishes from `designer-plan-si
    - `SUPABASE_ANON_KEY` — the publishable / anon key from the same API page. Served to the browser via `/.netlify/functions/public-config`. Safe to expose: it's gated by Row-Level Security on every table.
    - `STRIPE_PUBLISHABLE_KEY` — *(optional today)* Stripe's client-side key. `public-config` serves it when present and omits it when absent, so checkout degrades rather than breaking.
    - `EMAILOCTOPUS_API_KEY` — *(optional, for when list-sync is wired)*
+   - `ENGINE_BASE_URL` — the fulfillment engine, `https://designerplan.io` in production. Used by `cart-checkout`, `dashboard-data` and `client-send-link`.
+   - `HMAC_KEY_ID` and `HMAC_SECRET` — the signing pair the engine's `HmacAuthFilter` validates. Production uses key id `netlify-prod`; the secret must be the one in the engine's `application-prod.properties` (verified equal on 2026-09-18). The local `.env` carries the local engine's secret instead, on purpose: they differ.
+   - `RESEND_API_KEY` — a Resend key with sending access on `send.thedesignerplan.com`, used by `client-send-link` to email the plan link. Separate from the key pasted into Supabase's SMTP settings for auth mail; either can be revoked without touching the other. Scope: Functions.
 
    **Watch `SUPABASE_SERVICE_ROLE_KEY` in particular.** If it is wrong, the failure is silent: `account-bootstrap` returns 401, `auth.js` treats that as non-fatal and carries on, and the partner ends up signed in with **no `partners` row**. The symptom is a dashboard with no account number, not an error. This cost a day in September 2026. To check it directly:
 
