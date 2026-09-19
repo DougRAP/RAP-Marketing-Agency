@@ -61,6 +61,7 @@
     real: ' Your details below are real.',
     loading: 'Loading your sales and commission.',
     notLinked: 'Sales and commission will appear here once your account is matched to our records.',
+    unavailable: 'Sales and commission are temporarily unavailable. Refresh in a moment.',
     noSales: 'No sales yet. Your first sale through your client link will appear here.'
   };
 
@@ -570,11 +571,13 @@
     renderClientsTable(salesRowsFromCommissions(commissions));
   }
 
+  // A BFF failure says nothing about the account, so it must not claim the
+  // account is unmatched: that is a different sentence.
   function renderSalesUnavailable() {
-    renderRibbon(true, COPY.notLinked);
-    renderSalesNote('unavailable', COPY.notLinked);
+    renderRibbon(true, COPY.unavailable);
+    renderSalesNote('unavailable', COPY.unavailable);
     renderFigurePlaceholders(UNKNOWN);
-    renderEmptyClientsTable(COPY.notLinked);
+    renderEmptyClientsTable(COPY.unavailable);
   }
 
   // Which of the four sales states a payload lands in.

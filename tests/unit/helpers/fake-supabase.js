@@ -3,7 +3,8 @@
 // can assert what was queried and what was written, and never touches the
 // network.
 //
-//   makeFakeSupabase({ user, partner, client, insertResult, updateResult })
+//   makeFakeSupabase({ user, partner, client, insertResult, updateResult, count })
+//     count: what a head:true count query resolves to (default 0)
 //
 //   auth.getUser(jwt)  -> { data: { user }, error } ; jwt === 'bad' or no user -> error
 //   from(table)        -> chain supporting select / eq / insert / update /
@@ -21,6 +22,9 @@ function makeFakeSupabase(opts) {
   const calls = [];
 
   function resolve(call) {
+    if (call.head) {
+      return { count: o.count == null ? 0 : o.count, data: null, error: o.countError || null };
+    }
     if (call.insert !== undefined) {
       return call.insertResult || o.insertResult || { data: null, error: { message: 'no insertResult configured' } };
     }
@@ -49,12 +53,20 @@ function makeFakeSupabase(opts) {
       const call = { table, ops: [] };
       calls.push(call);
       const chain = {
-        select(cols) { call.ops.push(['select', cols]); return chain; },
+        select(cols, opts) {
+          call.ops.push(['select', cols, opts]);
+          if (opts && opts.head) call.head = true;
+          return chain;
+        },
         eq(col, val) { call.ops.push(['eq', col, val]); return chain; },
+        gte(col, val) { call.ops.push(['gte', col, val]); return chain; },
+        or(expr) { call.ops.push(['or', expr]); return chain; },
         insert(payload) { call.ops.push(['insert', payload]); call.insert = payload; return chain; },
         update(payload) { call.ops.push(['update', payload]); call.update = payload; return chain; },
         async maybeSingle() { call.ops.push(['maybeSingle']); return resolve(call); },
-        async single() { call.ops.push(['single']); return resolve(call); }
+        async single() { call.ops.push(['single']); return resolve(call); },
+        // A head:true count chain is awaited directly, without single().
+        then(onOk, onErr) { call.ops.push(['await']); return Promise.resolve(resolve(call)).then(onOk, onErr); }
       };
       return chain;
     }

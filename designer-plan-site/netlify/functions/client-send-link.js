@@ -11,11 +11,15 @@
 // Order of checks, so nothing is sent by mistake:
 //   1. JWT -> user; partners row -> partner
 //   2. partner_clients row must exist AND belong to that partner (else 404)
-//   3. rate cap: one send per client per 10 minutes (followups item 6)
+//   3. rate cap: one send per client per 10 minutes (followups item 6), and
+//      at most DAILY_SEND_CAP sends per partner per 24 hours
 //   4. engine: 404 -> 409 not_linked; down / 5xx / 401 -> 502 upstream_unavailable
 //   5. RESEND_API_KEY present, else 503 email_not_configured
-//   6. send via Resend; failure -> 502 email_failed, row untouched
-//   7. stamp link_sent_at = now, link_sent_count + 1; return the updated row
+//   6. claim the slot: a conditional update stamps link_sent_at = now and
+//      link_sent_count + 1 only if the 10 minute window is still clear, so
+//      two concurrent clicks cannot both send (second one gets 429)
+//   7. send via Resend; failure -> 502 email_failed and the stamp is rolled back
+//   8. return the updated row
 //
 // Response 200: the updated partner_clients row
 //   { id, client_name, project_name, client_email, client_phone, notes,
@@ -37,6 +41,10 @@
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROW_COLUMNS = 'id, client_name, project_name, client_email, client_phone, notes, link_sent_at, link_sent_count, created_at, updated_at';
 const SEND_WINDOW_MS = 10 * 60 * 1000;
+const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
+// Sends per partner per day. The from domain also carries the sign-in mail,
+// so one account must not be able to hurt its reputation in an afternoon.
+const DAILY_SEND_CAP = 50;
 const ENGINE_TIMEOUT_MS = 5000;
 const PLANS_URL = 'https://thedesignerplan.com/plans';
 
@@ -61,9 +69,13 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function singleLine(value) {
+  return String(value == null ? '' : value).replace(/[\r\n]+/g, ' ').trim();
+}
+
 /** The message from docs/email-templates.md, "Client plan link". */
 function buildMessage({ clientName, clientEmail, designerName, designerEmail, link }) {
-  const subject = designerName + ' sent you your Designer Plan link';
+  const subject = singleLine(designerName) + ' sent you your Designer Plan link';
   const text = [
     'Hi ' + clientName + ',',
     '',
@@ -97,7 +109,8 @@ function createHandler(deps) {
       return errorResponse(405, 'method_not_allowed', 'POST only');
     }
 
-    const authHeader = event.headers.authorization || event.headers.Authorization || '';
+    const headers = event.headers || {};
+    const authHeader = headers.authorization || headers.Authorization || '';
     if (!authHeader.startsWith('Bearer ')) {
       return errorResponse(401, 'missing_bearer_token', 'Sign in to send a link.');
     }
@@ -158,6 +171,20 @@ function createHandler(deps) {
       return errorResponse(429, 'rate_limited', 'A link was sent to this client in the last 10 minutes.');
     }
 
+    const dayAgo = new Date(nowDate.getTime() - DAILY_WINDOW_MS).toISOString();
+    const { count: sentToday, error: countErr } = await supabase
+      .from('partner_clients')
+      .select('id', { count: 'exact', head: true })
+      .eq('partner_id', partner.id)
+      .gte('link_sent_at', dayAgo);
+    if (countErr) {
+      console.error('[client-send-link] daily count failed', countErr.code || 'unknown');
+      return errorResponse(500, 'lookup_failed', 'Could not check your sending limit.');
+    }
+    if ((sentToday || 0) >= DAILY_SEND_CAP) {
+      return errorResponse(429, 'daily_limit', 'You have reached the daily limit of ' + DAILY_SEND_CAP + ' links. Try again tomorrow.');
+    }
+
     let engine;
     try {
       engine = await fetchPartnerDashboard(user.email, { timeoutMs: ENGINE_TIMEOUT_MS });
@@ -192,23 +219,39 @@ function createHandler(deps) {
       link: PLANS_URL + '?ref=' + encodeURIComponent(engine.json.affiliated_id)
     });
 
-    try {
-      await resend.sendEmail(message);
-    } catch (err) {
-      console.error('[client-send-link] send failed', err.code, err.status || '', err.message);
-      return errorResponse(502, 'email_failed', 'The email could not be sent. Please try again.');
-    }
-
+    // Claim the slot before sending. The filter repeats the 10 minute rule
+    // inside the database, so of two requests racing past the check above
+    // only one gets a row back; the other is told to wait.
+    const windowStart = new Date(nowDate.getTime() - SEND_WINDOW_MS).toISOString();
     const { data: updated, error: updateErr } = await supabase
       .from('partner_clients')
       .update({ link_sent_at: nowDate.toISOString(), link_sent_count: row.link_sent_count + 1 })
       .eq('id', row.id)
+      .eq('partner_id', partner.id)
+      .or('link_sent_at.is.null,link_sent_at.lt.' + windowStart)
       .select(ROW_COLUMNS)
-      .single();
+      .maybeSingle();
     if (updateErr) {
-      // The email already went out; the row just does not say so yet.
-      console.error('[client-send-link] update failed after send', row.id, updateErr.message);
-      return errorResponse(500, 'update_failed', 'The link was sent but could not be recorded. Refresh to check.');
+      console.error('[client-send-link] claim failed', row.id, updateErr.code || 'unknown');
+      return errorResponse(500, 'update_failed', 'Could not record the send. Please try again.');
+    }
+    if (!updated) {
+      return errorResponse(429, 'rate_limited', 'A link was sent to this client in the last 10 minutes.');
+    }
+
+    try {
+      await resend.sendEmail(message);
+    } catch (err) {
+      console.error('[client-send-link] send failed', err.code, err.status || '');
+      // Give the slot back so the designer can retry once the mail works again.
+      const { error: revertErr } = await supabase
+        .from('partner_clients')
+        .update({ link_sent_at: row.link_sent_at, link_sent_count: row.link_sent_count })
+        .eq('id', row.id)
+        .select('id')
+        .maybeSingle();
+      if (revertErr) console.error('[client-send-link] revert failed', row.id, revertErr.code || 'unknown');
+      return errorResponse(502, 'email_failed', 'The email could not be sent. Please try again.');
     }
 
     return jsonResponse(200, updated);

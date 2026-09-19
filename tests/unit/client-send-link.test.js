@@ -88,7 +88,9 @@ function setup(opts) {
     user: 'user' in o ? o.user : USER,
     partner: 'partner' in o ? o.partner : PARTNER,
     client: 'client' in o ? o.client : clientRow(),
-    updateResult: o.updateResult || { data: null, error: { message: 'no updateResult' } }
+    updateResult: o.updateResult || { data: null, error: { message: 'no updateResult' } },
+    count: o.count,
+    countError: o.countError
   });
   const fetchPartnerDashboard = o.engine || engineReplying(LINKED.status, LINKED.body);
   const resend = o.resend || fakeResend();
@@ -218,20 +220,80 @@ test('client-send-link', async (t) => {
     assert.equal(supabase.calls.filter((c) => c.update !== undefined).length, 0);
   });
 
-  await t.test('502 email_failed when Resend rejects; the row is not updated', async () => {
-    const { handler, supabase } = setup({ resend: fakeResend({ fail: true }) });
+  await t.test('502 email_failed when Resend rejects; the claimed stamp is rolled back', async () => {
+    const before = clientRow({ link_sent_at: minutesAgo(60), link_sent_count: 2 });
+    const { handler, supabase } = setup({
+      client: before,
+      resend: fakeResend({ fail: true }),
+      updateResult: { data: clientRow({ link_sent_at: NOW.toISOString(), link_sent_count: 3 }), error: null }
+    });
     const res = await handler(postEvent({ client_id: CLIENT_ID }));
     assert.equal(res.statusCode, 502);
     assert.equal(parse(res).code, 'email_failed');
-    assert.equal(supabase.calls.filter((c) => c.update !== undefined).length, 0);
+    const updates = supabase.calls.filter((c) => c.update !== undefined);
+    assert.equal(updates.length, 2, 'claim, then revert');
+    assert.deepEqual(updates[1].update, { link_sent_at: before.link_sent_at, link_sent_count: before.link_sent_count });
   });
 
-  await t.test('500 update_failed when the row update fails after the email went out', async () => {
+  await t.test('500 update_failed when the claim cannot be written; nothing is sent', async () => {
     const { handler, resend } = setup({ updateResult: { data: null, error: { message: 'db down' } } });
     const res = await handler(postEvent({ client_id: CLIENT_ID }));
     assert.equal(res.statusCode, 500);
     assert.equal(parse(res).code, 'update_failed');
+    assert.equal(resend.sends.length, 0);
+  });
+
+  await t.test('429 rate_limited when another request claimed the slot first; nothing is sent', async () => {
+    // The pre-check passed (link_sent_at old) but the conditional update
+    // matched no row: someone else stamped it in between.
+    const { handler, resend, supabase } = setup({
+      client: clientRow({ link_sent_at: minutesAgo(60), link_sent_count: 2 }),
+      updateResult: { data: null, error: null }
+    });
+    const res = await handler(postEvent({ client_id: CLIENT_ID }));
+    assert.equal(res.statusCode, 429);
+    assert.equal(parse(res).code, 'rate_limited');
+    assert.equal(resend.sends.length, 0);
+    const claim = supabase.calls.find((c) => c.update !== undefined);
+    assert.ok(claim.ops.some((op) => op[0] === 'or' && /link_sent_at\.is\.null,link_sent_at\.lt\./.test(op[1])),
+      'the claim carries the window filter');
+  });
+
+  await t.test('429 daily_limit at 50 sends in 24 hours; engine not asked, nothing sent', async () => {
+    const { handler, resend, fetchPartnerDashboard, supabase } = setup({ count: 50 });
+    const res = await handler(postEvent({ client_id: CLIENT_ID }));
+    assert.equal(res.statusCode, 429);
+    assert.equal(parse(res).code, 'daily_limit');
+    assert.equal(fetchPartnerDashboard.calls.length, 0);
+    assert.equal(resend.sends.length, 0);
+    const countCall = supabase.calls.find((c) => c.head);
+    assert.ok(countCall, 'a head count query ran');
+    assert.deepEqual(eqFilters(countCall), { partner_id: PARTNER.id });
+    assert.ok(countCall.ops.some((op) => op[0] === 'gte' && op[1] === 'link_sent_at'));
+  });
+
+  await t.test('49 sends today still allows one more', async () => {
+    const updated = clientRow({ link_sent_at: NOW.toISOString(), link_sent_count: 1 });
+    const { handler, resend } = setup({ count: 49, updateResult: { data: updated, error: null } });
+    const res = await handler(postEvent({ client_id: CLIENT_ID }));
+    assert.equal(res.statusCode, 200);
     assert.equal(resend.sends.length, 1);
+  });
+
+  await t.test('subject never carries a line break from the studio name', async () => {
+    const updated = clientRow({ link_sent_at: NOW.toISOString(), link_sent_count: 1 });
+    const { handler, resend } = setup({
+      partner: { id: 'partner-1', studio_name: 'Harper\r\nBcc: x@y.z' },
+      updateResult: { data: updated, error: null }
+    });
+    await handler(postEvent({ client_id: CLIENT_ID }));
+    assert.doesNotMatch(resend.sends[0].subject, /[\r\n]/);
+  });
+
+  await t.test('no headers object at all is a 401, not a crash', async () => {
+    const { handler } = setup();
+    const res = await handler({ httpMethod: 'POST', body: '{}' });
+    assert.equal(res.statusCode, 401);
   });
 
   await t.test('200: sends to the client, reply-to the designer, link with the affiliated id, then stamps the row', async () => {
@@ -262,7 +324,8 @@ test('client-send-link', async (t) => {
     assert.ok(update, 'row is updated');
     assert.equal(update.table, 'partner_clients');
     assert.deepEqual(update.update, { link_sent_at: NOW.toISOString(), link_sent_count: 3 });
-    assert.deepEqual(eqFilters(update), { id: CLIENT_ID });
+    assert.deepEqual(eqFilters(update), { id: CLIENT_ID, partner_id: PARTNER.id });
+    assert.ok(update.ops.some((op) => op[0] === 'or'), 'the stamp is conditional on the window');
   });
 
   await t.test('designer name falls back to dealer_name, then the email', async () => {

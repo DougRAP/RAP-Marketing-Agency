@@ -91,6 +91,7 @@ const UNAVAILABLE = {
 };
 
 const NOT_LINKED_SENTENCE = 'once your account is matched';
+const UNAVAILABLE_SENTENCE = 'temporarily unavailable';
 
 async function serveDashboardData(page: Page, status: number, body: unknown): Promise<void> {
   await page.unroute(BFF_GLOB);
@@ -256,11 +257,11 @@ test.describe('Dashboard live data', () => {
 
     const ribbon = page.locator('#preview-ribbon');
     await expect(ribbon).toBeVisible();
-    await expect(ribbon).toContainText(NOT_LINKED_SENTENCE);
+    await expect(ribbon).toContainText(UNAVAILABLE_SENTENCE);
 
     const note = page.locator('.dp-sales-note[data-sales-state="unavailable"]');
     await expect(note).toBeVisible();
-    await expect(note).toContainText(NOT_LINKED_SENTENCE);
+    await expect(note).toContainText(UNAVAILABLE_SENTENCE);
 
     const tracked = page.locator('[data-field="commission-tracked"]').nth(0);
     await expect(tracked).not.toHaveText('$843');
@@ -307,7 +308,7 @@ test.describe('Dashboard live data', () => {
 
     // A fresh test account is not in SOAR (and if the engine is down the page
     // says the same thing): either way the sales are explained, not sampled.
-    await expect(page.locator('.dp-sales-note')).toContainText(NOT_LINKED_SENTENCE);
+    await expect(page.locator('.dp-sales-note')).toContainText(new RegExp(NOT_LINKED_SENTENCE + '|' + UNAVAILABLE_SENTENCE));
     await expect(page.locator('#preview-ribbon')).not.toContainText('sample data');
   });
 });

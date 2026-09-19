@@ -80,7 +80,8 @@ function createHandler(deps) {
       return errorResponse(405, 'method_not_allowed', 'POST only');
     }
 
-    const authHeader = event.headers.authorization || event.headers.Authorization || '';
+    const headers = event.headers || {};
+    const authHeader = headers.authorization || headers.Authorization || '';
     if (!authHeader.startsWith('Bearer ')) {
       return errorResponse(401, 'missing_bearer_token', 'Sign in to add a client.');
     }
@@ -135,7 +136,8 @@ function createHandler(deps) {
       if (insertErr.code === '23505') {
         return errorResponse(409, 'duplicate_client', "That client's email is already on your list.");
       }
-      console.error('[client-add] insert failed', insertErr.message);
+      // The constraint text embeds the client's email; log the code only.
+      console.error('[client-add] insert failed', insertErr.code || 'unknown');
       return errorResponse(500, 'insert_failed', 'Could not save the client. Please try again.');
     }
 

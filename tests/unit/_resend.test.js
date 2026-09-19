@@ -94,6 +94,30 @@ test('_resend', async (t) => {
     );
   });
 
+  await t.test('sendEmail aborts a hung Resend call and throws email_failed', async () => {
+    const fetchImpl = (url, init) => new Promise((resolve, reject) => {
+      init.signal.addEventListener('abort', () => {
+        const err = new Error('aborted');
+        err.name = 'AbortError';
+        reject(err);
+      });
+    });
+    await assert.rejects(
+      resend.sendEmail({ to: 'x@rapqa.com', replyTo: 'd@rapqa.com', subject: 's', text: 't', html: '<p>t</p>' },
+        { apiKey: 're_test', fetchImpl, timeoutMs: 20 }),
+      (err) => err.code === 'email_failed' && /timed out/.test(err.message)
+    );
+  });
+
+  await t.test('sendEmail keeps the recipient out of the error on a non-2xx', async () => {
+    const fetchImpl = fetchReplying(422, { message: 'x@rapqa.com is invalid' });
+    await assert.rejects(
+      resend.sendEmail({ to: 'x@rapqa.com', replyTo: 'd@rapqa.com', subject: 's', text: 't', html: '<p>t</p>' },
+        { apiKey: 're_test', fetchImpl }),
+      (err) => err.code === 'email_failed' && err.status === 422 && !/rapqa/.test(err.message)
+    );
+  });
+
   await t.test('FROM is the verified sending domain', () => {
     assert.equal(resend.FROM, 'Designer Plan <no-reply@send.thedesignerplan.com>');
   });
