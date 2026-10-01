@@ -109,11 +109,41 @@ done in the same change.
 27. **`affiliated_id` in the metadata is the code as typed** (trimmed), not
     the dealer's stored value. Same designer, different capitalisation gives
     a different key and a differently cased commission record.
-28. **The storefront cannot check out yet.** `js/cart.js` still posts the old
+28. **The storefront cannot check out yet.** Planned in full in
+    `storefront-checkout-plan.md` (2026-10-01). `js/cart.js` still posts the old
     stub payload and the button on `/plans` is disabled, so
     `cart-checkout.js` answers 400 to it. The integration kit has the real
     page code; wiring it is its own task.
-29. **Positive check of `already_purchased` against real data** was done
+29. **Done 2026-10-01.** Checked against five real Paid rows in SOARV3:
+    409 for the paid plan (any email case), 200 for another customer or
+    another plan, and no Stripe call on a refusal. Original note:
+    **Positive check of `already_purchased` against real data** was done
     with unit tests and with the query validated at engine start-up, not
     against a real Paid row. One manual run with a known paid order closes it
     (step in the test guide).
+
+## From guided testing in production (2026-10-01)
+
+Six observations from walking the dashboard live with the dealer 421
+account. Five were fixed the same day in `af13cbc`:
+
+30. Overview showed visitor blocks to a signed-in partner, including two
+    "<email> · Log out" buttons. Fixed.
+31. A client added with a buyer's email showed as "Added" until reload.
+    Fixed: the page refreshes from the server after saving.
+32. "Not available yet" did not explain itself. Fixed: "Your account is not
+    matched yet".
+33. The setup checklist ticked "Referral code assigned" next to "Not
+    assigned yet". Fixed: those items follow the code shown.
+34. The clients page is public with sample rows and no label. Decided: keep
+    it public as a sample, now with a "Sample clients" banner. Fixed.
+35. The client link leads to a shop that cannot sell and ignores `?ref=`.
+    Not fixed: planned in `storefront-checkout-plan.md`, which also records
+    two risks live in production (a plan can be bought for 50 cents through
+    the public checkout function, and designers without Stripe lose their
+    sales to dealer 416).
+
+Still open from that session: the overview's "First client link sent"
+checklist item is static (it does not tick when a link is sent), and the
+"Plan", "Commission" and "Sort" filters on the clients page do nothing
+(item 18).
