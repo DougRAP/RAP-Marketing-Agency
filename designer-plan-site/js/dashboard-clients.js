@@ -15,7 +15,9 @@
      [data-action="send-link"]      POST client-send-link for a prospect row
      [data-action="add-client"]     toggles #add-client-form
      #add-client-form               POST client-add, prepends the row locally
-     #clients-status                one status line for both actions
+     #clients-modal                 holds the page while add / send is running,
+                                    closes itself on success, waits on an error
+     #clients-status                banner with the last result of either action
      [data-field="clients-note"]    "not linked" note under the table
 
    Loaded on dashboard/clients/index.html only, AFTER dashboard.js.
@@ -31,14 +33,21 @@
     empty: 'No clients yet. Add a client to send them your plan link.',
     unavailable: 'We could not load your clients right now.',
     noMatch: 'No clients match your search.',
-    sending: 'Sending the link.',
+    titleSending: 'Sending the link',
+    sendingTo: 'Sending the link to ',
+    titleSent: 'Link sent',
     sent: 'Link sent to ',
+    titleNotSent: 'The link was not sent',
+    titleNotLinked: 'Not available yet',
     rateLimited: 'Already sent in the last 10 minutes.',
     emailNotConfigured: 'Email sending is not set up yet.',
     sendFailed: 'Could not send the link. Please try again.',
-    saving: 'Saving.',
-    added: 'Client added.',
-    addedReload: 'Client added. Reload the page to see your list.',
+    titleSaving: 'Saving the client',
+    savingName: 'Saving ',
+    titleSaved: 'Client added',
+    added: 'Client added: ',
+    addedReload: ' Reload the page to see your list.',
+    titleNotSaved: 'The client was not saved',
     duplicate: "That client's email is already on your list.",
     saveFailed: 'Could not save the client. Please try again.',
     required: 'Client name and email are required.',
@@ -209,9 +218,65 @@
     renderNote();
   }
 
-  function setStatus(text) {
+  /* ---------------- feedback: modal + banner ---------------- */
+
+  var MODAL_AUTO_CLOSE_MS = 1800;
+  var modalTimer = null;
+  var focusBeforeModal = null;
+  // One request at a time. The modal already covers the page; this also
+  // stops a keyboard Enter from starting a second one behind it.
+  var busy = false;
+
+  // The banner keeps the last result on the page after the modal is gone.
+  function setStatus(text, kind) {
     var el = document.getElementById('clients-status');
-    if (el) el.textContent = text || '';
+    if (!el) return;
+    el.textContent = text || '';
+    el.setAttribute('data-kind', kind || 'ok');
+  }
+
+  // state: 'busy' holds the page, 'ok' closes itself, 'error' waits for Close.
+  function showModal(modalState, title, text) {
+    var modal = document.getElementById('clients-modal');
+    if (!modal) return;
+    clearTimeout(modalTimer);
+    if (modal.hidden) focusBeforeModal = document.activeElement;
+    var close = modal.querySelector('[data-modal-close]');
+    modal.setAttribute('data-state', modalState);
+    modal.querySelector('#clients-modal-title').textContent = title;
+    modal.querySelector('#clients-modal-text').textContent = text || '';
+    close.hidden = modalState !== 'error';
+    modal.hidden = false;
+    if (modalState === 'error') close.focus();
+    if (modalState === 'ok') modalTimer = setTimeout(hideModal, MODAL_AUTO_CLOSE_MS);
+  }
+
+  function hideModal() {
+    var modal = document.getElementById('clients-modal');
+    if (!modal || modal.hidden) return;
+    clearTimeout(modalTimer);
+    modal.hidden = true;
+    if (focusBeforeModal && document.contains(focusBeforeModal)) focusBeforeModal.focus();
+    focusBeforeModal = null;
+  }
+
+  function succeed(title, text) {
+    showModal('ok', title, text);
+    setStatus(text, 'ok');
+  }
+
+  function fail(title, text) {
+    showModal('error', title, text);
+    setStatus(text, 'error');
+  }
+
+  function wireModal() {
+    var modal = document.getElementById('clients-modal');
+    if (!modal) return;
+    modal.querySelector('[data-modal-close]').addEventListener('click', hideModal);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !busy) hideModal();
+    });
   }
 
   // One dashboard-data answer. A payload without `clients` (an older BFF)
@@ -276,33 +341,34 @@
   }
 
   function sendLink(span) {
+    if (busy) return;
     if (span.getAttribute('aria-disabled') === 'true') {
-      setStatus(COPY.notLinked);
+      fail(COPY.titleNotLinked, COPY.notLinked);
       return;
     }
-    if (span.getAttribute('data-busy')) return;
     var id = span.getAttribute('data-client-id');
     var client = findClient(id);
     if (!client) return;
 
-    span.setAttribute('data-busy', '1');
-    span.setAttribute('aria-disabled', 'true');
-    setStatus(COPY.sending);
+    busy = true;
+    showModal('busy', COPY.titleSending, COPY.sendingTo + client.client_email + '.');
 
     callFunction(SEND_URL, { client_id: id }).then(function (res) {
+      busy = false;
       if (res.status === 200) {
         client.status = 'link_sent';
         client.link_sent_at = res.body.link_sent_at || new Date().toISOString();
         client.link_sent_count = Number(res.body.link_sent_count) || (Number(client.link_sent_count) || 0) + 1;
         render();
-        setStatus(COPY.sent + client.client_email + '.');
+        succeed(COPY.titleSent, COPY.sent + client.client_email + '.');
         return;
       }
       render();
-      setStatus(sendErrorText(res));
+      fail(COPY.titleNotSent, sendErrorText(res));
     }).catch(function () {
+      busy = false;
       render();
-      setStatus(COPY.sendFailed);
+      fail(COPY.titleNotSent, COPY.sendFailed);
     });
   }
 
@@ -356,7 +422,6 @@
     if (!form) return;
     var formStatus = document.getElementById('add-client-status');
     var submit = form.querySelector('button[type="submit"]');
-    var submitLabel = submit ? submit.textContent : '';
 
     function say(text) {
       if (formStatus) formStatus.textContent = text || '';
@@ -376,28 +441,37 @@
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (busy) return;
       if (!signedIn()) { say(COPY.notSignedIn); return; }
       var payload = formPayload(form);
       if (!payload.client_name || !payload.client_email) { say(COPY.required); return; }
 
-      if (submit) { submit.disabled = true; submit.textContent = COPY.saving; }
+      // A refusal is shown in the modal and left next to the form, so it is
+      // still there once the modal is closed and the form is being corrected.
+      function refuse(text) {
+        say(text);
+        fail(COPY.titleNotSaved, text);
+      }
+
+      busy = true;
+      if (submit) submit.disabled = true;
       say('');
+      showModal('busy', COPY.titleSaving, COPY.savingName + payload.client_name + '.');
 
       callFunction(ADD_URL, payload).then(function (res) {
-        if (submit) { submit.disabled = false; submit.textContent = submitLabel; }
-        if (res.status !== 201) { say(addErrorText(res)); return; }
-        state.clients.unshift(clientFromAdded(res.body));
+        busy = false;
+        if (submit) submit.disabled = false;
+        if (res.status !== 201) { refuse(addErrorText(res)); return; }
+        var added = clientFromAdded(res.body);
+        state.clients.unshift(added);
         form.reset();
         form.hidden = true;
-        if (state.available) {
-          render();
-          setStatus(COPY.added);
-        } else {
-          setStatus(COPY.addedReload);
-        }
+        if (state.available) render();
+        succeed(COPY.titleSaved, COPY.added + added.client_name + '.' + (state.available ? '' : COPY.addedReload));
       }).catch(function () {
-        if (submit) { submit.disabled = false; submit.textContent = submitLabel; }
-        say(COPY.saveFailed);
+        busy = false;
+        if (submit) submit.disabled = false;
+        refuse(COPY.saveFailed);
       });
     });
   }
@@ -433,6 +507,7 @@
   function start() {
     if (!field('clients-table') || !dash()) return;
     wireFilters();
+    wireModal();
     wireSendLink();
     wireAddForm();
     document.addEventListener('dp-dashboard-data', function (e) { apply(e.detail); });

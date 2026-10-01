@@ -320,4 +320,103 @@ test.describe('Client pipeline UI', () => {
     await expect(cells.first()).toHaveText(UNAVAILABLE_ROW);
     await expect(page.locator('body')).not.toContainText('Miller Residence');
   });
+
+  test('U.5 send link: a modal blocks the page while sending, then confirms and leaves a banner', async ({ page }) => {
+    await serveDashboardData(page, 200, LINKED_WITH_CLIENTS);
+    let sendCalls = 0;
+    await page.route('**/.netlify/functions/client-send-link', async (route) => {
+      sendCalls++;
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: WESTON_CLIENT.id, link_sent_at: '2026-10-01T15:00:00Z', link_sent_count: 1 })
+      });
+    });
+    await openClients(page);
+
+    const send = page.locator(`[data-action="send-link"][data-client-id="${WESTON_CLIENT.id}"]`);
+    const box = await send.boundingBox();
+    await send.click();
+
+    const modal = page.locator('#clients-modal');
+    await expect(modal).toBeVisible();
+    await expect(modal).toHaveAttribute('data-state', 'busy');
+    await expect(modal).toContainText('Sending the link to weston@example.com');
+
+    // A second click on the same spot lands on the overlay, not on the action.
+    await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+
+    await expect(modal).toHaveAttribute('data-state', 'ok');
+    await expect(modal).toContainText('Link sent to weston@example.com');
+    await expect(modal).toBeHidden();
+    expect(sendCalls).toBe(1);
+
+    const banner = page.locator('#clients-status');
+    await expect(banner).toBeVisible();
+    await expect(banner).toHaveAttribute('data-kind', 'ok');
+    await expect(banner).toHaveText('Link sent to weston@example.com.');
+  });
+
+  test('U.6 a refused send stays on screen until it is closed', async ({ page }) => {
+    await serveDashboardData(page, 200, LINKED_WITH_CLIENTS);
+    await page.route('**/.netlify/functions/client-send-link', (route) => route.fulfill({
+      status: 429,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 'rate_limited', message: 'A link was sent to this client in the last 10 minutes.' })
+    }));
+    await openClients(page);
+
+    await page.locator(`[data-action="send-link"][data-client-id="${BROWN_CLIENT.id}"]`).click();
+
+    const modal = page.locator('#clients-modal');
+    await expect(modal).toHaveAttribute('data-state', 'error');
+    await expect(modal).toContainText('Already sent in the last 10 minutes.');
+
+    // Bad news does not dismiss itself: it waits to be read.
+    await page.waitForTimeout(2500);
+    await expect(modal).toBeVisible();
+    await modal.locator('[data-modal-close]').click();
+    await expect(modal).toBeHidden();
+
+    const banner = page.locator('#clients-status');
+    await expect(banner).toHaveAttribute('data-kind', 'error');
+    await expect(banner).toHaveText('Already sent in the last 10 minutes.');
+  });
+
+  test('U.7 add client: the same modal confirms the save', async ({ page }) => {
+    await serveDashboardData(page, 200, LINKED_WITH_CLIENTS);
+    await page.route('**/.netlify/functions/client-add', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: '44444444-4444-4444-8444-444444444444',
+          client_name: 'Nueva Casa',
+          project_name: null,
+          client_email: 'nueva@example.com',
+          link_sent_at: null,
+          link_sent_count: 0
+        })
+      });
+    });
+    await openClients(page);
+
+    await page.click('[data-action="add-client"]');
+    const form = page.locator('#add-client-form');
+    await form.locator('[name="client_name"]').fill('Nueva Casa');
+    await form.locator('[name="client_email"]').fill('nueva@example.com');
+    await form.locator('button[type="submit"]').click();
+
+    const modal = page.locator('#clients-modal');
+    await expect(modal).toHaveAttribute('data-state', 'busy');
+    await expect(modal).toContainText('Saving Nueva Casa');
+    await expect(modal).toHaveAttribute('data-state', 'ok');
+    await expect(modal).toContainText('Client added');
+    await expect(modal).toBeHidden();
+
+    await expect(page.locator('#clients-status')).toHaveText('Client added: Nueva Casa.');
+    await expect(rows(page)).toHaveCount(4);
+  });
 });
