@@ -115,6 +115,10 @@ Each has a recommendation; none of the work below can be finished without them.
 | D9 | Consent wording shown at checkout | Legal wording from RAP |
 | D10 | Does a plan activate on payment, or after review? | Sets the success page copy; on payment matches what fulfillment does today |
 
+**Decided 2026-10-01 (Adrian):** every payment check is done with real money,
+in production. There is no Stripe test-mode environment for this flow.
+Phase 3 is written accordingly.
+
 ---
 
 ## 4. The plan
@@ -250,18 +254,56 @@ remove the figure.
 stops forwarding a browser price as the charge (E2), logs `cart_started` as
 today and keeps the Phase 0 switch.
 
-### Phase 3: go live
+### Phase 3: go live, tested with real money
 
-1. Everything in Stripe test mode: local engine on the dev profile and a Netlify
-   deploy preview with test keys, card 4242, plus a refund and a declined card.
-2. Designer without Stripe buys through the link: commission appears as
-   pending; connect Stripe in test mode: the commission is paid (E1, E5).
-3. Tampering checks: a hand-built request with a low amount or an unknown plan
-   is refused before any PaymentIntent exists (E2, E3).
-4. Production with live keys: one real purchase at the real price by RAP,
-   then a refund, checking plan, commission and both dashboards at each step.
-5. Turn `CHECKOUT_OPEN=true`, enable the checkout button, and only then tell
-   designers that "Send link" sells.
+All payment checks happen in production with live keys and real cards (see
+the decision under section 3). That changes what has to be true before the
+first one:
+
+**Before the first real charge**
+
+- Phase 1 is deployed: the engine sets the price (E2) and refuses an unknown
+  plan before charging (E3). With real money, a mistake in the page must not
+  be able to charge a wrong amount.
+- E4 (refunds) is deployed, because every test purchase is refunded and the
+  refund must cancel the plan and the commission.
+- A RAP test designer exists with a real Stripe Connect account owned by RAP,
+  so a commission transfer can be paid and then reversed.
+
+**How test purchases are marked**
+
+- Customer email on a RAP-owned `@rapqa.com` mailbox, so confirmation emails
+  reach RAP and the management reports (which exclude `rapqa.com`) leave
+  them out.
+- Order reference prefixed `QALIVE-`, so the rows in SOARV3 can be found and,
+  if decided, removed with a script like the dealer 421 one.
+- Cards of RAP staff, lowest-priced plan unless a step needs another.
+
+**What it costs:** Stripe keeps its processing fee on a refunded charge, so
+each test purchase costs that fee even when refunded. Keep the list short.
+
+**The opening window:** `CHECKOUT_OPEN=true` is turned on for the test run
+and off again until launch, or left on once the run passes. With E2 and E3 in
+place an open checkout can no longer sell at a wrong price, so the window is
+about readiness, not safety.
+
+**The run, in order**
+
+1. Unknown plan and low amount by hand: refused, no PaymentIntent created
+   (E2, E3). Costs nothing.
+2. Purchase through a designer link by a designer without Stripe: plan
+   registered, confirmation received, commission pending under that designer
+   (E1). Refund: plan cancelled, commission cancelled (E4).
+3. Same designer connects Stripe: the pending commission is paid to the
+   connected account (E5), then the transfer is reversed by the refund path.
+4. Purchase through a designer with Stripe ready: split payment, commission
+   paid at once; refund reverses it.
+5. Double click and retry on a real purchase: one charge (already covered by
+   the idempotency key, checked again with real money).
+6. Declined card: clear message, nothing registered.
+7. Reconciliation (E8) shows no paid-but-unregistered rows after the run.
+8. Only then: button enabled for everyone, and designers told that "Send link"
+   sells.
 
 ---
 
@@ -274,8 +316,10 @@ today and keeps the Phase 0 switch.
   reference and the error mapping.
 - Site: `tests/unit/ref.test.js`; Playwright `12-plans-checkout.spec.ts` with a
   routed BFF (arrive with `?ref=`, the code survives navigation, the request
-  carries it, honeypot, one plan only, every error code shown), and one run
-  against Stripe test mode with the Payment Element.
+  carries it, honeypot, one plan only, every error code shown).
+- The automated suites keep their stubs and mocks: they never charge, and they
+  run on every change. Every check that involves an actual payment is a
+  Phase 3 step with real money.
 
 ---
 
