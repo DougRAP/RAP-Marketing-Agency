@@ -131,7 +131,9 @@ Phase 3 is written accordingly.
 moment this deploys, and nothing on the site can use it anyway. Unit test for
 both states. This is reversible with one env var.
 
-**P0.2 Allowlist in production.** Set `checkout.allowed-plan-ids` to the
+**P0.2 Allowlist in production.** **Done 2026-10-01** in engine 0.7.7
+(Designers `3bd8d43`): `300000,400000,500000`, the plans the engine's own
+store sells; it takes effect once that WAR is deployed. Set `checkout.allowed-plan-ids` to the
 confirmed ids (D4) in the engine's prod profile, so an unknown plan cannot be
 registered even through an old link.
 

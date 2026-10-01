@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de pruebas: Fase 0, cerrar la puerta del checkout</title>
+<style>
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#fff;color:#1a1a1a;margin:0;line-height:1.5}
+  main{max-width:960px;margin:0 auto;padding:32px 24px 64px}
+  h1{font-size:1.75rem;margin:0 0 4px}
+  h2{font-size:1.25rem;margin:40px 0 12px;padding-bottom:6px;border-bottom:1px solid #ddd}
+  h3{font-size:1rem;margin:24px 0 8px}
+  .meta{color:#555;font-size:.9rem;margin-bottom:24px}
+  table{border-collapse:collapse;width:100%;font-size:.9rem;margin:12px 0}
+  th,td{border:1px solid #ccc;padding:8px 10px;vertical-align:top;text-align:left}
+  th{background:#f4f4f4}
+  code,pre{font-family:ui-monospace,Consolas,monospace;font-size:.85rem}
+  code{background:#f4f4f4;padding:1px 4px;border-radius:3px}
+  pre{background:#f4f4f4;padding:12px;border:1px solid #ddd;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+  .badge{display:inline-block;font-size:.72rem;padding:1px 6px;border:1px solid #999;border-radius:3px;margin-left:6px;vertical-align:middle}
+  .imp{border-color:#b00;color:#b00}.inf{border-color:#8a6d00;color:#8a6d00}.pen{border-color:#555;color:#555}
+  ul{padding-left:22px}
+  .check{list-style:none;padding-left:0}.check li{margin:4px 0}
+  @media print{body{font-size:11pt}h2{page-break-after:avoid}tr{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Fase 0: cerrar la puerta del checkout</h1>
+<p class="meta">Generada el 1 de octubre de 2026. Sitio <code>RAPMarketingAgency</code> (rama <code>main</code>): commits <code>fb80717</code> y <code>cd47cbb</code>. Motor <code>Designers</code> (rama <code>master</code>): commit <code>3bd8d43</code>, versión 0.7.7. Plan: <code>designer-plan-site/docs/storefront-checkout-plan.md</code>, Fase 0.</p>
+
+<h2>Resumen ejecutivo</h2>
+<ul>
+  <li><strong>P0.1:</strong> la función de checkout de thedesignerplan.com responde <code>503 checkout_closed</code> salvo que la variable de Netlify <code>CHECKOUT_OPEN</code> valga exactamente <code>true</code>. No está definida, así que el checkout queda cerrado en cuanto se despliegue.</li>
+  <li><strong>P0.2:</strong> el motor 0.7.7 solo registra los planes 300000, 400000 y 500000 cuando el pago viene del checkout nuevo. Los pagos de la tienda vieja de designerplan.io no se ven afectados.</li>
+  <li>El comprador no nota diferencia: hoy la tienda no podía cobrar y sigue viendo el mismo aviso "Checkout is in development".</li>
+  <li>Pruebas: 104 unitarias del sitio, 74 de Playwright (2 nuevas) y 114 del motor (3 nuevas), todas en verde.</li>
+  <li><span class="badge imp">Importante</span> Nada de esto protege producción hasta que se hagan el push del sitio y el despliegue del WAR 0.7.7.</li>
+</ul>
+
+<h2>Contexto: qué había antes</h2>
+<ul>
+  <li>La función <code>/.netlify/functions/cart-checkout</code> es pública (los compradores no tienen cuenta) y reenviaba al motor el precio que mandaba el navegador.</li>
+  <li>El motor en producción cobra ese importe con claves reales de Stripe (modo <code>amount</code>, mínimo 50 centavos) y no tenía lista de planes permitidos.</li>
+  <li>Resultado: una petición hecha a mano podía crear un cobro real de 50 centavos por un plan Premium Plus, que luego se registraba como vendido.</li>
+</ul>
+
+<h2>Problema / tema trabajado</h2>
+<p>Riesgo de dinero real descubierto al planificar la tienda (punto 2.1 del plan). La Fase 0 lo cierra sin esperar decisiones del negocio, y de forma reversible: abrir el checkout es definir una variable y redesplegar.</p>
+
+<h2>Qué se hizo</h2>
+<table>
+  <tr><th>Pieza</th><th>Archivo</th><th>Cambio</th></tr>
+  <tr><td>P0.1</td><td><code>designer-plan-site/netlify/functions/cart-checkout.js</code></td><td>Comprobación de <code>CHECKOUT_OPEN</code> justo después de la del método y antes de leer el cuerpo: cerrado, no lee nada, no llama al motor ni a Supabase. Refactor mínimo <code>createHandler(deps)</code> para los tests, como en las funciones vecinas. El camino abierto no cambia.</td></tr>
+  <tr><td>P0.1</td><td><code>tests/unit/cart-checkout.test.js</code></td><td>13 tests: cerrado sin variable y con <code>false</code>, <code>1</code>, <code>TRUE </code> y vacío; el cierre gana al honeypot y al JSON roto; GET sigue en 405; abierto, todo funciona como antes; la variable se lee en cada petición.</td></tr>
+  <tr><td>P0.1</td><td><code>tests/e2e/12-checkout-closed.spec.ts</code></td><td>2 tests: la función responde 503 antes de leer el cuerpo, y el comprador en <code>/plans</code> conserva el carrito y ve el aviso de siempre. Ninguno manda una compra válida: si el cierre faltara, el test fallaría en 400 sin crear ningún cobro.</td></tr>
+  <tr><td>P0.2</td><td><code>application.properties</code> y <code>application-prod.properties</code> del motor (fuera de git)</td><td><code>checkout.allowed-plan-ids=300000,400000,500000</code>, los planes que vende la propia tienda del motor (<code>selectPlan.html</code>).</td></tr>
+  <tr><td>P0.2</td><td><code>PlanFulfillmentServiceTest.java</code>, <code>pom.xml</code></td><td>3 tests que fijan el comportamiento del que depende ese valor; versión 0.7.7. Se comprobó con una mutación que el test del plan fuera de la lista detecta si la comprobación se desactiva.</td></tr>
+  <tr><td>Docs</td><td>contrato de errores, kit de integración, <code>DEPLOY.md</code>, <code>CLAUDE.md</code>, <code>.env.example</code>, plan y pendientes; <code>smoke-test-bff.ps1</code> compra ahora el plan 300000</td><td>Todo coherente con el código. El <code>CLAUDE.md</code> del motor también se actualizó, pero no está en git.</td></tr>
+</table>
+
+<h2>Cómo se resolvió</h2>
+<ul>
+  <li><strong>Falla cerrado:</strong> solo la palabra exacta <code>true</code> abre. Una errata o un espacio de más solo pueden cerrar, nunca abrir.</li>
+  <li><strong>Antes de leer nada:</strong> cerrado, todas las peticiones reciben la misma respuesta, así que tampoco se puede sondear qué validaciones hay.</li>
+  <li><strong>La lista de planes es la segunda línea:</strong> detiene el registro, no el cobro. Comprobar el plan antes de cobrar es el punto E3 de la Fase 1.</li>
+  <li><strong>Revisado por:</strong> dos planificadores, dos implementadores, un auditor y Codex. Codex detectó que el primer test de Playwright mandaba una compra válida; se cambió por cuerpos que nunca pueden llegar al motor.</li>
+</ul>
+
+<h2>Precondiciones para probar</h2>
+<table>
+  <tr><th>Qué</th><th>Detalle</th></tr>
+  <tr><td>Sitio en local</td><td>Repo <code>RAPMarketingAgency</code> en <code>main</code>. <code>designer-plan-site/.env</code> <strong>sin</strong> <code>CHECKOUT_OPEN</code>.</td></tr>
+  <tr><td>Producción, sitio</td><td><span class="badge pen">Pendiente</span> push de <code>main</code> (Netlify despliega solo). Comprobar en Netlify que <code>CHECKOUT_OPEN</code> no existe.</td></tr>
+  <tr><td>Producción, motor</td><td><span class="badge pen">Pendiente</span> subir <code>C:\SourceCode\RAP\Designers\target\designers-0.7.7-prod.war</code> al Tomcat, como hiciste con la 0.7.6.</td></tr>
+  <tr><td>Dinero</td><td>Ningún paso de esta guía crea un cobro.</td></tr>
+</table>
+
+<h2>Pasos para probar</h2>
+<h3>A. Automáticas</h3>
+<table>
+  <tr><th>Paso</th><th>Acción</th><th>Resultado esperado</th><th>Estado</th></tr>
+  <tr><td>1</td><td>En <code>RAPMarketingAgency</code>: <code>npm run test:unit</code></td><td>104 tests, 0 fallos.</td><td>☐</td></tr>
+  <tr><td>2</td><td><code>npx playwright test tests/e2e/12-checkout-closed.spec.ts</code></td><td>2 passed.</td><td>☐</td></tr>
+  <tr><td>3</td><td>En <code>Designers</code>: <pre>.\mvnw.cmd -o test -Dtest="PlanFulfillmentServiceTest"</pre></td><td>8 tests, 0 fallos.</td><td>☐</td></tr>
+</table>
+<h3>B. Producción, tras el push del sitio</h3>
+<table>
+  <tr><th>Paso</th><th>Acción</th><th>Resultado esperado</th><th>Estado</th></tr>
+  <tr><td>4</td><td><pre>curl -s -X POST https://thedesignerplan.com/.netlify/functions/cart-checkout -H "Content-Type: application/json" -d "{}"</pre></td><td><code>{"code":"checkout_closed","message":"Checkout is not open yet. Your items are saved in your cart."}</code> con HTTP 503. Antes del push respondía 400 <code>validation_failed</code>: ese cambio es la prueba de que la puerta está cerrada.</td><td>☐</td></tr>
+  <tr><td>5</td><td>La misma llamada con <code>-X GET</code> en lugar de <code>-X POST</code>.</td><td>405, como siempre.</td><td>☐</td></tr>
+  <tr><td>6</td><td>Abrir <code>https://thedesignerplan.com/plans</code>, añadir el primer plan al carrito y pulsar el botón de checkout.</td><td>El mismo aviso de antes: "Checkout is in development. Your items are saved in your cart." El carrito sigue con el plan.</td><td>☐</td></tr>
+</table>
+<h3>C. Producción, tras desplegar el WAR 0.7.7</h3>
+<table>
+  <tr><th>Paso</th><th>Acción</th><th>Resultado esperado</th><th>Estado</th></tr>
+  <tr><td>7</td><td>Antes de subirlo, comprobar el WAR: <pre>unzip -p target/designers-0.7.7-prod.war WEB-INF/classes/application-prod.properties | grep allowed-plan-ids</pre></td><td><code>checkout.allowed-plan-ids=300000,400000,500000</code></td><td>☐</td></tr>
+  <tr><td>8</td><td>Tras desplegar, abrir <code>https://designerplan.io/api/version</code>.</td><td>Empieza por <code>0.7.7.</code></td><td>☐</td></tr>
+  <tr><td>9</td><td>Comprar un plan en la tienda de designerplan.io como lo hace un cliente (es la tienda real y cobra de verdad: solo si toca una compra real; si no, saltar).</td><td>Funciona igual que antes: esos pagos no pasan por la lista. <span class="badge inf">Inferido</span> por el código y por el test <code>allowlist_legacyNoMarker_skipped</code>.</td><td>☐</td></tr>
+  <tr><td>10</td><td>Dashboard de thedesignerplan.com con la cuenta 421, y el de designerplan.io.</td><td>Mismas cifras que hoy ($852.40 / $936.00 / 5). La versión 0.7.7 no toca nada de eso.</td><td>☐</td></tr>
+</table>
+
+<h2>Escenarios negativos y edge cases</h2>
+<table>
+  <tr><th>Caso</th><th>Cómo</th><th>Esperado</th><th>Estado</th></tr>
+  <tr><td>Variable mal escrita</td><td>Tests unitarios con <code>TRUE </code>, <code>1</code>, <code>false</code>, vacío</td><td>Todo cerrado.</td><td>☐</td></tr>
+  <tr><td>Honeypot con checkout cerrado</td><td>Test unitario</td><td>503, no el 200 silencioso de siempre: cerrado gana.</td><td>☐</td></tr>
+  <tr><td>JSON roto</td><td>Test unitario y paso 2</td><td>503, no 400: se comprueba antes de leer el cuerpo.</td><td>☐</td></tr>
+  <tr><td>Plan fuera de la lista</td><td>Test <code>allowlist_planOutsideList_throws</code></td><td>Se rechaza el registro. <span class="badge imp">Importante</span> No probar en producción: el cobro ya habría ocurrido.</td><td>☐</td></tr>
+  <tr><td>Abrir el checkout</td><td>No hacerlo hasta la Fase 3</td><td>Sería: definir <code>CHECKOUT_OPEN=true</code> en Netlify y redesplegar.</td><td>☐</td></tr>
+  <tr><td>Regresión del panel y del pipeline</td><td>Playwright completo</td><td>74 de 74. Un fallo de inicio de sesión por lentitud de Supabase en un spec que no toca el checkout se repitió y pasó.</td><td>☐</td></tr>
+</table>
+
+<h2>Checklist final</h2>
+<ul class="check">
+  <li>☐ 104 unitarios, 74 Playwright y 114 del motor en verde.</li>
+  <li>☐ Push de <code>main</code> del sitio.</li>
+  <li>☐ En producción, <code>cart-checkout</code> responde 503 <code>checkout_closed</code> (paso 4).</li>
+  <li>☐ <code>CHECKOUT_OPEN</code> no está definida en Netlify.</li>
+  <li>☐ WAR 0.7.7 desplegado y <code>/api/version</code> empieza por <code>0.7.7.</code></li>
+  <li>☐ Push del motor a Bitbucket (4 commits locales: <code>5a61d98</code>, <code>bb7240a</code>, <code>1662f21</code>, <code>3bd8d43</code>).</li>
+</ul>
+
+<h2>Notas / riesgos / pendientes</h2>
+<ul>
+  <li>La lista de planes detiene el registro, no el cobro. El cobro de un plan desconocido solo queda imposible con el punto E3 de la Fase 1; hoy lo impide el cierre del checkout.</li>
+  <li><code>pricing.tampering.mode</code> sigue en <code>soft</code> en producción; tampoco ayudaría mientras el navegador ponga el precio. Lo resuelve el punto E2 (precio en el servidor).</li>
+  <li>Las propiedades y el <code>CLAUDE.md</code> del motor no están en git: la lista de planes vive en esta máquina y dentro del WAR. Si se compila en otra máquina, hay que replicarla.</li>
+  <li>El comprador sigue viendo "Checkout is in development" en lugar del mensaje nuevo, porque <code>js/cart.js</code> muestra ese aviso para cualquier respuesta sin pago. Es intencional hasta la Fase 2.</li>
+</ul>
+
+</main>
+</body>
+</html>
