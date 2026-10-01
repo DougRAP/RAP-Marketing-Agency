@@ -84,3 +84,36 @@ blocks the lanes; they are taken in order after the lanes are verified.
     a plain `spring-boot:run` validates with the production HMAC key. For
     local integration start it with `-Dspring-boot.run.profiles=dev`, whose
     key matches the site's `.env`. Worth a line in the engine README.
+
+## Left open by the checkout double-charge fix (2026-10-01, Designers `5a61d98`)
+
+The fix covers `/api/v1/checkout`. These were looked at and deliberately not
+done in the same change.
+
+23. **A checkout-attempt id from the browser.** Today the key is derived from
+    the request, so an identical request is the same attempt. The cleaner
+    model is an attempt UUID the page creates and keeps across retries, with
+    the engine remembering attempt to PaymentIntent. Needs the storefront
+    checkout page, which does not exist yet.
+24. **Legacy PaymentIntent paths have no key:** `CheckoutController` (the
+    designerplan.io flow) and `StripeController`. stripe-java adds a random
+    key per call, so its own network retries are safe, but a repeated
+    browser submit there still creates a second PaymentIntent.
+25. **No uniqueness in the database.** The already-purchased check reads
+    `SoarSales`; nothing stops two fulfillments racing past it more than a
+    day apart with the first webhook still pending. A unique index on plan,
+    order and customer needs a look at the historical rows first.
+26. **HMAC replay window** is still 300 seconds with no nonce. Idempotency
+    makes a replayed checkout harmless; other signed endpoints are read
+    only. Shorten or add a nonce if a write endpoint is ever added.
+27. **`affiliated_id` in the metadata is the code as typed** (trimmed), not
+    the dealer's stored value. Same designer, different capitalisation gives
+    a different key and a differently cased commission record.
+28. **The storefront cannot check out yet.** `js/cart.js` still posts the old
+    stub payload and the button on `/plans` is disabled, so
+    `cart-checkout.js` answers 400 to it. The integration kit has the real
+    page code; wiring it is its own task.
+29. **Positive check of `already_purchased` against real data** was done
+    with unit tests and with the query validated at engine start-up, not
+    against a real Paid row. One manual run with a known paid order closes it
+    (step in the test guide).

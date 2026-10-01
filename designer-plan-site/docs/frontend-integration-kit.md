@@ -99,7 +99,10 @@ Every non-2xx is `{ "code": "<machine_code>", "message": "<human_text>" }` (engi
 | 415 | `unsupported_media_type` | `Content-Type` ≠ `application/json` | Config bug — log it. |
 | 422 | `business_rule_violation` | A business rule rejected it | Show `message`. |
 | 404 | `not_found` | Referenced resource missing | Show `message`. |
-| 409 | `conflict` | State conflict | Show `message`. |
+| 409 | `already_purchased` | This customer already has this plan, paid, for this order number | "This plan was already purchased for that order." Not retryable. |
+| 409 | `checkout_in_progress` | The same checkout is still being created (a double click or a retry that overtook the first request) | "Your checkout is already being processed. Please wait a moment." Do not resubmit automatically. |
+| 409 | `checkout_conflict` | Stripe saw the same checkout key with different parameters. Should not happen; it is logged as an engine error | "Something went wrong. Please contact support." Not retryable. |
+| 409 | `conflict` | Any other state conflict | Show `message` |
 | 429 | `rate_limited` | Too many requests | "Too many attempts — please wait a moment." (retryable) |
 | 502 | `stripe_unavailable` | Stripe call failed inside the engine | "Payment service is temporarily unreachable. Please try again." (retryable) |
 | 500 | `internal_error` | Unhandled engine exception | "Something went wrong on our end. Please try again." (retryable) |
@@ -115,7 +118,7 @@ A `401` means the **BFF's own HMAC credentials are misconfigured** (`HMAC_KEY_ID
 3. **Send `consent_text`** — the literal consent copy shown.
 4. **NEVER call Stripe when a 200 lacks `client_secret`.**
 
-> **⚠ Engine-side caveat (as of 2026-06-02):** the engine's `/api/v1/checkout` does **not** yet pass a Stripe idempotency key, so the front-end single-flight guard (rule #1) is the only thing preventing a double charge today. Closing the engine gap (idempotency key keyed on `sales_order_number`+`plan_id`) is tracked separately — until then, rule #1 is load-bearing.
+> **Engine side, since 2026-10-01 (Designers commit `5a61d98`):** `/api/v1/checkout` sends Stripe an idempotency key derived from everything it sends, so an identical request repeated within about a day returns the **same** PaymentIntent instead of a second one, and a paid plan for the same order and customer is refused with `409 already_purchased`. Rule #1 is still required (it is what keeps the UI honest), but it is no longer the only layer. One consequence for the page: a retry can come back with a PaymentIntent that is already paid or cancelled, so handle Stripe's "unexpected state" on confirm by showing the outcome, not by starting over. This protection is live only once the engine is deployed with that commit.
 
 ---
 
@@ -334,6 +337,9 @@ Plain static HTML/JS matching the site's no-framework convention. Stripe.js v3 P
     switch (data && data.code) {
       case 'validation_failed':      return (data && data.message) || 'Please check your details and try again.';
       case 'rate_limited':           return 'Too many attempts — please wait a moment.';
+      case 'already_purchased':      return 'This plan was already purchased for that order.';
+      case 'checkout_in_progress':   return 'Your checkout is already being processed. Please wait a moment.';
+      case 'checkout_conflict':      return 'Something went wrong. Please contact support.';
       case 'upstream_unavailable':
       case 'stripe_unavailable':     return 'Payment service is temporarily unreachable. Please try again.';
       case 'internal_error':         return 'Something went wrong on our end. Please try again.';

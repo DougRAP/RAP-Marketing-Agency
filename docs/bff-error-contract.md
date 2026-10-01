@@ -91,7 +91,10 @@ The BFF forwards these with the engine's status + body unchanged.
 | 415 | `unsupported_media_type` | `Content-Type` ≠ `application/json` | (config bug) — log it |
 | 422 | `business_rule_violation` | A business rule rejected the request (e.g. amount-vs-coverage in `strict` tamper mode) | Show `message` |
 | 404 | `not_found` | Referenced resource missing | Show `message` |
-| 409 | `conflict` | State conflict | Show `message` |
+| 409 | `already_purchased` | This customer already has this plan, paid, for this order number | "This plan was already purchased for that order." Not retryable. |
+| 409 | `checkout_in_progress` | The same checkout is still being created (a double click or a retry that overtook the first request) | "Your checkout is already being processed. Please wait a moment." Do not resubmit automatically. |
+| 409 | `checkout_conflict` | Stripe saw the same checkout key with different parameters. Should not happen; it is logged as an engine error | "Something went wrong. Please contact support." Not retryable. |
+| 409 | `conflict` | Any other state conflict | Show `message` |
 | 429 | `rate_limited` | Too many requests | "Too many attempts — please wait a moment." |
 | 502 | `stripe_unavailable` | Stripe API call failed inside the engine | "Payment service is temporarily unreachable. Please try again." |
 | 500 | `internal_error` | Unhandled engine exception | "Something went wrong on our end. Please try again." |

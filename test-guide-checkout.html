@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de pruebas: sin doble cobro en el checkout</title>
+<style>
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#fff;color:#1a1a1a;margin:0;line-height:1.5}
+  main{max-width:960px;margin:0 auto;padding:32px 24px 64px}
+  h1{font-size:1.75rem;margin:0 0 4px}
+  h2{font-size:1.25rem;margin:40px 0 12px;padding-bottom:6px;border-bottom:1px solid #ddd}
+  h3{font-size:1rem;margin:24px 0 8px}
+  .meta{color:#555;font-size:.9rem;margin-bottom:24px}
+  table{border-collapse:collapse;width:100%;font-size:.9rem;margin:12px 0}
+  th,td{border:1px solid #ccc;padding:8px 10px;vertical-align:top;text-align:left}
+  th{background:#f4f4f4}
+  code,pre{font-family:ui-monospace,Consolas,monospace;font-size:.85rem}
+  code{background:#f4f4f4;padding:1px 4px;border-radius:3px}
+  pre{background:#f4f4f4;padding:12px;border:1px solid #ddd;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+  .badge{display:inline-block;font-size:.72rem;padding:1px 6px;border:1px solid #999;border-radius:3px;margin-left:6px;vertical-align:middle}
+  .imp{border-color:#b00;color:#b00}.inf{border-color:#8a6d00;color:#8a6d00}.pen{border-color:#555;color:#555}
+  ul{padding-left:22px}
+  .check{list-style:none;padding-left:0}.check li{margin:4px 0}
+  @media print{body{font-size:11pt}h2{page-break-after:avoid}tr{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Un pedido no puede cobrarse dos veces en <code>/api/v1/checkout</code></h1>
+<p class="meta">Generada el 1 de octubre de 2026. Repositorio del cambio: <code>Designers</code> (motor), rama <code>master</code>, commit <code>5a61d98</code>. Documentación en <code>RAPMarketingAgency</code>. Especificación: se fijó tras una segunda opinión de Codex y dos revisiones (sobreingeniería y defectos).</p>
+
+<h2>Resumen ejecutivo</h2>
+<ul>
+  <li>El checkout del puente (<code>POST /api/v1/checkout</code>) creaba un cobro nuevo en Stripe por cada petición. Un doble clic, un reintento o una petición repetida daban dos cobros y dos coberturas.</li>
+  <li>Ahora el motor envía a Stripe una clave de idempotencia calculada a partir de todo lo que envía. La misma petición repetida devuelve <strong>el mismo</strong> cobro.</li>
+  <li>Stripe olvida la clave en unas 24 horas. Para después de ese plazo, el motor comprueba antes de cobrar si ese cliente ya tiene ese plan pagado para ese pedido, y responde <code>409 already_purchased</code>.</li>
+  <li>Verificado contra Stripe en modo de prueba: peticiones repetidas y cuatro simultáneas devolvieron un único PaymentIntent.</li>
+  <li>El checkout viejo de designerplan.io no cambia. 106 tests en verde.</li>
+  <li><span class="badge imp">Importante</span> Sin desplegar. La protección existe en producción solo cuando el motor se despliegue con este commit.</li>
+</ul>
+
+<h2>Contexto: qué había antes</h2>
+<ul>
+  <li><code>CheckoutService</code> llamaba a <code>PaymentIntent.create(params)</code> sin clave propia, y el grupo de transferencia llevaba la hora del reloj.</li>
+  <li>El registro de la cobertura (webhook <code>payment_intent.succeeded</code>) solo evita duplicados por identificador de cobro. Dos cobros distintos del mismo pedido se registraban los dos.</li>
+  <li>La única barrera era que el botón de la página se deshabilita al hacer clic.</li>
+  <li>Las claves de Stripe del motor en producción son reales (live).</li>
+</ul>
+
+<h2>Problema / tema trabajado</h2>
+<p>Riesgo de doble cobro con dinero real, anotado desde junio y vuelto urgente porque el 18 de septiembre se desplegó en thedesignerplan.com la función que llama a ese endpoint. Reanálisis: la tienda todavía no puede llegar a cobrar (el carrito manda un formato viejo y el botón está deshabilitado), así que el riesgo solo era alcanzable llamando a la función directamente. Se cerró igualmente en el motor, que es donde vive.</p>
+
+<h2>Qué se hizo</h2>
+<table>
+  <tr><th>Archivo (motor)</th><th>Cambio</th></tr>
+  <tr><td><code>services/CheckoutService.java</code></td><td>Los dos métodos con metadatos reciben una clave de idempotencia y la pasan a Stripe. Con clave, el grupo de transferencia sale de la clave y no del reloj. Sin clave (flujo viejo), comportamiento idéntico al anterior.</td></tr>
+  <tr><td><code>controllers/CheckoutApiV1Controller.java</code></td><td>Normaliza los datos del cliente una vez (espacios, correo en minúsculas). Calcula la clave <code>v1ckt-</code> + SHA-256 de importe, moneda, cuenta destino, comisión y todos los metadatos. Comprueba "ya comprado" antes de llamar a Stripe.</td></tr>
+  <tr><td><code>repositories/SoarSalesRepository.java</code></td><td>Consulta nueva <code>countPurchasedPlans</code>: mismo plan, mismo pedido, mismo cliente (por usuario o correo), y solo ventas con <code>PaymentStatus = 'Paid'</code>.</td></tr>
+  <tr><td><code>controllers/advice/ApiV1ExceptionHandler.java</code></td><td>Stripe 409 en checkout responde <code>409 checkout_in_progress</code> en vez de 502. Clave reutilizada con otros parámetros responde <code>409 checkout_conflict</code> y se registra como error.</td></tr>
+  <tr><td>Tests</td><td><code>CheckoutServiceTest</code> nuevo (3). <code>CheckoutApiV1ControllerTest</code> pasa de 18 a 28. Los dos tests de integración del puente adaptados.</td></tr>
+</table>
+<table>
+  <tr><th>Archivo (sitio, documentación)</th><th>Cambio</th></tr>
+  <tr><td><code>docs/api-fulfillment-bridge.openapi.yaml</code>, <code>docs/bff-error-contract.md</code></td><td>Los tres códigos 409 nuevos.</td></tr>
+  <tr><td><code>designer-plan-site/docs/frontend-integration-kit.md</code></td><td>Nota de protección del motor actualizada; mensajes para los códigos nuevos.</td></tr>
+  <tr><td><code>designer-plan-site/docs/phase-2-followups.md</code></td><td>Pendientes 23 a 29: lo que quedó fuera a propósito.</td></tr>
+</table>
+
+<h2>Cómo se resolvió</h2>
+<ul>
+  <li><strong>Regla de Stripe que manda el diseño:</strong> misma clave con parámetros idénticos devuelve el primer cobro; misma clave con parámetros distintos es un error. Por eso la clave se calcula a partir de lo que se envía, y nada de lo enviado puede depender del reloj.</li>
+  <li><strong>Correcta por construcción:</strong> la clave resume el mapa de metadatos tal cual se manda, no una lista de campos mantenida a mano. Un campo añadido en el futuro queda cubierto solo.</li>
+  <li><strong>Dos plazos, dos barreras:</strong> la clave cubre segundos a horas; la comprobación de "ya comprado" cubre de un día en adelante.</li>
+  <li><strong>Correcciones surgidas en la revisión:</strong> la comprobación solo cuenta ventas pagadas (el flujo viejo guarda la venta como <code>Pending</code> antes de cobrar); el 409 se limita al checkout; se añadió un test que fallaría si la clave fuese constante.</li>
+  <li><strong>Consecuencia aceptada:</strong> el mismo cliente no puede comprar dos veces el mismo plan para el mismo pedido.</li>
+</ul>
+
+<h2>Precondiciones para probar</h2>
+<table>
+  <tr><th>Qué</th><th>Detalle</th></tr>
+  <tr><td>Motor local</td><td>Desde <code>C:\SourceCode\RAP\Designers</code>: <code>.\mvnw.cmd -o spring-boot:run -Dspring-boot.run.profiles=dev</code>. El perfil <code>dev</code> usa claves de Stripe de <strong>prueba</strong>. <span class="badge imp">Importante</span> sin <code>dev</code> arranca con claves reales: no probar así.</td></tr>
+  <tr><td>Firma</td><td><code>designer-plan-site/.env</code> con <code>HMAC_KEY_ID</code>, <code>HMAC_SECRET</code> y <code>ENGINE_BASE_URL=http://127.0.0.1:8080</code>.</td></tr>
+  <tr><td>Script de prueba</td><td>Guardar el bloque de abajo como <code>designer-plan-site/_smoke-checkout.js</code> (no se versiona) y ejecutar con <code>node _smoke-checkout.js</code> desde <code>designer-plan-site</code>.</td></tr>
+  <tr><td>Efecto en Stripe</td><td>Crea intentos de pago de prueba sin confirmar. No cobra nada.</td></tr>
+</table>
+<pre>require('fs').readFileSync('.env','utf8').split(/\r?\n/).forEach(function (l) {
+  var m = l.match(/^([A-Z_]+)=(.*)$/); if (m &amp;&amp; !process.env[m[1]]) process.env[m[1]] = m[2];
+});
+var callEngine = require('./netlify/functions/_hmac').callEngine;
+var so = 'QATEST-' + Date.now();
+function body(o) {
+  return Object.assign({ plan_id: 1, sales_order_number: so, amount_cents: 24900,
+    customer: { name: 'QA Idempotency', email: 'qa-idemp@rapqa.com' } }, o || {});
+}
+function show(label, r) { console.log(label, r.status, r.json &amp;&amp; (r.json.payment_intent_id || r.json.code)); }
+(async function () {
+  show('A primera      ', await callEngine('POST', '/api/v1/checkout', body()));
+  show('B repetida     ', await callEngine('POST', '/api/v1/checkout', body()));
+  show('C mayusculas   ', await callEngine('POST', '/api/v1/checkout',
+        body({ customer: { name: 'QA Idempotency', email: 'QA-Idemp@RAPQA.com' } })));
+  show('D otro importe ', await callEngine('POST', '/api/v1/checkout', body({ amount_cents: 25000 })));
+  var race = body({ sales_order_number: so + '-R' });
+  var rs = await Promise.all([1, 2, 3, 4].map(function () { return callEngine('POST', '/api/v1/checkout', race); }));
+  rs.forEach(function (r, i) { show('E simultanea ' + (i + 1) + ' ', r); });
+})();</pre>
+
+<h2>Pasos para probar</h2>
+<table>
+  <tr><th>Paso</th><th>Acción</th><th>Resultado esperado</th><th>Estado</th></tr>
+  <tr><td>1</td><td>En <code>Designers</code>: <pre>.\mvnw.cmd -o test -Dtest="CheckoutServiceTest,CheckoutApiV1ControllerTest,BridgeIntegrationTest,BridgeAbuseTest,DealerServicesTest,PartnerDashboardApiV1ControllerTest,PartnerDashboardIntegrationTest,DashboardCommissionMapperTest"</pre></td><td>106 tests, 0 fallos, <code>BUILD SUCCESS</code>.</td><td>☐</td></tr>
+  <tr><td>2</td><td>Arrancar el motor en perfil <code>dev</code>.</td><td>Arranca sin error. Eso ya valida la consulta nueva contra la base: si estuviera mal escrita, Spring no arrancaría.</td><td>☐</td></tr>
+  <tr><td>3</td><td>Ejecutar el script. Mirar líneas A y B.</td><td>Las dos <code>200</code> con <strong>el mismo</strong> identificador <code>pi_...</code>.</td><td>☐</td></tr>
+  <tr><td>4</td><td>Línea C (correo en mayúsculas).</td><td>El mismo <code>pi_...</code> que A.</td><td>☐</td></tr>
+  <tr><td>5</td><td>Línea D (otro importe).</td><td><code>200</code> con un <code>pi_...</code> <strong>distinto</strong>. Un pedido que cambia de verdad sí crea otro cobro.</td><td>☐</td></tr>
+  <tr><td>6</td><td>Líneas E (cuatro a la vez, el doble clic real).</td><td>Las cuatro con el mismo <code>pi_...</code>. Si alguna respondiera <code>409 checkout_in_progress</code> también es correcto; lo que no puede haber son dos <code>pi_...</code> distintos.</td><td>☐</td></tr>
+  <tr><td>7</td><td>En el log del motor, buscar <code>v1_checkout</code>.</td><td>Líneas <code>created key=v1ckt-... pi=...</code>: misma clave para A, B y C; otra para D. El correo del cliente no aparece en ninguna.</td><td>☐</td></tr>
+  <tr><td>8</td><td>En SSMS, <strong>solo lectura</strong>, buscar una venta pagada:<pre>USE SOARV3;
+SELECT TOP 5 PlanID, DealerSalesOrderNum, CustEmail, CustUserName, PaymentStatus
+FROM SoarSales WITH (NOLOCK)
+WHERE PaymentStatus = 'Paid' AND DealerSalesOrderNum &lt;&gt; ''
+ORDER BY PlanRegistrationID DESC;</pre>Tomar una fila y llamar al checkout con ese <code>plan_id</code>, ese <code>sales_order_number</code> y ese correo (cambiar esos tres valores en <code>body()</code>).</td><td><code>409 already_purchased</code>. En el log, <code>v1_checkout already_purchased</code> y ninguna línea <code>created</code>: no se llamó a Stripe. <span class="badge pen">Pendiente</span> es la única comprobación que no se hizo contra una fila real.</td><td>☐</td></tr>
+</table>
+
+<h2>Escenarios negativos y edge cases</h2>
+<table>
+  <tr><th>Caso</th><th>Cómo</th><th>Esperado</th><th>Estado</th></tr>
+  <tr><td>Venta sin pagar no bloquea</td><td>Checkout con <code>plan_id: 0</code>, pedido <code>QAFAKE-005</code>, correo <code>qafake005@rapqa.com</code> (fila de QA con estado <code>qa_fake</code>)</td><td><code>200</code>. Solo <code>Paid</code> cuenta como comprado.</td><td>☐</td></tr>
+  <tr><td>Otro cliente, mismo número de pedido</td><td>Repetir el paso 8 cambiando solo el correo</td><td><code>200</code>. El número de pedido lo escribe el cliente y no es único.</td><td>☐</td></tr>
+  <tr><td>Pedido con espacios</td><td><code>sales_order_number</code> con espacios delante y detrás</td><td>Mismo <code>pi_...</code> que sin espacios.</td><td>☐</td></tr>
+  <tr><td>Sin firma</td><td>POST sin cabeceras HMAC</td><td><code>401</code>, igual que antes.</td><td>☐</td></tr>
+  <tr><td>Stripe 409 fuera del checkout</td><td>Unitario <code>stripe409OutsideCheckout_isNotRelabelled</code></td><td>Sigue siendo 502; no se disfraza de "checkout en proceso".</td><td>☐</td></tr>
+  <tr><td>Clave con parámetros distintos</td><td>Unitario <code>stripeKeyReusedWithDifferentParams_returns409CheckoutConflict</code></td><td><code>409 checkout_conflict</code> y línea de error <code>idempotency_mismatch</code> en el log.</td><td>☐</td></tr>
+  <tr><td>Regresión: checkout viejo</td><td>Unitario <code>legacySignatures_createWithoutRequestOptions</code>; y una compra de prueba en designerplan.io en entorno de pruebas</td><td>Sin clave propia, grupo de transferencia con la hora, como siempre. <span class="badge inf">Inferido</span> por test y por lectura del código; conviene una compra de prueba.</td><td>☐</td></tr>
+  <tr><td>Regresión: dashboard</td><td>Tests <code>PartnerDashboard*</code> y <code>DashboardCommissionMapperTest</code></td><td>En verde, sin cambios.</td><td>☐</td></tr>
+</table>
+
+<h2>Checklist final</h2>
+<ul class="check">
+  <li>☐ 106 tests del motor en verde.</li>
+  <li>☐ Misma petición repetida: un solo <code>pi_...</code> (pasos 3 y 4).</li>
+  <li>☐ Peticiones simultáneas: un solo <code>pi_...</code> (paso 6).</li>
+  <li>☐ Petición distinta: <code>pi_...</code> distinto (paso 5).</li>
+  <li>☐ Venta pagada real: <code>409 already_purchased</code> sin llamar a Stripe (paso 8).</li>
+  <li>☐ Venta sin pagar no bloquea.</li>
+  <li>☐ El correo del cliente no aparece en los logs.</li>
+  <li>☐ Motor desplegado en designerplan.io con <code>5a61d98</code> (junto con <code>4ba8dfd</code> y <code>b183a2c</code> del dashboard).</li>
+</ul>
+
+<h2>Notas / riesgos / pendientes</h2>
+<ul>
+  <li><span class="badge imp">Importante</span> Hasta que el motor se despliegue, producción sigue sin esta protección.</li>
+  <li>Un reintento puede devolver un cobro ya pagado o cancelado. La página de pago, cuando exista, debe mostrar ese resultado en vez de empezar de nuevo.</li>
+  <li>Quedan sin clave propia los caminos viejos (<code>CheckoutController</code>, <code>StripeController</code>). Pendiente 24.</li>
+  <li>No hay restricción única en la base; la comprobación es por consulta. Pendiente 25.</li>
+  <li>La tienda todavía no puede hacer checkout: <code>cart.js</code> manda el formato viejo y el botón está deshabilitado. Pendiente 28.</li>
+  <li>La barrera es contra el accidente, no contra el fraude: con otro correo u otro número de pedido se salta.</li>
+  <li>Los intentos de pago <code>QATEST-...</code> creados al probar quedan en el panel de Stripe de prueba, sin confirmar; caducan solos o se pueden cancelar.</li>
+</ul>
+
+</main>
+</body>
+</html>

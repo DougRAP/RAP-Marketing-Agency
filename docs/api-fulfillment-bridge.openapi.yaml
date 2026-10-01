@@ -107,6 +107,7 @@ paths:
                 designer_attributed: true
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
         '429': { $ref: '#/components/responses/RateLimited' }
         '500': { $ref: '#/components/responses/EngineError' }
@@ -375,6 +376,14 @@ components:
         State conflict — operation can't proceed because something has
         already happened. Examples: `session_token_consumed`,
         `stripe_account_already_linked`, `promo_already_claimed`.
+
+        On `/v1/checkout`: `already_purchased` (this customer already has
+        this plan, paid, for this order), `checkout_in_progress` (the same
+        checkout is still being created; do not resubmit) and
+        `checkout_conflict` (the idempotency key was reused with different
+        parameters; an engine bug signal, not a customer error). An identical
+        request repeated within about a day is not an error at all: it
+        returns 200 with the first PaymentIntent.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
