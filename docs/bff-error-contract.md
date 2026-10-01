@@ -79,6 +79,7 @@ safe to surface to developers, not necessarily to end-users.
 | 400 | `bad_json` | Body is not valid JSON | "Something went wrong. Please refresh and try again." |
 | 400 | `validation_failed` | Local pre-check failed; `message` says which field (`plan_id`, `sales_order_number`, `amount_cents`, `customer.name`, `customer.email`, `coverage_retail_cents`) | Show the field-specific `message` inline on that field |
 | 502 | `upstream_unavailable` | BFF could not reach the engine (network/timeout) | "Payment service is temporarily unreachable. Please try again." |
+| 503 | `checkout_closed` | Site env `CHECKOUT_OPEN` is not exactly `true`; checked before the body is read | "Checkout is not open yet." Not retryable; do not start Stripe |
 
 ### B. Engine pass-through (`/api/v1/checkout` via `ApiV1ExceptionHandler`)
 
@@ -134,6 +135,8 @@ if (res.ok && data.client_secret) {
   // mount Stripe Elements, confirmCardPayment(data.client_secret)
 } else if (data.code === 'validation_failed') {
   showFieldError(data.message);          // inline, field-specific
+} else if (data.code === 'checkout_closed') {
+  showNotice('Checkout is not open yet.'); // not retryable; do not start Stripe
 } else if (res.status === 401 || data.code === 'upstream_unavailable'
            || data.code === 'stripe_unavailable' || res.status === 502) {
   showRetry('Payment service is temporarily unreachable. Please try again.');

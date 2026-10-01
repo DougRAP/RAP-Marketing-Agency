@@ -336,6 +336,7 @@ Plain static HTML/JS matching the site's no-framework convention. Stripe.js v3 P
   function messageForError(status, data) {
     switch (data && data.code) {
       case 'validation_failed':      return (data && data.message) || 'Please check your details and try again.';
+      case 'checkout_closed':        return 'Checkout is not open yet. Please try again later.';
       case 'rate_limited':           return 'Too many attempts — please wait a moment.';
       case 'already_purchased':      return 'This plan was already purchased for that order.';
       case 'checkout_in_progress':   return 'Your checkout is already being processed. Please wait a moment.';

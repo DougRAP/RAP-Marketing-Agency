@@ -110,10 +110,12 @@ done in the same change.
     the dealer's stored value. Same designer, different capitalisation gives
     a different key and a differently cased commission record.
 28. **The storefront cannot check out yet.** Planned in full in
-    `storefront-checkout-plan.md` (2026-10-01). `js/cart.js` still posts the old
-    stub payload and the button on `/plans` is disabled, so
-    `cart-checkout.js` answers 400 to it. The integration kit has the real
-    page code; wiring it is its own task.
+    `storefront-checkout-plan.md` (2026-10-01). The button on `/plans` turns
+    on once the cart has an item, but `js/cart.js` still posts the old stub
+    payload, and `cart-checkout.js` answers 503 `checkout_closed` while
+    `CHECKOUT_OPEN` is unset (P0.1). The shopper sees the old "Checkout is in
+    development" alert. The integration kit has the real page code; wiring it
+    is its own task.
 29. **Done 2026-10-01.** Checked against five real Paid rows in SOARV3:
     409 for the paid plan (any email case), 200 for another customer or
     another plan, and no Stripe call on a refusal. Original note:

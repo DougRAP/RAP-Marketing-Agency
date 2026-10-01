@@ -38,6 +38,7 @@
 //     400 bad_json             — body not valid JSON
 //     400 validation_failed    — local pre-check (message names the field)
 //     502 upstream_unavailable — engine unreachable (network/timeout)
+//     503 checkout_closed      (CHECKOUT_OPEN is not exactly 'true'; checked before the body)
 //   Engine pass-through (ApiV1ExceptionHandler, status+body unchanged):
 //     400 validation_failed / bad_json · 415 unsupported_media_type
 //     422 business_rule_violation · 404 not_found · 409 conflict
@@ -51,84 +52,99 @@
 // Required env (Netlify dashboard):
 //   HMAC_KEY_ID, HMAC_SECRET, ENGINE_BASE_URL  (for engine call)
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY    (for lead_events logging)
+//   CHECKOUT_OPEN  exactly 'true' opens checkout; anything else (or unset)
+//                  answers 503 checkout_closed. Read per request.
+//
+// createHandler(deps) exists for the unit tests: callEngine and supabase are
+// injectable so nothing touches the network there.
 
-const { supabase } = require('./_supabase');
-const { callEngine } = require('./_hmac');
+function createHandler(deps) {
+  const d = deps || {};
+  const callEngine = d.callEngine || require('./_hmac').callEngine;
+  const supabase = 'supabase' in d ? d.supabase : require('./_supabase').supabase;
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return errorResponse(405, 'method_not_allowed', 'POST only');
-  }
+  return async (event) => {
+    if (event.httpMethod !== 'POST') {
+      return errorResponse(405, 'method_not_allowed', 'POST only');
+    }
 
-  // Parse body
-  let body;
-  try {
-    body = JSON.parse(event.body || '{}');
-  } catch {
-    return errorResponse(400, 'bad_json', 'Request body is not valid JSON.');
-  }
+    if (process.env.CHECKOUT_OPEN !== 'true') {
+      return errorResponse(503, 'checkout_closed', 'Checkout is not open yet. Your items are saved in your cart.');
+    }
 
-  // Honeypot — silently accept and drop
-  if (body.hp) {
-    return jsonResponse(200, { ok: true, honeypot: true });
-  }
+    // Parse body
+    let body;
+    try {
+      body = JSON.parse(event.body || '{}');
+    } catch {
+      return errorResponse(400, 'bad_json', 'Request body is not valid JSON.');
+    }
 
-  // Local validation. The engine re-validates authoritatively; this just
-  // catches obvious garbage early to save a round-trip.
-  const validationError = validate(body);
-  if (validationError) {
-    return errorResponse(400, 'validation_failed', validationError);
-  }
+    // Honeypot — silently accept and drop
+    if (body.hp) {
+      return jsonResponse(200, { ok: true, honeypot: true });
+    }
 
-  // Build engine payload — strict subset of what the browser sent, in the
-  // shape Spring Boot's CheckoutRequestDto expects (amount mode).
-  const enginePayload = {
-    plan_id: body.plan_id,
-    sales_order_number: String(body.sales_order_number).trim(),
-    amount_cents: body.amount_cents,
-    ...(Number.isInteger(body.coverage_retail_cents)
-      ? { coverage_retail_cents: body.coverage_retail_cents }
-      : {}),
-    customer: {
-      name: String(body.customer.name).trim(),
-      email: String(body.customer.email).trim().toLowerCase(),
-      ...(body.customer.phone ? { phone: String(body.customer.phone).trim() } : {}),
-    },
-    ...(body.referral_code ? { referral_code: String(body.referral_code).trim() } : {}),
-  };
+    // Local validation. The engine re-validates authoritatively; this just
+    // catches obvious garbage early to save a round-trip.
+    const validationError = validate(body);
+    if (validationError) {
+      return errorResponse(400, 'validation_failed', validationError);
+    }
 
-  // Call the engine.
-  let engineResp;
-  try {
-    engineResp = await callEngine('POST', '/api/v1/checkout', enginePayload);
-  } catch (err) {
-    console.error('[cart-checkout] engine call failed', err.message);
-    return errorResponse(
-      502,
-      'upstream_unavailable',
-      'Payment service is temporarily unreachable. Please try again.'
-    );
-  }
-
-  // Engine returned a 4xx/5xx — pass the body through (it already follows
-  // the {code, message} contract). Add console.error for our own logs.
-  if (engineResp.status >= 400) {
-    const code = engineResp.json?.code || 'upstream_error';
-    console.warn('[cart-checkout] engine error', engineResp.status, code);
-    return {
-      statusCode: engineResp.status,
-      headers: { 'Content-Type': 'application/json' },
-      body: engineResp.raw || JSON.stringify({ code, message: 'Could not start checkout.' }),
+    // Build engine payload — strict subset of what the browser sent, in the
+    // shape Spring Boot's CheckoutRequestDto expects (amount mode).
+    const enginePayload = {
+      plan_id: body.plan_id,
+      sales_order_number: String(body.sales_order_number).trim(),
+      amount_cents: body.amount_cents,
+      ...(Number.isInteger(body.coverage_retail_cents)
+        ? { coverage_retail_cents: body.coverage_retail_cents }
+        : {}),
+      customer: {
+        name: String(body.customer.name).trim(),
+        email: String(body.customer.email).trim().toLowerCase(),
+        ...(body.customer.phone ? { phone: String(body.customer.phone).trim() } : {}),
+      },
+      ...(body.referral_code ? { referral_code: String(body.referral_code).trim() } : {}),
     };
-  }
 
-  // Engine succeeded. Log a lead event best-effort (don't block on failure).
-  logCartStarted(body, engineResp.json).catch((e) => {
-    console.warn('[cart-checkout] lead_event log failed', e.message);
-  });
+    // Call the engine.
+    let engineResp;
+    try {
+      engineResp = await callEngine('POST', '/api/v1/checkout', enginePayload);
+    } catch (err) {
+      console.error('[cart-checkout] engine call failed', err.message);
+      return errorResponse(
+        502,
+        'upstream_unavailable',
+        'Payment service is temporarily unreachable. Please try again.'
+      );
+    }
 
-  return jsonResponse(200, engineResp.json);
-};
+    // Engine returned a 4xx/5xx — pass the body through (it already follows
+    // the {code, message} contract). Add console.error for our own logs.
+    if (engineResp.status >= 400) {
+      const code = engineResp.json?.code || 'upstream_error';
+      console.warn('[cart-checkout] engine error', engineResp.status, code);
+      return {
+        statusCode: engineResp.status,
+        headers: { 'Content-Type': 'application/json' },
+        body: engineResp.raw || JSON.stringify({ code, message: 'Could not start checkout.' }),
+      };
+    }
+
+    // Engine succeeded. Log a lead event best-effort (don't block on failure).
+    logCartStarted(supabase, body, engineResp.json).catch((e) => {
+      console.warn('[cart-checkout] lead_event log failed', e.message);
+    });
+
+    return jsonResponse(200, engineResp.json);
+  };
+}
+
+exports.createHandler = createHandler;
+exports.handler = createHandler();
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -163,7 +179,7 @@ function validate(body) {
   return null;
 }
 
-async function logCartStarted(body, engineResponse) {
+async function logCartStarted(supabase, body, engineResponse) {
   if (!supabase) return;
 
   const email = String(body.customer.email).trim().toLowerCase();

@@ -125,7 +125,7 @@ Phase 3 is written accordingly.
 
 ### Phase 0: close the live exposure now (small, can ship this week)
 
-**P0.1 Checkout switch in the BFF.** `cart-checkout.js` answers
+**Done 2026-10-01.** **P0.1 Checkout switch in the BFF.** `cart-checkout.js` answers
 `503 { code: "checkout_closed" }` unless the Netlify env var
 `CHECKOUT_OPEN=true` is set. It is not set today, so the endpoint closes the
 moment this deploys, and nothing on the site can use it anyway. Unit test for
