@@ -38,7 +38,8 @@
     titleSent: 'Link sent',
     sent: 'Link sent to ',
     titleNotSent: 'The link was not sent',
-    titleNotLinked: 'Not available yet',
+    titleNotLinked: 'Your account is not matched yet',
+    notLinkedSend: 'You can keep adding clients. Sending links turns on once we match your account to our records.',
     rateLimited: 'Already sent in the last 10 minutes.',
     emailNotConfigured: 'Email sending is not set up yet.',
     sendFailed: 'Could not send the link. Please try again.',
@@ -333,9 +334,13 @@
 
   /* ---------------- send link ---------------- */
 
+  function isNotLinked(res) {
+    return res.status === 409 && !!res.body && res.body.code === 'not_linked';
+  }
+
   function sendErrorText(res) {
     if (res.status === 429) return COPY.rateLimited;
-    if (res.status === 409 && res.body && res.body.code === 'not_linked') return COPY.notLinked;
+    if (isNotLinked(res)) return COPY.notLinkedSend;
     if (res.status === 503) return COPY.emailNotConfigured;
     return (res.body && res.body.message) || COPY.sendFailed;
   }
@@ -343,7 +348,7 @@
   function sendLink(span) {
     if (busy) return;
     if (span.getAttribute('aria-disabled') === 'true') {
-      fail(COPY.titleNotLinked, COPY.notLinked);
+      fail(COPY.titleNotLinked, COPY.notLinkedSend);
       return;
     }
     var id = span.getAttribute('data-client-id');
@@ -364,7 +369,7 @@
         return;
       }
       render();
-      fail(COPY.titleNotSent, sendErrorText(res));
+      fail(isNotLinked(res) ? COPY.titleNotLinked : COPY.titleNotSent, sendErrorText(res));
     }).catch(function () {
       busy = false;
       render();
@@ -468,6 +473,10 @@
         form.hidden = true;
         if (state.available) render();
         succeed(COPY.titleSaved, COPY.added + added.client_name + '.' + (state.available ? '' : COPY.addedReload));
+        // Only the server knows whether this email already bought (contract F).
+        // Ask again, so a client who has a plan shows as Active straight away
+        // instead of as a prospect waiting for a link until the next reload.
+        if (state.available && dash().refresh) dash().refresh().catch(function () {});
       }).catch(function () {
         busy = false;
         if (submit) submit.disabled = false;

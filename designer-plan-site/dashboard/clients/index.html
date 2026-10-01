@@ -333,6 +333,19 @@ section:last-of-type{padding-bottom:var(--sp-section);}
 }
 #add-client-status{color:var(--accent); font-weight:500;}
 
+/* SAMPLE RIBBON: the page is public as a sample, and visitors are told so */
+.sample-ribbon{
+  display:flex; align-items:center; flex-wrap:wrap; gap:10px;
+  margin:0 0 16px; padding:12px 16px; border:1px solid var(--rule); border-radius:4px;
+  background:var(--accent-soft); font-size:0.8125rem; color:var(--ink);
+}
+.sample-ribbon__dot{width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none;}
+.sample-ribbon strong{font-weight:500;}
+.sample-ribbon a{margin-left:auto; font-weight:500; color:var(--ink); text-decoration-color:var(--ink);}
+/* Both are display:flex, which beats the [hidden] attribute; say it here so
+   they stay hidden even before dashboard.js injects its global rule. */
+.sample-ribbon[hidden], .dp-modal[hidden]{display:none;}
+
 /* FEEDBACK for add / send: a banner above the table that keeps the last
    result, and a modal that holds the page while the request is running */
 #clients-status{
@@ -423,6 +436,12 @@ section:last-of-type{padding-bottom:var(--sp-section);}
        ============================================================ -->
   <section aria-label="Account at a glance" style="padding-top:0;">
     <div class="container">
+      <div class="sample-ribbon" data-dp-when="signed-out">
+        <span class="sample-ribbon__dot" aria-hidden="true"></span>
+        <span><strong>Sample clients.</strong> These rows are examples of what your list will look like.</span>
+        <a href="/login">Log in to see yours &rarr;</a>
+      </div>
+
       <div class="stats-strip">
         <div class="stats-strip__cell">
           <span class="stats-strip__label">Active plans</span>

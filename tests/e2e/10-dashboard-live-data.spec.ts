@@ -159,6 +159,11 @@ test.describe('Dashboard live data', () => {
     await expect(page.locator('[data-field="stripe-note"]')).toContainText('Stripe not connected yet');
     await expect(page.locator('[data-field="setup-checklist"] li', { hasText: /Stripe connected/ }))
       .not.toHaveClass(/is-done/);
+
+    // The code came from the engine, so the checklist says it is assigned.
+    for (const item of ['Client link assigned', 'Referral code assigned']) {
+      await expect(page.locator('[data-field="setup-checklist"] li', { hasText: item })).toHaveClass(/is-done/);
+    }
   });
 
   test('L.2 linked with sales: clients page builds the table from the commissions', async ({ page }) => {
@@ -243,6 +248,11 @@ test.describe('Dashboard live data', () => {
     // Stripe copy comes from the partners row, as before the bridge.
     await expect(page.locator('[data-field="stripe-note"]'))
       .toHaveText('Stripe not connected yet. Connect it to receive commission.');
+
+    // No code yet, and the checklist agrees.
+    for (const item of ['Client link assigned', 'Referral code assigned']) {
+      await expect(page.locator('[data-field="setup-checklist"] li', { hasText: item })).not.toHaveClass(/is-done/);
+    }
   });
 
   test('L.5 BFF down: account data still renders and the figures are marked unavailable', async ({ page }) => {

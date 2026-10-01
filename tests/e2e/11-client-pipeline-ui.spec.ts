@@ -24,6 +24,8 @@ const NOT_LINKED_NOTE =
   'Sales will appear here once your account is matched to our records. Sending links becomes available then.';
 const UNAVAILABLE_ROW = 'We could not load your clients right now.';
 const EMPTY_ROW = 'No clients yet. Add a client to send them your plan link.';
+const NOT_LINKED_SEND =
+  'You can keep adding clients. Sending links turns on once we match your account to our records.';
 
 const HARPER_SALE = {
   plan_registration_id: 501,
@@ -114,6 +116,18 @@ async function serveDashboardData(page: Page, status: number, body: unknown): Pr
   }));
 }
 
+// Answers each dashboard-data call with the next body; the last one repeats.
+async function serveDashboardSequence(page: Page, bodies: unknown[]): Promise<void> {
+  let call = 0;
+  await page.unroute(BFF_GLOB);
+  await page.route(BFF_GLOB, (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    headers: { 'cache-control': 'no-store' },
+    body: JSON.stringify(bodies[Math.min(call++, bodies.length - 1)])
+  }));
+}
+
 async function openClients(page: Page): Promise<void> {
   await page.goto('/dashboard/clients/');
   await waitForAuthReady(page);
@@ -138,6 +152,9 @@ test.describe('Client pipeline UI', () => {
   test('U.1 linked: sales and prospects render as one list with counts, actions and filters', async ({ page }) => {
     await serveDashboardData(page, 200, LINKED_WITH_CLIENTS);
     await openClients(page);
+
+    // The public sample banner is for visitors only.
+    await expect(page.locator('.sample-ribbon')).toBeHidden();
 
     await expect(rows(page)).toHaveCount(3);
     await expect(page.locator('[data-field="links-sent"]')).toHaveText('1');
@@ -222,7 +239,8 @@ test.describe('Client pipeline UI', () => {
     let sendCalls = 0;
     await page.route('**/.netlify/functions/client-send-link', (route) => { sendCalls++; return route.continue(); });
     await send.click();
-    await expect(page.locator('#clients-status')).toHaveText(NOT_LINKED_NOTE);
+    await expect(page.locator('#clients-modal')).toContainText('Your account is not matched yet');
+    await expect(page.locator('#clients-status')).toHaveText(NOT_LINKED_SEND);
     expect(sendCalls).toBe(0);
   });
 
@@ -302,7 +320,8 @@ test.describe('Client pipeline UI', () => {
     await expect(send).toHaveAttribute('aria-disabled', 'true');
 
     await send.click();
-    await expect(page.locator('#clients-status')).toHaveText(NOT_LINKED_NOTE);
+    await expect(page.locator('#clients-modal')).toContainText('Your account is not matched yet');
+    await expect(page.locator('#clients-status')).toHaveText(NOT_LINKED_SEND);
 
     // Nothing was sent.
     const after = await getPartnerClients(partner!.id);
@@ -385,7 +404,23 @@ test.describe('Client pipeline UI', () => {
   });
 
   test('U.7 add client: the same modal confirms the save', async ({ page }) => {
-    await serveDashboardData(page, 200, LINKED_WITH_CLIENTS);
+    const NUEVA_CLIENT = {
+      id: '44444444-4444-4444-8444-444444444444',
+      client_name: 'Nueva Casa',
+      project_name: null,
+      client_email: 'nueva@example.com',
+      status: 'added',
+      link_sent_at: null,
+      link_sent_count: 0,
+      plan_number: null,
+      months_remaining: null,
+      plan_registration_id: null
+    };
+    // The page asks again after saving; the second answer includes the client.
+    await serveDashboardSequence(page, [
+      LINKED_WITH_CLIENTS,
+      { ...LINKED_WITH_CLIENTS, clients: [NUEVA_CLIENT, ...LINKED_WITH_CLIENTS.clients] }
+    ]);
     await page.route('**/.netlify/functions/client-add', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 500));
       await route.fulfill({
@@ -418,5 +453,44 @@ test.describe('Client pipeline UI', () => {
 
     await expect(page.locator('#clients-status')).toHaveText('Client added: Nueva Casa.');
     await expect(rows(page)).toHaveCount(4);
+  });
+
+  test('U.8 adding a client who already bought shows them as Active at once, not as a prospect', async ({ page }) => {
+    // Before: the sale stands alone, under the customer's last name.
+    const SALE_ONLY = {
+      ...LINKED_WITH_CLIENTS,
+      clients: [{ ...HARPER_CLIENT, id: null, client_name: 'Harper', project_name: null, link_sent_at: null, link_sent_count: 0 }]
+    };
+    // After: the server has joined the new client with that sale.
+    const JOINED = { ...LINKED_WITH_CLIENTS, clients: [HARPER_CLIENT] };
+    await serveDashboardSequence(page, [SALE_ONLY, JOINED]);
+    await page.route('**/.netlify/functions/client-add', (route) => route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: HARPER_CLIENT.id,
+        client_name: 'Harper Project',
+        project_name: 'Dining Room',
+        client_email: 'harper@example.com',
+        link_sent_at: null,
+        link_sent_count: 0
+      })
+    }));
+    await openClients(page);
+    await expect(rows(page)).toHaveCount(1);
+
+    await page.click('[data-action="add-client"]');
+    const form = page.locator('#add-client-form');
+    await form.locator('[name="client_name"]').fill('Harper Project');
+    await form.locator('[name="client_email"]').fill('harper@example.com');
+    await form.locator('[name="project_name"]').fill('Dining Room');
+    await form.locator('button[type="submit"]').click();
+
+    await expect(page.locator('#clients-status')).toHaveText('Client added: Harper Project.');
+    await expect(rows(page)).toHaveCount(1);
+    await expect(cellsOf(page, 0).nth(0)).toHaveText('Harper Project');
+    await expect(cellsOf(page, 0).nth(3)).toHaveText('Active');
+    await expect(page.locator('[data-field="total-clients"]')).toHaveText('1');
+    await expect(page.locator('[data-action="send-link"]')).toHaveCount(0);
   });
 });

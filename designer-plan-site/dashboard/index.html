@@ -796,8 +796,9 @@ section:last-of-type { padding-bottom: var(--sp-section); }
       </div>
 
       <div class="inside-footer">
-        <a href="/dashboard/overview" class="btn btn--primary">See the full example <span class="arrow">&rarr;</span></a>
-        <a href="/login" class="link-inline">Or log in to your real dashboard &rarr;</a>
+        <a href="/dashboard/overview" class="btn btn--primary" data-dp-when="signed-out">See the full example <span class="arrow">&rarr;</span></a>
+        <a href="/dashboard/overview" class="btn btn--primary" data-dp-when="signed-in" hidden>See my full dashboard <span class="arrow">&rarr;</span></a>
+        <a href="/login" class="link-inline" data-dp-when="signed-out">Or log in to your real dashboard &rarr;</a>
       </div>
     </div>
   </section>

@@ -823,7 +823,8 @@ section:last-of-type { padding-bottom: var(--sp-section); }
             <div class="hero__title-row">
               <div class="hero__title">
                 <h2 data-field="studio-name">Example Designer Studio</h2>
-                <p>Partner dashboard preview</p>
+                <p data-dp-when="signed-out">Partner dashboard preview</p>
+                <p data-dp-when="signed-in" hidden>Partner dashboard</p>
               </div>
               <span class="hero__status">
                 <span class="status-dot" aria-hidden="true"></span>
@@ -867,20 +868,23 @@ section:last-of-type { padding-bottom: var(--sp-section); }
           </div>
         </div>
 
+        <!-- The pitch, the account buttons and "Already talked to us?" are for
+             visitors; dashboard.js hides them once there is a session. The
+             contact block stays for everyone. -->
         <aside class="hero__help" aria-labelledby="hero-pitch-title">
-          <div>
+          <div data-dp-when="signed-out">
             <span class="eyebrow">Partner dashboard</span>
             <h2 id="hero-pitch-title">See how Designer Plan works for your studio.</h2>
             <p>Track clients, see commissions, send clients to claims, find sales tools &mdash; in one place.</p>
           </div>
 
-          <div class="hero__help-cta">
+          <div class="hero__help-cta" data-dp-when="signed-out">
             <a href="/login" class="btn btn--accent">Create my account <span class="arrow">&rarr;</span></a>
             <a href="/login" class="btn btn--primary">Log in <span class="arrow">&rarr;</span></a>
             <p class="hero__help-tertiary"><a href="tel:+15613743147" class="link-inline">Or call us to set it up &rarr;</a></p>
           </div>
 
-          <div>
+          <div data-dp-when="signed-out">
             <p class="hero__help-aside"><strong>Already talked to us?</strong> Your account may already be waiting.</p>
           </div>
 
@@ -1117,7 +1121,7 @@ section:last-of-type { padding-bottom: var(--sp-section); }
   <!-- ============================================================
        FINAL CTA
        ============================================================ -->
-  <section class="final-cta" aria-labelledby="final-cta-title">
+  <section class="final-cta" aria-labelledby="final-cta-title" data-dp-when="signed-out">
     <div class="container final-cta-wrap">
       <span class="eyebrow">Begin</span>
       <h2 id="final-cta-title" class="h-section">Ready to see your studio in the dashboard?</h2>

@@ -30,7 +30,8 @@
 
    window.DP_DASHBOARD exposes renderClientsTable, formatCents,
    salesRowsFromCommissions and lastData so the client pipeline
-   (dashboard-clients.js) can feed the same table with its own rows.
+   (dashboard-clients.js) can feed the same table with its own rows,
+   and refresh() so it can ask the server again after a change.
    Every dashboard-data answer (or failure) is announced as a
    'dp-dashboard-data' CustomEvent with detail { data, state }.
 
@@ -55,6 +56,8 @@
   var PLANS_URL = 'thedesignerplan.com/plans?ref=';
   var BFF_URL = '/.netlify/functions/dashboard-data';
   var UNKNOWN = '\u2014';
+  var REFERRAL_ITEMS = /Client link assigned|Referral code assigned/;
+  var currentPartner = null;
 
   var COPY = {
     live: 'Your account is live.',
@@ -184,6 +187,7 @@
       setField('referral-code', 'Not assigned yet');
       setField('client-link', 'Ready once your referral code is assigned');
       setCopyButtonsEnabled(false);
+      setChecklistItem(REFERRAL_ITEMS, false);
     }
 
     var step = Number(partner.onboarding_step);
@@ -203,6 +207,7 @@
     setField('referral-code', code);
     setField('client-link', PLANS_URL + code);
     setCopyButtonsEnabled(true);
+    setChecklistItem(REFERRAL_ITEMS, true);
   }
 
   function setCopyButtonsEnabled(enabled) {
@@ -530,16 +535,21 @@
   function renderStripe(stripeStatus, partner) {
     var copy = STRIPE_COPY[stripeStatus] || stripeCopyFromPartner(partner);
     setField('stripe-note', copy);
-    if (stripeStatus !== 'READY') return;
-    // Tick the checklist item, and never un-tick one: the page only ever
-    // learns that more is done, not less.
+    // Ticked on READY and never un-ticked here: what the engine says about
+    // Stripe only ever adds to what the partners row already showed.
+    if (stripeStatus === 'READY') setChecklistItem(/Stripe connected/, true);
+  }
+
+  // The checklist in the markup is a static picture. Items the page has data
+  // for follow that data, so the list never contradicts the fields above it.
+  function setChecklistItem(pattern, done) {
     all('[data-field="setup-checklist"] li').forEach(function (li) {
-      if (!/Stripe connected/.test(li.textContent || '')) return;
-      li.classList.add('is-done');
+      if (!pattern.test(li.textContent || '')) return;
+      li.classList.toggle('is-done', done);
       var icon = li.querySelector('.check-icon');
       if (icon) {
-        icon.classList.add('check-icon--done');
-        icon.textContent = '\u2713';
+        icon.classList.toggle('check-icon--done', done);
+        icon.textContent = done ? '\u2713' : '';
       }
     });
   }
@@ -605,6 +615,15 @@
       .catch(function () { renderSalesUnavailable(); publishSales(null); });
   }
 
+  // A quiet re-read after the page changed something on the server: no
+  // loading state, and if it fails the page keeps what it already shows.
+  function refreshSales() {
+    return fetchDashboardData().then(function (data) {
+      renderSales(data, currentPartner);
+      publishSales(data);
+    });
+  }
+
   /* ---------------- copy buttons ---------------- */
 
   function copyToClipboard(text, btn) {
@@ -658,6 +677,7 @@
 
     if (!signedIn) return;
     hideStaticSampleNote();
+    currentPartner = partner;
     if (hasSalesFields()) loadSales(partner);
   }
 
@@ -672,6 +692,7 @@
     renderEmptyClientsTable: renderEmptyClientsTable,
     formatCents: formatCents,
     salesRowsFromCommissions: salesRowsFromCommissions,
+    refresh: refreshSales,
     // { data, state } of the last dashboard-data fetch, set by publishSales;
     // null until the first answer. The 'dp-dashboard-data' event carries the same.
     lastData: null

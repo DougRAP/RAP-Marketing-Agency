@@ -42,8 +42,12 @@ export async function engineReachable(timeoutMs = 3000): Promise<boolean> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
+    // Only the engine answers /api/version with {"version": ...}. Any other
+    // app that happens to listen on the same port must not count as reachable.
     const res = await fetch(`${base.replace(/\/$/, '')}/api/version`, { signal: controller.signal });
-    return res.status < 500;
+    if (!res.ok) return false;
+    const body = await res.json().catch(() => null);
+    return !!(body && typeof body.version === 'string');
   } catch {
     return false;
   } finally {

@@ -53,4 +53,23 @@ test.describe('Camino A — anonymous visitor', () => {
       expect(html, `"Apply to the program" found on ${path}`).not.toMatch(/Apply to the program/i);
     }
   });
+
+  test('A.7 - /dashboard/overview keeps the visitor invitation for a visitor', async ({ page }) => {
+    await page.goto('/dashboard/overview/');
+    await page.waitForFunction(() => (window as any).DP_AUTH && (window as any).DP_AUTH.ready === true, { timeout: 20_000 });
+    await expect(page.locator('.hero__help-cta')).toBeVisible();
+    await expect(page.locator('section.final-cta')).toBeVisible();
+    await expect(page.locator('.hero__title [data-dp-when="signed-out"]')).toHaveText('Partner dashboard preview');
+  });
+
+  test('A.8 - /dashboard/clients is a public sample and says so', async ({ page }) => {
+    await page.goto('/dashboard/clients/');
+    await page.waitForFunction(() => (window as any).DP_AUTH && (window as any).DP_AUTH.ready === true, { timeout: 20_000 });
+    const banner = page.locator('.sample-ribbon');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText('Sample clients.');
+    await expect(banner.locator('a')).toHaveAttribute('href', '/login');
+    // The example rows are still there to look at.
+    await expect(page.locator('[data-field="clients-table"] tr.client-row')).toHaveCount(5);
+  });
 });

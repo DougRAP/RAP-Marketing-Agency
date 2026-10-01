@@ -67,6 +67,10 @@ test.describe('Dashboard — signed-in state', () => {
 
     // "Not a partner yet?" is gone once you are a partner.
     await expect(page.locator('section[data-dp-when="signed-out"]')).toBeHidden();
+
+    // So is the invitation to log in to a dashboard they are already in.
+    await expect(page.getByRole('link', { name: /Or log in to your real dashboard/ })).toBeHidden();
+    await expect(page.getByRole('link', { name: /See my full dashboard/ })).toBeVisible();
   });
 
   test('D.3 - overview shows real account fields and says sales are not linked yet', async ({ page, context }) => {
@@ -92,15 +96,19 @@ test.describe('Dashboard — signed-in state', () => {
 
     // The ribbon tells the truth about which half of the page is real. The
     // BFF answers after auth, so these assertions auto-wait for the final copy.
+    // A fresh account is unknown to SOAR ("not matched"); with no engine
+    // reachable, as on a machine without the local engine, the page says the
+    // figures are unavailable instead. Either is the truth, never sample data.
+    const NOT_SAMPLE = /once your account is matched|temporarily unavailable/;
     const ribbon = page.locator('#preview-ribbon');
     await expect(ribbon).toContainText('Your account is live');
-    await expect(ribbon).toContainText('once your account is matched');
+    await expect(ribbon).toContainText(NOT_SAMPLE);
     await expect(ribbon).not.toContainText('sample data');
     await expect(ribbon).not.toContainText('This is what your dashboard will look like');
 
     // And the figures themselves carry a note, for anyone scrolling past it.
     await expect(page.locator('.dp-sales-note')).toBeVisible();
-    await expect(page.locator('.dp-sales-note')).toContainText('once your account is matched');
+    await expect(page.locator('.dp-sales-note')).toContainText(NOT_SAMPLE);
     await expect(page.locator('.dp-sample-note')).toHaveCount(0);
     await expect(page.locator('.hero__sample-note')).toBeHidden();
   });
@@ -131,5 +139,30 @@ test.describe('Dashboard — signed-in state', () => {
     for (let i = 0; i < count; i++) {
       await expect(copyButtons.nth(i)).toBeDisabled();
     }
+
+    // The setup checklist must not claim what the fields above deny.
+    const checklist = page.locator('[data-field="setup-checklist"] li');
+    await expect(checklist.filter({ hasText: 'Referral code assigned' })).not.toHaveClass(/is-done/);
+    await expect(checklist.filter({ hasText: 'Client link assigned' })).not.toHaveClass(/is-done/);
+  });
+
+  test('D.5 - overview does not invite a signed-in partner to create an account', async ({ page, context }) => {
+    await context.clearCookies();
+    const link = await generateMagicLink(testEmail, 'http://localhost:8888/dashboard');
+    await page.goto(link);
+    await page.waitForURL(/\/dashboard/, { timeout: 20_000 });
+    await waitForAuth(page);
+
+    await page.goto('/dashboard/overview/');
+    await waitForAuth(page);
+
+    await expect(page.locator('.hero__help-cta')).toBeHidden();
+    await expect(page.locator('.hero__help-aside')).toBeHidden();
+    await expect(page.locator('section.final-cta')).toBeHidden();
+    // The two "Log in" buttons used to become two "<email> · Log out" buttons.
+    await expect(page.locator('a.btn:visible', { hasText: 'Log out' })).toHaveCount(0);
+    await expect(page.locator('.hero__title [data-dp-when="signed-in"]')).toHaveText('Partner dashboard');
+    // What a partner can still use there stays.
+    await expect(page.locator('.hero__help-contact')).toBeVisible();
   });
 });
