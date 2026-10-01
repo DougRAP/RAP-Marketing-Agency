@@ -9,6 +9,7 @@
 #        HMAC_KEY_ID, HMAC_SECRET (dev value lives in application.properties / .env — NOT here)
 #        ENGINE_BASE_URL = "http://127.0.0.1:8080"
 #        SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (for lead_events)
+#        CHECKOUT_OPEN=true in designer-plan-site/.env (else the BFF answers 503 checkout_closed)
 
 $bffUrl = "http://localhost:8888/.netlify/functions/cart-checkout"
 
@@ -20,7 +21,7 @@ $bffUrl = "http://localhost:8888/.netlify/functions/cart-checkout"
 $referralCode = ""
 
 $body = @{
-    plan_id               = 4
+    plan_id               = 300000
     sales_order_number    = "SO-SMOKE-001"
     amount_cents          = 24900
     coverage_retail_cents = 500000
